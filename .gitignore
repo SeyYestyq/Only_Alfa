@@ -79,3 +79,7 @@ tmp/
 # local test DB
 *.db
 backend/tests/test_alfa.db
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+*.db-journal

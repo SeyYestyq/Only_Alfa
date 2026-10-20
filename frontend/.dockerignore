@@ -1,0 +1,17 @@
+# Зависимости и сборка не должны попадать в контекст — их ставит Dockerfile.
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# Локальные переменные окружения и логи.
+.env
+.env.*
+npm-debug.log*
+*.log
+
+# Служебные файлы репозитория.
+.git/
+.gitignore
+Dockerfile
+.dockerignore
