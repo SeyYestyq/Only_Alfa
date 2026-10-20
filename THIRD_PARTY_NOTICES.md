@@ -45,11 +45,19 @@
 |---|---:|---|---|---|
 | React | 18.3.1 | MIT | https://github.com/facebook/react | UI-компоненты |
 | React DOM | 18.3.1 | MIT | https://github.com/facebook/react | Рендеринг |
+| recharts | 3.x | MIT | https://github.com/recharts/recharts | Прогноз кассы 60 дней, Waterfall скоринга |
+| zustand | 5.x | MIT | https://github.com/pmndrs/zustand | Demo Control Bar (экран / роль / режим) |
+| react-dropzone | 20.x | MIT | https://github.com/react-dropzone/react-dropzone | Drag-and-drop PDF-счетов |
+| lucide-react | 1.x | ISC | https://github.com/lucide-icons/lucide | SVG-иконки UI |
+| react-leaflet | 4.2.1 | Hippocratic-2.1 | https://github.com/PaulLeCam/react-leaflet | Карта GeoScore + офлайн SVG-фолбэк |
+| Leaflet | 1.9.4 | BSD-2-Clause | https://github.com/Leaflet/Leaflet | Ядро карты (транзитивно) |
+| openapi-typescript | 7.13.0 | MIT | https://github.com/openapi-ts/openapi-typescript | Генерация `src/types/api.d.ts` из openapi.yaml |
 | Vite | 5.4.21 | MIT | https://github.com/vitejs/vite | Сборка и dev-сервер |
 | TypeScript | 5.6.3 | Apache-2.0 | https://github.com/microsoft/TypeScript | Типизация |
 | @vitejs/plugin-react | 4.7.0 | MIT | https://github.com/vitejs/vite-plugin-react | React-плагин Vite |
 | Node.js | 20 | MIT | https://github.com/nodejs/node | Сборка frontend (только build-стадия) |
 | nginx | 1.27-alpine | BSD-2-Clause | https://github.com/nginx/nginx | Статика SPA, reverse proxy |
+| core-ds/core-components | — | MIT | https://github.com/core-ds/core-components | Референс палитры (#EF3124 / #1A1D24); тяжёлый пакет не установлен |
 
 `nginx:1.27-alpine` — официальный образ; в него также входят компоненты Alpine Linux и сторонние библиотеки с собственными лицензиями. Для продукта нужен полный SBOM образа.
 
@@ -80,7 +88,7 @@
 
 | Внешний сервис | Использование | Критический путь | Лицензия / условия |
 |---|---|---|---|
-| OpenStreetMap | iframe с картой на Экране 3 | Нет, Tier-2 | Данные ODbL, тайлы — условия openstreetmap.org |
+| OpenStreetMap | Тайлы Leaflet на Экране 3 + офлайн SVG-фолбэк | Нет, Tier-2 | Данные ODbL, тайлы — условия openstreetmap.org |
 | OpenAI-compatible провайдер | Опциональное обогащение поиска | Нет, Tier-2 | Условия провайдера; по умолчанию выключен |
 | ЕГРЮЛ / БКИ / ФССП / Open Banking | Заменены симуляторами | Нет реального вызова | В демо внешние API не используются |
 

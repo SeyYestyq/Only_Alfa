@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import { useEffect, useState } from "react";
+import { useDropzone } from "react-dropzone";
+import { CheckCircle2, FileUp, TriangleAlert } from "lucide-react";
 import type { ProductType } from "../api/types";
 import { PRODUCT_LABELS } from "../api/client";
 import { useApp } from "../state/AppState";
@@ -14,8 +16,6 @@ export function InvoicePanel() {
     isBusy,
     viewMode,
   } = useApp();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [product, setProduct] = useState<ProductType>("INVEST_LEASING");
   const [term, setTerm] = useState(24);
 
@@ -26,17 +26,17 @@ export function InvoicePanel() {
     }
   }, [invoiceResult]);
 
-  function pickFile(file: File | undefined) {
-    if (file) {
-      void parseFile(file);
-    }
-  }
-
-  function handleDrop(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    setIsDragging(false);
-    pickFile(event.dataTransfer.files[0]);
-  }
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: { "application/pdf": [".pdf"] },
+    multiple: false,
+    disabled: isBusy,
+    onDrop: (files) => {
+      const file = files[0];
+      if (file) {
+        void parseFile(file);
+      }
+    },
+  });
 
   return (
     <section className="card">
@@ -45,35 +45,22 @@ export function InvoicePanel() {
           <h2 className="card-title">Счёт в кредит</h2>
           <p className="card-subtitle">PDF → ИНН поставщика → ЕГРЮЛ/ФССП → черновик заявки</p>
         </div>
-        <span className="pill pill-outline">pdfplumber</span>
+        <span className="pill pill-outline">pdfplumber · react-dropzone</span>
       </div>
       <div className="card-body">
         <div
-          className={`dropzone ${isDragging ? "dragging" : ""}`}
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(event) => {
-            event.preventDefault();
-            setIsDragging(true);
-          }}
-          onDragLeave={() => setIsDragging(false)}
-          onDrop={handleDrop}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              inputRef.current?.click();
-            }
-          }}
+          {...getRootProps({
+            className: `dropzone ${isDragActive ? "dragging" : ""}`,
+            role: "button",
+            tabIndex: 0,
+          })}
         >
-          <div className="dropzone-title">Перетащите PDF-счёт сюда</div>
+          <input {...getInputProps()} />
+          <FileUp className="dropzone-icon" size={28} strokeWidth={1.75} aria-hidden />
+          <div className="dropzone-title">
+            {isDragActive ? "Отпустите PDF-счёт" : "Перетащите PDF-счёт сюда"}
+          </div>
           <div className="dropzone-sub">или нажмите, чтобы выбрать файл · до 5 секунд на разбор</div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="application/pdf"
-            hidden
-            onChange={(event) => pickFile(event.target.files?.[0])}
-          />
         </div>
 
         <div className="template-buttons">
@@ -97,7 +84,14 @@ export function InvoicePanel() {
         {invoiceResult && (
           <div className={`invoice-result ${invoiceResult.antifraud.is_verified ? "" : "warn"}`}>
             <div className="result-head">
-              <strong>Счёт распознан за {invoiceResult.parsing_ms.toFixed(0)} мс</strong>
+              <strong className="result-head-title">
+                {invoiceResult.antifraud.is_verified ? (
+                  <CheckCircle2 size={16} className="icon-good" aria-hidden />
+                ) : (
+                  <TriangleAlert size={16} className="icon-warn" aria-hidden />
+                )}
+                Счёт распознан за {invoiceResult.parsing_ms.toFixed(0)} мс
+              </strong>
               <span className={`pill ${invoiceResult.antifraud.is_verified ? "pill-good" : "pill-warn"}`}>
                 {invoiceResult.antifraud.egrul_status}
               </span>

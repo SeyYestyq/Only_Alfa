@@ -1,4 +1,5 @@
 import type { Xray } from "../api/types";
+import { GeoMap } from "./GeoMap";
 
 const BUSINESS_MODEL_LABELS: Record<string, string> = {
   B2C_OFFLINE: "офлайн-точка B2C",
@@ -17,16 +18,19 @@ export function GeoPanel({ xray }: { xray: Xray }) {
           Локация и рейтинг заказчика · {modelLabel}
         </div>
         <div className="map-frame">
-          <iframe
-            title="Карта OpenStreetMap"
-            src={geo.map_url}
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
+          <GeoMap
+            latitude={geo.latitude}
+            longitude={geo.longitude}
+            city={geo.city}
+            address={geo.address}
+            competitorsCount={geo.competitors_count}
           />
           <div className="map-caption">
-            <span>OpenStreetMap · {geo.latitude.toFixed(4)}, {geo.longitude.toFixed(4)}</span>
+            <span>
+              react-leaflet · {geo.latitude.toFixed(4)}, {geo.longitude.toFixed(4)}
+            </span>
             <a href={osmUrl} target="_blank" rel="noreferrer">
-              Открыть карту ↗
+              Открыть OSM ↗
             </a>
           </div>
         </div>

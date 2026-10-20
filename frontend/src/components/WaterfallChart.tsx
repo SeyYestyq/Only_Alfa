@@ -1,14 +1,67 @@
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  LabelList,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import type { Factor } from "../api/types";
 
-const WIDTH = 840;
-const HEIGHT = 300;
-const PAD = { left: 18, right: 18, top: 38, bottom: 66 };
+const ALFA_RED = "#EF3124";
+const ANTHRACITE = "#1A1D24";
+const GREEN = "#10B981";
+const MUTED = "#8b95a3";
+
+interface WaterfallBar {
+  key: string;
+  label: string;
+  group: string;
+  delta: number;
+  range: [number, number];
+  fill: string;
+  condition: string;
+  isTotal: boolean;
+}
 
 function shortLabel(factor: Factor): string {
   if (factor.code === "BASE_SCORE") {
     return "База";
   }
-  return factor.label.length > 20 ? `${factor.label.slice(0, 19)}…` : factor.label;
+  return factor.label.length > 18 ? `${factor.label.slice(0, 17)}…` : factor.label;
+}
+
+function barColor(factor: Factor): string {
+  if (factor.code === "BASE_SCORE") {
+    return ANTHRACITE;
+  }
+  return factor.score_delta >= 0 ? GREEN : ALFA_RED;
+}
+
+function WaterfallTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: WaterfallBar }>;
+}) {
+  if (!active || !payload?.[0]) {
+    return null;
+  }
+  const item = payload[0].payload;
+  const signed = item.delta > 0 ? `+${item.delta}` : String(item.delta);
+  return (
+    <div className="recharts-custom-tooltip">
+      <strong>{item.label}</strong>
+      <div>
+        {item.isTotal ? `Итог: ${item.delta}` : `${signed} · ${item.group}`}
+      </div>
+      {!item.isTotal && item.condition && <div className="muted">{item.condition}</div>}
+    </div>
+  );
 }
 
 export function WaterfallChart({
@@ -20,131 +73,82 @@ export function WaterfallChart({
   finalScore: number;
   rawScore: number;
 }) {
-  const series = factors.map((factor) => ({ factor, start: 0, end: 0, running: 0 }));
+  const bars: WaterfallBar[] = [];
   let running = 0;
-  for (const item of series) {
-    item.start = running;
-    item.end = running + item.factor.score_delta;
-    item.running = item.end;
-    running = item.end;
+
+  for (const factor of factors) {
+    const start = running;
+    const end = running + factor.score_delta;
+    bars.push({
+      key: factor.code,
+      label: shortLabel(factor),
+      group: factor.code === "BASE_SCORE" ? "G0" : factor.group,
+      delta: factor.score_delta,
+      range: [Math.min(start, end), Math.max(start, end)],
+      fill: barColor(factor),
+      condition: factor.condition,
+      isTotal: false,
+    });
+    running = end;
   }
 
-  const maxValue = Math.max(1000, finalScore, running);
-  const plotWidth = WIDTH - PAD.left - PAD.right;
-  const plotHeight = HEIGHT - PAD.top - PAD.bottom;
-  const slot = plotWidth / (series.length + 1);
-  const barWidth = Math.min(64, slot * 0.6);
-  const y = (value: number) => PAD.top + ((maxValue - value) / maxValue) * plotHeight;
-
-  function xFor(index: number): number {
-    return PAD.left + slot * index + slot / 2;
-  }
+  bars.push({
+    key: "TOTAL",
+    label: "Итог",
+    group: "clamp",
+    delta: finalScore,
+    range: [0, Math.max(0, finalScore)],
+    fill: ALFA_RED,
+    condition: "clamp 0…1000",
+    isTotal: true,
+  });
 
   return (
     <div className="waterfall-wrap">
-      <svg
-        className="waterfall-svg"
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        role="img"
-        aria-label="Waterfall декомпозиции RiskScore"
-      >
-        {[0, 250, 500, 750, 1000].map((tick) => (
-          <g key={tick}>
-            <line
-              x1={PAD.left}
-              x2={WIDTH - PAD.right}
-              y1={y(tick)}
-              y2={y(tick)}
-              stroke="#e3e8ef"
-              strokeDasharray={tick === 0 ? "0" : "4 5"}
+      <div className="waterfall-canvas" role="img" aria-label="Waterfall декомпозиции RiskScore">
+        <ResponsiveContainer width="100%" height={300} minWidth={640}>
+          <BarChart data={bars} margin={{ top: 28, right: 12, left: 4, bottom: 8 }}>
+            <CartesianGrid stroke="#e3e8ef" strokeDasharray="4 5" vertical={false} />
+            <XAxis
+              dataKey="label"
+              tick={{ fill: MUTED, fontSize: 10 }}
+              interval={0}
+              height={48}
+              tickLine={false}
+              axisLine={{ stroke: "#e3e8ef" }}
             />
-            <text x={PAD.left} y={y(tick) - 4} fontSize="9.5" fill="#8b95a3">
-              {tick}
-            </text>
-          </g>
-        ))}
-
-        {series.map((item, index) => {
-          const isBase = item.factor.code === "BASE_SCORE";
-          const top = y(Math.max(item.start, item.end));
-          const bottom = y(Math.min(item.start, item.end));
-          const barHeight = Math.max(2, bottom - top);
-          const color = isBase ? "#1a1d24" : item.factor.score_delta >= 0 ? "#15945f" : "#ef3124";
-          const previous = series[index - 1];
-          return (
-            <g key={item.factor.code}>
-              <title>
-                {item.factor.label}: {item.factor.score_delta > 0 ? "+" : ""}
-                {item.factor.score_delta} ({item.factor.condition})
-              </title>
-              {previous && (
-                <line
-                  x1={xFor(index - 1) + barWidth / 2}
-                  x2={xFor(index) - barWidth / 2}
-                  y1={y(previous.running)}
-                  y2={y(previous.running)}
-                  stroke="#cfd7e3"
-                  strokeDasharray="3 3"
-                />
-              )}
-              <rect
-                x={xFor(index) - barWidth / 2}
-                y={top}
-                width={barWidth}
-                height={barHeight}
-                rx={4}
-                fill={color}
-                opacity={0.92}
+            <YAxis
+              domain={[0, 1000]}
+              ticks={[0, 250, 500, 750, 1000]}
+              tick={{ fill: MUTED, fontSize: 10 }}
+              tickLine={false}
+              axisLine={false}
+              width={40}
+            />
+            <Tooltip content={<WaterfallTooltip />} cursor={{ fill: "rgba(26, 29, 36, 0.04)" }} />
+            <Bar dataKey="range" radius={[4, 4, 0, 0]} maxBarSize={56}>
+              {bars.map((bar) => (
+                <Cell key={bar.key} fill={bar.fill} fillOpacity={0.92} />
+              ))}
+              <LabelList
+                dataKey="delta"
+                position="top"
+                formatter={(value) => {
+                  const num = typeof value === "number" ? value : Number(value);
+                  if (Number.isNaN(num)) {
+                    return "";
+                  }
+                  return num > 0 ? `+${num}` : String(num);
+                }}
+                style={{ fontSize: 11, fontWeight: 800, fill: ANTHRACITE }}
               />
-              <text
-                x={xFor(index)}
-                y={top - 7}
-                textAnchor="middle"
-                fontSize="10.5"
-                fontWeight="800"
-                fill={color}
-              >
-                {item.factor.score_delta > 0 ? "+" : ""}
-                {item.factor.score_delta}
-              </text>
-              <text x={xFor(index)} y={HEIGHT - 44} textAnchor="middle" fontSize="9.5" fill="#5f6875">
-                {shortLabel(item.factor)}
-              </text>
-              <text x={xFor(index)} y={HEIGHT - 31} textAnchor="middle" fontSize="9" fill="#8b95a3">
-                {item.factor.code === "BASE_SCORE" ? "G0" : item.factor.group}
-              </text>
-            </g>
-          );
-        })}
-
-        <rect
-          x={xFor(series.length) - barWidth / 2}
-          y={y(finalScore)}
-          width={barWidth}
-          height={Math.max(2, y(0) - y(finalScore))}
-          rx={4}
-          fill="#ef3124"
-        />
-        <text
-          x={xFor(series.length)}
-          y={y(finalScore) - 7}
-          textAnchor="middle"
-          fontSize="11"
-          fontWeight="850"
-          fill="#ef3124"
-        >
-          {finalScore}
-        </text>
-        <text x={xFor(series.length)} y={HEIGHT - 44} textAnchor="middle" fontSize="9.5" fontWeight="700" fill="#161a21">
-          Итог
-        </text>
-        <text x={xFor(series.length)} y={HEIGHT - 31} textAnchor="middle" fontSize="9" fill="#8b95a3">
-          clamp 0…1000
-        </text>
-      </svg>
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
       <p className="muted" style={{ fontSize: 11, marginTop: 2 }}>
         Сырая сумма факторов: {rawScore} → после clamp: {finalScore}. Отрицательный сырой балл
-        отображается как 0.
+        отображается как 0. График: recharts (floating Bar).
       </p>
     </div>
   );

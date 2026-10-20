@@ -1,9 +1,20 @@
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ReferenceArea,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import type { CashForecast } from "../api/types";
 import { formatMoney, formatNumber } from "../utils/format";
 
-const WIDTH = 760;
-const HEIGHT = 250;
-const PAD = { left: 64, right: 16, top: 18, bottom: 30 };
+const ALFA_RED = "#EF3124";
+const ANTHRACITE = "#1A1D24";
+const MUTED = "#8b95a3";
 
 function axisLabel(value: number): string {
   if (Math.abs(value) >= 1_000_000) {
@@ -15,126 +26,120 @@ function axisLabel(value: number): string {
   return formatNumber(value);
 }
 
+interface ChartPoint {
+  day: number;
+  date: string;
+  balance_rub: number;
+  trigger: string | null;
+}
+
+function CashTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: ChartPoint }>;
+}) {
+  if (!active || !payload?.[0]) {
+    return null;
+  }
+  const point = payload[0].payload;
+  return (
+    <div className="recharts-custom-tooltip">
+      <strong>День {point.day}</strong>
+      <div>{point.date}</div>
+      <div className={point.balance_rub < 0 ? "red" : ""}>{formatMoney(point.balance_rub)}</div>
+      {point.trigger && <div className="muted">Триггер: {point.trigger}</div>}
+    </div>
+  );
+}
+
 export function CashForecastChart({ forecast }: { forecast: CashForecast }) {
   const days = forecast.days;
   if (days.length === 0) {
     return <p className="muted">Нет данных прогноза.</p>;
   }
 
-  const balances = days.map((day) => day.balance_rub);
-  const rawMin = Math.min(0, ...balances);
-  const rawMax = Math.max(0, ...balances);
-  const span = rawMax - rawMin || 1;
-  const minValue = rawMin - span * 0.08;
-  const maxValue = rawMax + span * 0.08;
+  const data: ChartPoint[] = days.map((day) => ({
+    day: day.day,
+    date: day.date,
+    balance_rub: day.balance_rub,
+    trigger: day.trigger,
+  }));
 
-  const innerWidth = WIDTH - PAD.left - PAD.right;
-  const innerHeight = HEIGHT - PAD.top - PAD.bottom;
-  const x = (index: number) => PAD.left + (index / Math.max(1, days.length - 1)) * innerWidth;
-  const y = (value: number) => PAD.top + ((maxValue - value) / (maxValue - minValue)) * innerHeight;
-  const zeroY = y(0);
-
-  const line = days
-    .map((day, index) => `${index === 0 ? "M" : "L"} ${x(index).toFixed(1)} ${y(day.balance_rub).toFixed(1)}`)
-    .join(" ");
-  const area = `${line} L ${x(days.length - 1).toFixed(1)} ${HEIGHT - PAD.bottom} L ${PAD.left} ${HEIGHT - PAD.bottom} Z`;
-
-  const gridValues = Array.from({ length: 5 }, (_, index) => minValue + ((maxValue - minValue) / 4) * index);
-  const minPoint = days.reduce((worst, day) => (day.balance_rub < worst.balance_rub ? day : worst), days[0]);
-  const minIndex = days.indexOf(minPoint);
-  const hasGap = forecast.has_gap;
+  const negativeDays = data.filter((day) => day.balance_rub < 0);
+  const gapStart = negativeDays[0]?.day;
+  const gapEnd = negativeDays[negativeDays.length - 1]?.day;
+  const minBalance = Math.min(...data.map((day) => day.balance_rub), 0);
 
   return (
     <div className="chart-wrap">
-      <svg className="chart-svg" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="Прогноз остатка на счёте на 60 дней">
-        <defs>
-          <linearGradient id="cashFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#1a1d24" stopOpacity="0.16" />
-            <stop offset="100%" stopColor="#1a1d24" stopOpacity="0.01" />
-          </linearGradient>
-          <linearGradient id="gapFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#ef3124" stopOpacity="0.06" />
-            <stop offset="100%" stopColor="#ef3124" stopOpacity="0.16" />
-          </linearGradient>
-        </defs>
-
-        {hasGap && (
-          <rect
-            x={PAD.left}
-            y={zeroY}
-            width={innerWidth}
-            height={Math.max(0, HEIGHT - PAD.bottom - zeroY)}
-            fill="url(#gapFill)"
-          />
-        )}
-
-        {gridValues.map((value) => (
-          <g key={value}>
-            <line
-              x1={PAD.left}
-              x2={WIDTH - PAD.right}
-              y1={y(value)}
-              y2={y(value)}
-              stroke="#e3e8ef"
-              strokeWidth="1"
+      <div className="chart-canvas" role="img" aria-label="Прогноз остатка на счёте на 60 дней">
+        <ResponsiveContainer width="100%" height={280}>
+          <AreaChart data={data} margin={{ top: 16, right: 12, left: 8, bottom: 8 }}>
+            <defs>
+              <linearGradient id="cashSplit" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={ANTHRACITE} stopOpacity={0.22} />
+                <stop offset="55%" stopColor={ANTHRACITE} stopOpacity={0.06} />
+                <stop offset="100%" stopColor={ALFA_RED} stopOpacity={0.18} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="#e3e8ef" strokeDasharray="3 3" vertical={false} />
+            <XAxis
+              dataKey="day"
+              tick={{ fill: MUTED, fontSize: 11 }}
+              tickLine={false}
+              axisLine={{ stroke: "#e3e8ef" }}
+              ticks={[1, 15, 30, 45, 60]}
+              tickFormatter={(value: number) => `${value} дн.`}
             />
-            <text x={PAD.left - 8} y={y(value) + 3} textAnchor="end" fontSize="10" fill="#8b95a3">
-              {axisLabel(value)}
-            </text>
-          </g>
-        ))}
-
-        <line
-          x1={PAD.left}
-          x2={WIDTH - PAD.right}
-          y1={zeroY}
-          y2={zeroY}
-          stroke="#ef3124"
-          strokeWidth="1"
-          strokeDasharray="5 4"
-          opacity="0.7"
-        />
-        <text x={WIDTH - PAD.right} y={zeroY - 5} textAnchor="end" fontSize="9.5" fill="#ef3124">
-          нулевой остаток
-        </text>
-
-        <path d={area} fill="url(#cashFill)" />
-        <path d={line} fill="none" stroke="#1a1d24" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
-
-        {days.map((day, index) =>
-          day.balance_rub < 0 ? (
-            <circle key={day.day} cx={x(index)} cy={y(day.balance_rub)} r="2.4" fill="#ef3124" />
-          ) : null,
-        )}
-
-        <circle cx={x(minIndex)} cy={y(minPoint.balance_rub)} r="4.5" fill="#fff" stroke="#ef3124" strokeWidth="2.4" />
-        <text
-          x={Math.min(x(minIndex) + 8, WIDTH - PAD.right - 120)}
-          y={Math.max(y(minPoint.balance_rub) - 9, PAD.top + 10)}
-          fontSize="10.5"
-          fontWeight="700"
-          fill="#ef3124"
-        >
-          {minPoint.balance_rub < 0 ? "разрыв " : "минимум "}
-          {formatMoney(minPoint.balance_rub)}
-        </text>
-
-        {[1, 15, 30, 45, 60].map((dayNumber) => {
-          const index = Math.min(days.length - 1, Math.max(0, dayNumber - 1));
-          return (
-            <text
-              key={dayNumber}
-              x={x(index)}
-              y={HEIGHT - 10}
-              textAnchor="middle"
-              fontSize="10"
-              fill="#8b95a3"
-            >
-              {dayNumber} дн.
-            </text>
-          );
-        })}
-      </svg>
+            <YAxis
+              tick={{ fill: MUTED, fontSize: 11 }}
+              tickLine={false}
+              axisLine={false}
+              width={64}
+              tickFormatter={(value: number) => axisLabel(value)}
+            />
+            <Tooltip content={<CashTooltip />} />
+            <ReferenceLine
+              y={0}
+              stroke="#575B5F"
+              strokeDasharray="3 3"
+              label={{ value: "нулевой остаток", position: "insideTopRight", fill: ALFA_RED, fontSize: 10 }}
+            />
+            {forecast.has_gap && gapStart !== undefined && gapEnd !== undefined && (
+              <ReferenceArea
+                x1={gapStart}
+                x2={gapEnd}
+                y1={minBalance}
+                y2={0}
+                fill={ALFA_RED}
+                fillOpacity={0.14}
+                ifOverflow="extendDomain"
+              />
+            )}
+            <Area
+              type="monotone"
+              dataKey="balance_rub"
+              stroke={ANTHRACITE}
+              strokeWidth={2.4}
+              fill="url(#cashSplit)"
+              dot={(props) => {
+                const { cx, cy, payload } = props as {
+                  cx?: number;
+                  cy?: number;
+                  payload?: ChartPoint;
+                };
+                if (cx === undefined || cy === undefined || !payload || payload.balance_rub >= 0) {
+                  return <g key={`dot-${payload?.day ?? "x"}`} />;
+                }
+                return <circle key={`neg-${payload.day}`} cx={cx} cy={cy} r={2.6} fill={ALFA_RED} />;
+              }}
+              activeDot={{ r: 5, fill: ALFA_RED, stroke: "#fff", strokeWidth: 2 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
 
       <div className="chart-meta">
         <div className="chart-stat">

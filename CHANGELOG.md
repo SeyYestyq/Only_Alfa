@@ -8,6 +8,7 @@
 ## [Unreleased]
 
 ### Added
+- Экспериментальная ветка `тестовая-реализация`: UI-апгрейд по аудиту GitHub-репозиториев — `recharts` (прогноз кассы 60 дней + Waterfall), `zustand` (Demo Control Bar), `react-dropzone` + `lucide-react` (PDF-зона), `react-leaflet` с офлайн SVG-фолбэком (GeoMap), `openapi-typescript` → `frontend/src/types/api.d.ts`.
 - Checkpoint 1 MVP: FastAPI (11 эндпоинтов ТЗ), дискретный RiskScore + Decision Engine, seed 5 профилей (815/610/760/495/0), Smart Search, PDF-парсер, SPA (Demo Control Bar, Экраны 1–2, задел Экрана 3).
 - `docker-compose.yml` (postgres:16-alpine + backend + frontend), `.env.example`, Dockerfiles, корневой `openapi.yaml`.
 - Автотесты pytest: конвейер, скоринг, поиск, PDF, коды 403/409/422.
