@@ -276,7 +276,10 @@ paths:
       tags:
       - applications
       summary: Verify Multibank
-      description: 'Симулятор Open Banking: +90 баллов, +25% к лимиту, снятие аномалии.'
+      description: >-
+        Симулятор Open Banking: снимает ANOMALY_VERIFICATION, добавляет фактор
+        CF_MULTIBANK_VERIFIED (+90), пересчитывает FCF/DSCR/RiskScore и даёт +25% к лимиту.
+        Эталон ТехноСтрой: 295 → 760 после verify-multibank.
       operationId: verify_multibank_api_v1_applications__application_id__verify_multibank_post
       parameters:
       - name: application_id

@@ -333,24 +333,11 @@ class ApplicationService:
         role = UserRole(actor_role)
         ensure_signing_authority(role, profile.legal_form)
 
-        if current == ApplicationStatus.COUNTER_OFFER:
-            if not application.selected_offer_index:
-                raise InvalidTransition(
-                    "Сначала выберите один из встречных офферов, затем подписывайте ПЭП"
-                )
-            offers = application.counter_offers_json or []
-            if application.selected_offer_index > len(offers):
-                raise InvalidTransition("Выбранный оффер больше не доступен")
-            offer = offers[application.selected_offer_index - 1]
-            approved_amount = offer["amount_rub"]
-            rate = offer["rate_pct"]
-            monthly = offer["monthly_payment_rub"]
-            term = offer["term_months"]
-        else:
-            approved_amount = application.approved_amount_rub
-            rate = application.final_rate_pct
-            monthly = application.monthly_payment_rub
-            term = application.term_months
+        # Условия уже зафиксированы: либо APPROVED, либо выбранный оффер (AWAITING_CEO_APPROVAL).
+        approved_amount = application.approved_amount_rub
+        rate = application.final_rate_pct
+        monthly = application.monthly_payment_rub
+        term = application.term_months
 
         if approved_amount <= 0:
             raise InvalidTransition("Нельзя профинансировать заявку с нулевой суммой одобрения")

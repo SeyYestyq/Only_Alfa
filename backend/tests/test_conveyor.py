@@ -87,11 +87,13 @@ def test_signature_for_ip_and_ooo(client, companies):
     assert signed.json()["account_balance"] == 420_000 + 900_000
 
     rosters = create_application(client, companies["rosters"], DEMO_APPLICATION_SCENARIOS["rosters"])
-    forbidden = client.post(
+    assert rosters["status"] == "COUNTER_OFFER"
+    # ПЭП из COUNTER_OFFER без accept-offer — 409 (нужен выбор оффера).
+    premature = client.post(
         f"/api/v1/applications/{rosters['application_id']}/ceo-approve",
-        json={"actor_role": "ACCOUNTANT"},
+        json={"actor_role": "CEO_OWNER"},
     )
-    assert forbidden.status_code == 403
+    assert premature.status_code == 409
 
     accepted = client.post(
         f"/api/v1/applications/{rosters['application_id']}/accept-offer",
@@ -100,6 +102,12 @@ def test_signature_for_ip_and_ooo(client, companies):
     assert accepted.status_code == 200
     assert accepted.json()["status"] == "AWAITING_CEO_APPROVAL"
     assert accepted.json()["selected_offer_index"] == 1
+
+    forbidden = client.post(
+        f"/api/v1/applications/{rosters['application_id']}/ceo-approve",
+        json={"actor_role": "ACCOUNTANT"},
+    )
+    assert forbidden.status_code == 403
 
     funded = client.post(
         f"/api/v1/applications/{rosters['application_id']}/ceo-approve",

@@ -61,8 +61,6 @@ stateDiagram-v2
     APPROVED --> FUNDED: ПЭП подписан
 
     COUNTER_OFFER --> AWAITING_CEO_APPROVAL: оффер выбран
-    COUNTER_OFFER --> FUNDED: ПЭП подписан
-
     AWAITING_CEO_APPROVAL --> FUNDED: ПЭП подписан
 
     MANUAL_REVIEW --> NEED_MORE_INFO: запрос документа
@@ -83,7 +81,7 @@ stateDiagram-v2
 - коридор — не единственное условие: при балле ≥ 650 Decision Engine всё равно вернёт `COUNTER_OFFER`, если платёж превышает `MaxPayment` или локация слабая (`geo_score < 45` для `B2C_OFFLINE`);
 - переходы из `DRAFT_BY_EMPLOYEE` и `ANOMALY_VERIFICATION` выполняет сервис по результату скоринга и решения, а не пользователь;
 - `APPROVED → AWAITING_CEO_APPROVAL` и `NEED_MORE_INFO → MANUAL_REVIEW` разрешены State Machine, но отдельных кнопок/эндпоинтов для них в демо нет;
-- `COUNTER_OFFER → FUNDED` технически возможно прямым вызовом `ceo-approve`, но в демо используется путь через выбор оффера;
+- прямой `COUNTER_OFFER → FUNDED` запрещён: сначала `accept-offer` → `AWAITING_CEO_APPROVAL`, затем ПЭП;
 - из `FUNDED` и `REJECTED` переходов нет.
 
 ## 4. Таблица переходов
@@ -104,15 +102,14 @@ stateDiagram-v2
 | 10 | `APPROVED` | `AWAITING_CEO_APPROVAL` | `CEO_OWNER`, `IP_OWNER`, `ACCOUNTANT` | Запрос подписания; отдельного эндпоинта в демо нет | 403 / 409 |
 | 11 | `APPROVED` | `FUNDED` | Подписант: `CEO_OWNER` для ООО, `IP_OWNER` для ИП | `POST /ceo-approve` | 403 / 409 |
 | 12 | `COUNTER_OFFER` | `AWAITING_CEO_APPROVAL` | `CEO_OWNER`, `IP_OWNER`, `ACCOUNTANT` | `POST /accept-offer` | 403 / 409 |
-| 13 | `COUNTER_OFFER` | `FUNDED` | Подписант: `CEO_OWNER` / `IP_OWNER` | `POST /ceo-approve` | 403 / 409 |
-| 14 | `AWAITING_CEO_APPROVAL` | `FUNDED` | Подписант: `CEO_OWNER` / `IP_OWNER` | `POST /ceo-approve` | 403 / 409 |
-| 15 | `MANUAL_REVIEW` | `NEED_MORE_INFO` | `UNDERWRITER` | `underwriter-action` → `NEED_MORE_INFO` | 403 / 409 |
-| 16 | `MANUAL_REVIEW` | `APPROVED` | `UNDERWRITER` | `underwriter-action` → `APPROVE` | 403 / 409 |
-| 17 | `MANUAL_REVIEW` | `COUNTER_OFFER` | `UNDERWRITER` | `underwriter-action` → `COUNTER_OFFER` | 403 / 409 |
-| 18 | `MANUAL_REVIEW` | `REJECTED` | `UNDERWRITER` | `underwriter-action` → `REJECT` | 403 / 409 |
-| 19 | `NEED_MORE_INFO` | `APPROVED` | `UNDERWRITER` | `underwriter-action` → `APPROVE` + `document_name` | 400 / 403 / 409 |
-| 20 | `NEED_MORE_INFO` | `MANUAL_REVIEW` | `UNDERWRITER` | FSM допускает; отдельного действия в API нет | 403 / 409 |
-| 21 | `NEED_MORE_INFO` | `REJECTED` | `UNDERWRITER` | `underwriter-action` → `REJECT` | 403 / 409 |
+| 13 | `AWAITING_CEO_APPROVAL` | `FUNDED` | Подписант: `CEO_OWNER` / `IP_OWNER` | `POST /ceo-approve` | 403 / 409 |
+| 14 | `MANUAL_REVIEW` | `NEED_MORE_INFO` | `UNDERWRITER` | `underwriter-action` → `NEED_MORE_INFO` | 403 / 409 |
+| 15 | `MANUAL_REVIEW` | `APPROVED` | `UNDERWRITER` | `underwriter-action` → `APPROVE` | 403 / 409 |
+| 16 | `MANUAL_REVIEW` | `COUNTER_OFFER` | `UNDERWRITER` | `underwriter-action` → `COUNTER_OFFER` | 403 / 409 |
+| 17 | `MANUAL_REVIEW` | `REJECTED` | `UNDERWRITER` | `underwriter-action` → `REJECT` | 403 / 409 |
+| 18 | `NEED_MORE_INFO` | `APPROVED` | `UNDERWRITER` | `underwriter-action` → `APPROVE` + `document_name` | 400 / 403 / 409 |
+| 19 | `NEED_MORE_INFO` | `MANUAL_REVIEW` | `UNDERWRITER` | FSM допускает; отдельного действия в API нет | 403 / 409 |
+| 20 | `NEED_MORE_INFO` | `REJECTED` | `UNDERWRITER` | `underwriter-action` → `REJECT` | 403 / 409 |
 
 Дополнительные правила, которые не видны в таблице пар:
 
@@ -138,7 +135,7 @@ stateDiagram-v2
 Порядок проверок в `ceo_approve`:
 
 1. заявка существует — иначе 404;
-2. статус входит в `SIGNING_STATUSES` (`APPROVED`, `COUNTER_OFFER`, `AWAITING_CEO_APPROVAL`) — иначе 409;
+2. статус входит в `SIGNING_STATUSES` (`APPROVED`, `AWAITING_CEO_APPROVAL`) — иначе 409 (из `COUNTER_OFFER` без `accept-offer` тоже 409);
 3. роль является подписантом для организационно-правовой формы — иначе 403;
 4. переход в `FUNDED` разрешён — иначе 409.
 

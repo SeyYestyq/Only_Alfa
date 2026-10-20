@@ -25,8 +25,8 @@ _TRANSITIONS: dict[tuple[ApplicationStatus, ApplicationStatus], set[UserRole]] =
     (S.ANOMALY_VERIFICATION, S.REJECTED): set(),
     (S.APPROVED, S.AWAITING_CEO_APPROVAL): {UserRole.CEO_OWNER, UserRole.IP_OWNER, UserRole.ACCOUNTANT},
     (S.APPROVED, S.FUNDED): {UserRole.CEO_OWNER, UserRole.IP_OWNER},
+    # Контр-оффер: сначала accept-offer → AWAITING_CEO_APPROVAL, затем ПЭП → FUNDED.
     (S.COUNTER_OFFER, S.AWAITING_CEO_APPROVAL): {UserRole.CEO_OWNER, UserRole.IP_OWNER, UserRole.ACCOUNTANT},
-    (S.COUNTER_OFFER, S.FUNDED): {UserRole.CEO_OWNER, UserRole.IP_OWNER},
     (S.AWAITING_CEO_APPROVAL, S.FUNDED): {UserRole.CEO_OWNER, UserRole.IP_OWNER},
     (S.MANUAL_REVIEW, S.NEED_MORE_INFO): {UserRole.UNDERWRITER},
     (S.MANUAL_REVIEW, S.APPROVED): {UserRole.UNDERWRITER},
@@ -38,7 +38,7 @@ _TRANSITIONS: dict[tuple[ApplicationStatus, ApplicationStatus], set[UserRole]] =
 }
 
 SIGNING_STATUSES: frozenset[ApplicationStatus] = frozenset(
-    {S.APPROVED, S.COUNTER_OFFER, S.AWAITING_CEO_APPROVAL}
+    {S.APPROVED, S.AWAITING_CEO_APPROVAL}
 )
 TERMINAL_STATUSES: frozenset[ApplicationStatus] = frozenset({S.FUNDED, S.REJECTED})
 UNDERWRITER_STATUSES: frozenset[ApplicationStatus] = frozenset({S.MANUAL_REVIEW, S.NEED_MORE_INFO})

@@ -2,7 +2,8 @@ import type { Application } from "../api/types";
 import { useApp } from "../state/AppState";
 import { formatMoney, formatPercent, roleLabel } from "../utils/format";
 
-const SIGNING_STATUSES = ["APPROVED", "COUNTER_OFFER", "AWAITING_CEO_APPROVAL"];
+/** ПЭП только из APPROVED или после выбора контр-оффера (AWAITING_CEO_APPROVAL). COUNTER_OFFER → 409 без accept-offer. */
+const SIGNING_STATUSES = ["APPROVED", "AWAITING_CEO_APPROVAL"];
 
 export function SigningPanel({ application }: { application: Application }) {
   const { signApplication, isBusy, effectiveRole, viewMode, goToScreen } = useApp();
@@ -20,7 +21,7 @@ export function SigningPanel({ application }: { application: Application }) {
           : ["MANUAL_REVIEW", "NEED_MORE_INFO"].includes(application.status)
             ? "Решение принимает кредитный инспектор на Экране 3."
             : application.status === "COUNTER_OFFER"
-              ? "Выберите один из 4 вариантов — или подпишите текущие условия."
+              ? "Сначала выберите один из 4 контр-офферов выше — после выбора станет доступна подпись ПЭП."
               : application.status === "AWAITING_CEO_APPROVAL"
                 ? "Оффер выбран, остался один шаг — подпись ПЭП."
                 : "Условия готовы, можно подписывать ПЭП.";
