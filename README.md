@@ -1,68 +1,287 @@
-# Only_Alfa — Умный кредитный кабинет предпринимателя
+# Only_Alfa — умный кредитный кабинет предпринимателя
 
-Хакатон «Альфа-Будущее» · команда Only_Alfa · репозиторий [SeyYestyq/Only_Alfa](https://github.com/SeyYestyq/Only_Alfa)
+Демо-проект команды **Only_Alfa** для хакатона «Альфа-Будущее». Кабинет проводит предпринимателя от 360°-портрета бизнеса до подписанной заявки на кредит, а банку показывает экономику сделки, риск и аудит решений.
 
-Стек: React 18 + Vite + TypeScript · Python 3.12 + FastAPI · PostgreSQL 16 · `docker compose up --build`
+Стек: **React 18 + Vite + TypeScript** · **Python 3.12 + FastAPI + SQLAlchemy 2.0** · **PostgreSQL 16** · запуск через `docker compose up --build`.
 
-Правила для агентов и команды: [`AGENTS.md`](./AGENTS.md) · скиллы в [`skills/`](./skills/)
+## Содержание
 
-## Быстрый старт (жюри / демо)
+- [Что это](#что-это)
+- [Три экрана](#три-экрана)
+- [Быстрый старт в Docker](#быстрый-старт-в-docker)
+- [Локальный запуск без Docker](#локальный-запуск-без-docker)
+- [Переменные окружения](#переменные-окружения)
+- [Пять демо-сценариев](#пять-демо-сценариев)
+- [API](#api)
+- [Тесты и проверка](#тесты-и-проверка)
+- [Структура репозитория](#структура-репозитория)
+- [Ограничения демо](#ограничения-демо)
+- [Документация](#документация)
+
+## Что это
+
+«Умный кредитный кабинет» решает три задачи:
+
+1. **Показать бизнес целиком.** 360°-ДНК, выписка, прогноз кассы на 60 дней, финансовый радар, новости и умный поиск.
+2. **Принять объяснимое кредитное решение.** Дискретный RiskScore (база 500 + 5 факторов), Decision Engine с коридорами 650 / 520 / 450, ставка от ключевой ставки ЦБ, лимит от FCF.
+3. **Провести заявку до денег.** Мультибанк, встречные офферы, ручной разбор, ПЭП владельца и audit trail.
+
+Ключевой принцип: фронтенд не считает баллы, лимиты и статусы — он только отображает ответы API. Все решения принимает backend.
+
+## Три экрана
+
+| Экран | Для кого | Что показывает |
+|---|---|---|
+| **Экран 1. Кабинет** | Предприниматель | ДНК бизнеса, прогноз кассы на 60 дней, 5 триггеров радара, лента News-to-Action, умный поиск, Invoice-to-Credit, выписка и рассрочка |
+| **Экран 2. Заявка** | Предприниматель / бухгалтер | Паспорт заявки, факторы RiskScore, Мультибанк, 4 встречных оффера, ПЭП, чек-лист оздоровления |
+| **Экран 3. Рентген** | Банк / инспектор | P&L сделки, Waterfall скоринга, карта локации, audit trail, действия инспектора |
+
+Сверху — **Demo Control Bar**: переключение компании, роли, экрана и режима «глазами бизнеса / глазами банка». Палитра: `#EF3124`, `#1A1D24`, `#F8FAFC`.
+
+## Быстрый старт в Docker
 
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
-| Сервис   | URL |
-|----------|-----|
-| SPA      | http://localhost:8080 |
-| API docs | http://localhost:8000/docs |
-| Health   | http://localhost:8000/health |
-| OpenAPI  | [`openapi.yaml`](./openapi.yaml) |
+| Сервис | URL |
+|---|---|
+| SPA | http://localhost:8080 |
+| Swagger | http://localhost:8000/docs |
+| Health | http://localhost:8000/health |
+| OpenAPI | [openapi.yaml](./openapi.yaml) |
 
-Норматив памяти трёх контейнеров: **≤ 4 ГБ ОЗУ** (`docker stats`).
+Норматив памяти трёх контейнеров — **≤ 4 ГБ ОЗУ**; проверка: `docker stats --no-stream`.
 
-## Чекпоинт 1 — сквозные 5 демо-профилей
+Остановить стенд:
 
-| # | Компания | Ожидание |
-|---|----------|----------|
-| 1 | ИП Смирнов (кофейня) | RiskScore **815** → APPROVED → ПЭП → FUNDED |
-| 2 | ООО «Ростерс Кафе» | **610** → 4 контр-оффера → CEO ПЭП (сотрудник = 403) |
-| 3 | ООО «ТехноСтрой» | ANOMALY → Мультибанк → **760** → APPROVED |
-| 4 | ИП Ковалев | **495** → MANUAL_REVIEW (Экран 3 / инспектор) |
-| 5 | ООО «Бодрость Плюс» | Hard Stop → **0** / REJECTED |
+```bash
+docker compose down
+```
 
-Demo Control Bar переключает компанию, роль и экраны «бизнес / банк».
+Полный сброс демо-данных (включая том PostgreSQL):
 
-## Локальная разработка без Docker
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+При старте backend создаёт 9 таблиц и идемпотентно засевает 5 демо-компаний и каталог поставщиков. Повторный запуск не создаёт дубликаты.
+
+## Локальный запуск без Docker
+
+Нужны Python 3.12+ и Node.js 20+.
 
 ```bash
 # Backend
 cd backend
-python -m venv ../.venv && source ../.venv/bin/activate
+python3.12 -m venv ../.venv
+source ../.venv/bin/activate
 pip install -r requirements.txt
-export DATABASE_URL=sqlite:///./alfa.db CBR_KEY_RATE=14.0 AI_PROVIDER_MODE=DETERMINISTIC
-uvicorn app.main:app --reload --port 8000
 
-# Frontend (другой терминал)
-cd frontend && npm ci && npm run dev
-# http://localhost:5173  (прокси /api → :8000)
+export DATABASE_URL=sqlite:///./alfa.db
+export CBR_KEY_RATE=14.0
+export AI_PROVIDER_MODE=DETERMINISTIC
+
+uvicorn app.main:app --reload --port 8000
 ```
 
-Тесты: `cd backend && pytest -q` (эталон 815 / 610 / 760 / 495 / 0).
+```bash
+# Frontend, второй терминал
+cd frontend
+npm ci
+npm run dev
+# http://localhost:5173, прокси /api → http://localhost:8000
+```
 
-## Ветки по ТЗ
+Локально по умолчанию используется SQLite. Для PostgreSQL задайте `DATABASE_URL=postgresql+psycopg://...` и установите `psycopg` (он уже в `requirements.txt`).
 
-| Ветка | Зона |
-|-------|------|
-| `feature/frontend-spa` | ТЗ-01 Frontend |
-| `feature/backend-core` | ТЗ-02 Backend core |
-| `feature/scoring-data` | ТЗ-03 Scoring / Decision |
-| `feature/smart-search` | ТЗ-04 Smart search / PDF |
-| `feature/qa-acceptance` | ТЗ-05 QA |
+## Переменные окружения
 
-`main` — защищённая; работа только через feature-ветки и PR.
+Эталон — [`.env.example`](./.env.example). Файл `.env` не коммитится.
 
-## Контракт API
+| Переменная | Значение в `.env.example` / compose | Назначение |
+|---|---|---|
+| `POSTGRES_DB` | `alfadb` | Имя базы в контейнере PostgreSQL |
+| `POSTGRES_USER` | `alfa` | Пользователь PostgreSQL |
+| `POSTGRES_PASSWORD` | `alfa` | Пароль локального демо; для продукта заменить |
+| `DATABASE_URL` | `postgresql+psycopg://alfa:alfa@db:5432/alfadb` | Строка подключения; локально задайте `sqlite:///./alfa.db` |
+| `CBR_KEY_RATE` | `14.0` | Ключевая ставка ЦБ, % годовых; участвует в ставке и P&L |
+| `AI_PROVIDER_MODE` | `DETERMINISTIC` | `DETERMINISTIC` или `OPENAI_COMPATIBLE` |
+| `OPENAI_BASE_URL` | пусто | Базовый URL OpenAI-compatible шлюза; без него ИИ выключен |
+| `OPENAI_API_KEY` | пусто | Ключ, если шлюз требует авторизацию |
+| `OPENAI_MODEL_NAME` | пусто | Имя модели; без него ИИ выключен |
+| `OPENAI_TIMEOUT_MS` | `1500` | Жёсткий таймаут ИИ-запроса, мс |
+| `CORS_ORIGINS` | `http://localhost:5173,http://localhost:8080` | Разрешённые origins для SPA |
 
-11 канонических эндпоинтов ТЗ + SPA-хелперы (`accept-offer`, `invoice-templates`, …) — см. [`openapi.yaml`](./openapi.yaml).
+ИИ-обогащение опционально: при любой ошибке или таймауте возвращается `null`, а ответ поиска остаётся детерминированным.
+
+## Пять демо-сценариев
+
+| # | Компания | Заявка | Балл | Решение | Ставка | Ключевой шаг |
+|---:|---|---|---:|---|---:|---|
+| 1 | ИП Смирнов, кофейня | 900 000 ₽ / 24 мес., инвест-кредит | **815** | APPROVED | **14,5%** | `IP_OWNER` подписывает ПЭП → FUNDED |
+| 2 | ООО «Ростерс Кафе» | 2 500 000 ₽ / 12 мес., инвест-кредит | **610** | COUNTER_OFFER, 4 оффера | **18,0%** | оффер → `AWAITING_CEO_APPROVAL` → `CEO_OWNER` → FUNDED |
+| 3 | ООО «ТехноСтрой» | 3 200 000 ₽ / 24 мес., ВКЛ | **295 → 760** | ANOMALY → APPROVED | **15,5%** | Мультибанк +4,2 млн ₽ → `CEO_OWNER` → FUNDED |
+| 4 | ИП Ковалев, эспрессо-бар | 200 000 ₽ / 12 мес., овердрафт | **495** | MANUAL_REVIEW | **20,0%** | NEED_MORE_INFO → лимит 300 000 ₽ → `IP_OWNER` → FUNDED |
+| 5 | ООО «Бодрость Плюс» | 1 500 000 ₽ / 12 мес., инвест-кредит | **0** (raw −30) | REJECTED, Hard Stop | — | терминальный отказ |
+
+### 1. ИП Смирнов — качественная сделка
+
+- Балл 815: база 500 + БКИ 130 + денежный поток 65 + DSCR 25 + профиль 20 + гео 75.
+- FCF 280 000 ₽/мес., MaxPayment 161 000 ₽, платёж 43 424,49 ₽.
+- Прогноз кассы: минимум +390 666,67 ₽ на 14-й день, разрыва нет.
+- После ПЭП баланс 420 000 → 1 320 000 ₽.
+
+### 2. ООО «Ростерс Кафе» — встреча с риском
+
+- Балл 610: сильная БКИ, но слабая локация −90 и DSCR 0.
+- FCF 260 000 ₽/мес., MaxPayment 110 500 ₽, лимит 1 205 279,33 ₽.
+- 4 оффера: 1 205 279,33 ₽ на 12 мес.; 2 500 000 ₽ на 30 мес.; овердрафт 331 500 ₽; ВКЛ 663 000 ₽.
+- Оффер 1: 18,0%, платёж 110 500 ₽. Подписывает только `CEO_OWNER`; бухгалтер получает 403.
+
+### 3. ООО «ТехноСтрой» — аномалия выручки
+
+- Заявленная выручка 6 000 000 ₽ против 1 800 000 ₽ в Альфе: отклонение 233% → `ANOMALY_VERIFICATION`, балл 295.
+- `verify-multibank` добавляет 4 200 000 ₽ внешней выручки, балл 760, статус APPROVED.
+- FCF 950 000 ₽/мес., MaxPayment 546 250 ₽, ставка 15,5%, сумма 3 200 000 ₽, платёж 155 918,54 ₽.
+- После ПЭП баланс 2 400 000 → 5 600 000 ₽.
+
+### 4. ИП Ковалев — ручной разбор
+
+- Балл 495: техническая просрочка −85, молодой бизнес +10, средняя локация +20.
+- FCF 95 000 ₽/мес., MaxPayment 47 500 ₽.
+- Прогноз кассы: разрыв на 14-й день, −139 666,67 ₽, 14 дней в минусе.
+- Инспектор запрашивает документ, затем одобряет 300 000 ₽ по лестнице лимитов; `IP_OWNER` подписывает ПЭП.
+
+### 5. ООО «Бодрость Плюс» — Hard Stop
+
+- Просрочка БКИ 45 дней > 30 и ФССП 320 000 ₽ > 20% оборота (80 000 ₽).
+- Балл −30 после clamp → 0; решение REJECTED, сумма 0.
+- Любой `ceo-approve` из REJECTED → 409. Заявка терминальна.
+
+## API
+
+Базовый префикс — `/api/v1`. Swagger: http://localhost:8000/docs. Контракт: [openapi.yaml](./openapi.yaml).
+
+### 11 канонических эндпоинтов
+
+| # | Метод | Путь | Назначение |
+|---:|---|---|---|
+| 1 | GET | `/companies` | 5 демо-компаний и пользователи для Demo Control Bar |
+| 2 | POST | `/companies/lookup-inn` | 360°-портрет по ИНН; симулятор `seed = sha256(INN)` |
+| 3 | GET | `/companies/{company_id}/dashboard` | Экран 1: ДНК, прогноз, радар, новости, выписка |
+| 4 | POST | `/companies/{company_id}/smart-search` | 4 интента, поставщики, кредитная плашка или режим тишины |
+| 5 | POST | `/applications` | Создать заявку: Hard Stop → аномалия → скоринг → решение |
+| 6 | POST | `/applications/parse-invoice` | PDF-счёт или 3 шаблона → антифрод → черновик |
+| 7 | POST | `/applications/{application_id}/verify-multibank` | Снять аномалию, +90 баллов, +25% к лимиту |
+| 8 | POST | `/applications/{application_id}/underwriter-action` | Действие инспектора: APPROVE / COUNTER_OFFER / NEED_MORE_INFO / REJECT |
+| 9 | POST | `/applications/{application_id}/ceo-approve` | ПЭП: ООО — `CEO_OWNER`, ИП — `IP_OWNER` |
+| 10 | GET | `/applications/{application_id}/xray` | Экран 3: P&L, Waterfall, Geo, события, проверки |
+| 11 | POST | `/transactions/{transaction_id}/installment` | Пост-транзакционная рассрочка на 3–6 месяцев |
+
+### Дополнительные маршруты
+
+| Метод | Путь | Назначение |
+|---|---|---|
+| GET | `/applications/{application_id}` | Текущее состояние заявки для SPA |
+| GET | `/companies/{company_id}/applications` | История заявок компании |
+| GET | `/applications/invoice-templates` | 3 демо-шаблона счёта |
+| POST | `/applications/{application_id}/accept-offer` | Выбор одного из 4 офферов |
+| GET | `/health` | Статус, ставка ЦБ, режим ИИ, тип БД (без префикса) |
+
+Коды: 201 — создание, 200 — успех, 400 — неверный запрос, 403 — роль, 404 — объект не найден, 409 — недопустимый переход, 422 — валидация/ИНН/PDF.
+
+## Тесты и проверка
+
+```bash
+# Backend: 35 тестов
+cd backend && ../.venv/bin/python -m pytest -q
+
+# Frontend: типы и сборка
+cd frontend && npm run typecheck && npm run build
+
+# Docker: поднять с нуля и проверить health
+docker compose up --build
+curl http://localhost:8000/health
+
+# Память трёх контейнеров
+docker stats --no-stream
+```
+
+Что покрыто:
+
+- 5 контрольных профилей: 815 / 610 / 760 / 495 / 0;
+- Decision Engine: ставки 14,5 / 18,0 / 15,5 / 20,0%;
+- State Machine: 403 для бухгалтера, 409 для терминального статуса, 409 для повторного Мультибанка;
+- Мультибанк: 295 → 760, `score_delta = 465`; повторная заявка «ТехноСтрой» — APPROVED 760 без повторной аномалии;
+- оффер 1 «Ростерса» укладывается в MaxPayment: 110 500 ₽;
+- PDF: 3 шаблона, реальный PDF через pdfplumber, 422 на битый файл;
+- умный поиск: точность 100% на контрольном наборе, `classification_ms ≤ 50`;
+- идемпотентность сидера.
+
+Ожидаемый результат: **35 passed**.
+
+## Структура репозитория
+
+```text
+.
+├── backend/
+│   ├── app/
+│   │   ├── api/          # роуты, Pydantic-схемы
+│   │   ├── core/         # константы, настройки, исключения
+│   │   ├── domain/       # скоринг, Decision Engine, FSM, прогноз кассы
+│   │   ├── infra/        # модели, БД, сидер, симуляторы, PDF, ИИ-адаптер
+│   │   ├── repositories/ # SQLAlchemy-запросы
+│   │   ├── services/     # сценарии использования
+│   │   └── main.py       # FastAPI-приложение
+│   ├── tests/            # pytest: 35 тестов
+│   ├── requirements.txt
+│   └── Dockerfile
+├── frontend/
+│   ├── src/
+│   │   ├── api/          # клиент и типы API
+│   │   ├── components/   # панели, графики, Demo Control Bar
+│   │   ├── screens/      # Экраны 1–3
+│   │   ├── state/        # состояние приложения
+│   │   └── styles/       # токены и глобальные стили
+│   ├── nginx.conf
+│   ├── package.json
+│   └── Dockerfile
+├── docs/                 # архитектура, SLA, FSM, упрощения, экономика
+├── docker-compose.yml
+├── openapi.yaml
+├── Postman_Collection.json
+├── .env.example
+├── THIRD_PARTY_NOTICES.md
+├── CHANGELOG.md
+└── AGENTS.md
+```
+
+## Ограничения демо
+
+- **Реестры — симуляторы.** ЕГРЮЛ, БКИ, ФССП и Open Banking не вызываются; профиль строится детерминированно по ИНН. Подробности — в [реестре упрощений](./docs/simplifications-registry.md).
+- **Нет аутентификации.** Роль приходит в теле запроса; это демонстрация бизнес-правила, а не защита от подмены личности.
+- **ПЭП — логическая подпись.** Проверяются роль, статус и факт подписания; криптографической подписи и юридической значимости нет.
+- **PDF без OCR.** Поддерживается текстовый слой; сканы и фотографии не распознаются. Лимит загрузки — 10 МБ.
+- **ИИ выключен по умолчанию.** Внешний OpenAI-compatible вызов не входит в критический путь и ограничен таймаутом 1,5 с.
+- **Карта OSM — iframe.** Внешний слой не влияет на решение; при отсутствии сети координаты и GeoScore остаются.
+- **SQLite — только для локального запуска.** В Docker используется PostgreSQL 16; миграций Alembic нет, схема создаётся `create_all`.
+- **PD, LTV и approval probability — эвристики.** Они не калиброваны на исторических данных банка.
+- **Демо-данные.** Все компании, выписки и новости вымышлены; секреты в репозитории не хранятся.
+
+## Документация
+
+| Документ | Содержание |
+|---|---|
+| [docs/architecture-and-sla.md](./docs/architecture-and-sla.md) | Слои, 9 таблиц, компонентная схема, SLA Tier-0/1/2, latency-бюджеты, деградация |
+| [docs/state-machine-ip-vs-ooo.md](./docs/state-machine-ip-vs-ooo.md) | Mermaid-диаграмма, 21 переход, права ИП/ООО, 5 сценариев, audit trail |
+| [docs/simplifications-registry.md](./docs/simplifications-registry.md) | Что замокано, риск, чем закрыто, как проверить; что не упрощено |
+| [docs/bank-value-pdf-cash-forecast.md](./docs/bank-value-pdf-cash-forecast.md) | Экономика PDF и 60-дневного прогноза, P&L, PD, LTV, метрики |
+| [openapi.yaml](./openapi.yaml) | Контракт API |
+| [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) | Лицензии библиотек и внешних компонентов |
+| [CHANGELOG.md](./CHANGELOG.md) | История изменений |
+| [AGENTS.md](./AGENTS.md) | Правила разработки и приёмки |
+
+Проект использует демонстрационные данные. Расчёты выполняет backend; SPA только отображает ответы API.
