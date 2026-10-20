@@ -144,7 +144,7 @@ export function CashForecastChart({ forecast }: { forecast: CashForecast }) {
           </span>
         </div>
         <div className="chart-stat">
-          <span>День разрыва</span>
+          <span>{forecast.has_gap ? "День разрыва" : "День минимума"}</span>
           <span>{forecast.min_day} дн.</span>
         </div>
         <div className="chart-stat">
