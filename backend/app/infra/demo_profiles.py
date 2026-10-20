@@ -1,0 +1,263 @@
+"""
+5 эталонных демо-профилей ТЗ v3.2.
+
+Контрольные баллы: Смирнов 815 · Ростерс 610 · ТехноСтрой 760 (после Мультибанка)
+· Ковалев 495 · Бодрость Плюс 0 (Hard Stop).
+"""
+from __future__ import annotations
+
+from app.domain.types import BusinessModel, CompanyProfile, CompanyUser, LegalForm, UserRole
+
+_ID_PREFIX = "cmp_"
+
+
+def _users(company_key: str, legal_form: LegalForm, owner_name: str, accountant_name: str) -> list[CompanyUser]:
+    owner_role = UserRole.IP_OWNER if legal_form == LegalForm.IP else UserRole.CEO_OWNER
+    return [
+        CompanyUser(
+            id=f"usr_{company_key}_owner",
+            full_name=owner_name,
+            role=owner_role,
+            role_label="Предприниматель" if legal_form == LegalForm.IP else "Генеральный директор",
+        ),
+        CompanyUser(
+            id=f"usr_{company_key}_accountant",
+            full_name=accountant_name,
+            role=UserRole.ACCOUNTANT,
+            role_label="Бухгалтер",
+        ),
+    ]
+
+
+SMIRNOV = CompanyProfile(
+    id=f"{_ID_PREFIX}smirnov",
+    inn="771589012345",
+    name="ИП Смирнов А.В. «Кофейня Зерно & Молоко»",
+    legal_form=LegalForm.IP,
+    okved_code="56.10",
+    okved_cluster="Общественное питание (ОКВЭД 56)",
+    business_model=BusinessModel.B2C_OFFLINE,
+    director_name="Смирнов Алексей Викторович",
+    city="Москва",
+    address="ул. Большая Дмитровка, 12",
+    latitude=55.7601,
+    longitude=37.6117,
+    age_months=48,
+    monthly_revenue_alfa=1_450_000,
+    monthly_revenue_multibank=0,
+    declared_monthly_revenue=1_450_000,
+    annual_revenue=17_400_000,
+    purchases_monthly=850_000,
+    rent_fot_monthly=250_000,
+    taxes_monthly=50_000,
+    bki_monthly_payment=20_000,
+    bki_overdue_days=0,
+    bki_history_months=36,
+    bki_active_contracts=1,
+    fssp_amount=0,
+    revenue_growth_pct=18.0,
+    geo_score=85,
+    buyer_score=60,
+    competitors_count=2,
+    alfa_tenure_months=36,
+    alfa_revenue_share=0.90,
+    account_balance=420_000,
+    demo_key="smirnov",
+    users=_users("smirnov", LegalForm.IP, "Смирнов Алексей Викторович", "Петрова Ольга Сергеевна"),
+)
+
+ROSTERS = CompanyProfile(
+    id=f"{_ID_PREFIX}rosters",
+    inn="7704561238",
+    name="ООО «Ростерс Кафе»",
+    legal_form=LegalForm.OOO,
+    okved_code="56.10",
+    okved_cluster="Общественное питание (ОКВЭД 56)",
+    business_model=BusinessModel.B2C_OFFLINE,
+    director_name="Кузнецова Мария Андреевна",
+    city="Москва",
+    address="ул. Тверская, 8",
+    latitude=55.7650,
+    longitude=37.6050,
+    age_months=30,
+    monthly_revenue_alfa=2_100_000,
+    monthly_revenue_multibank=0,
+    declared_monthly_revenue=2_100_000,
+    annual_revenue=25_200_000,
+    purchases_monthly=1_300_000,
+    rent_fot_monthly=400_000,
+    taxes_monthly=62_000,
+    bki_monthly_payment=78_000,
+    bki_overdue_days=0,
+    bki_history_months=30,
+    bki_active_contracts=2,
+    fssp_amount=0,
+    revenue_growth_pct=8.0,
+    geo_score=38,
+    buyer_score=55,
+    competitors_count=9,
+    alfa_tenure_months=24,
+    alfa_revenue_share=0.75,
+    account_balance=600_000,
+    demo_key="rosters",
+    users=_users("rosters", LegalForm.OOO, "Кузнецова Мария Андреевна", "Соколов Пётр Ильич"),
+)
+
+TEKHNOSTROY = CompanyProfile(
+    id=f"{_ID_PREFIX}tekhnostroy",
+    inn="7728901122",
+    name="ООО «ТехноСтрой Инжиниринг»",
+    legal_form=LegalForm.OOO,
+    okved_code="41.20",
+    okved_cluster="Строительство (ОКВЭД 41-43)",
+    business_model=BusinessModel.B2B_CONTRACTOR,
+    director_name="Волков Игорь Николаевич",
+    city="Москва",
+    address="Ленинградский пр-т, 74",
+    latitude=55.7900,
+    longitude=37.5300,
+    age_months=60,
+    monthly_revenue_alfa=1_800_000,
+    monthly_revenue_multibank=0,
+    declared_monthly_revenue=6_000_000,
+    annual_revenue=21_600_000,
+    purchases_monthly=3_000_000,
+    rent_fot_monthly=1_400_000,
+    taxes_monthly=550_000,
+    bki_monthly_payment=100_000,
+    bki_overdue_days=0,
+    bki_history_months=18,
+    bki_active_contracts=1,
+    fssp_amount=0,
+    revenue_growth_pct=5.0,
+    geo_score=40,
+    buyer_score=88,
+    competitors_count=4,
+    alfa_tenure_months=48,
+    alfa_revenue_share=0.60,
+    account_balance=2_400_000,
+    has_girbo=True,
+    anchor_buyer="ПАО «ГК Самолёт» — рамочный контракт на 18 мес.",
+    demo_key="tekhnostroy",
+    users=_users("tekhnostroy", LegalForm.OOO, "Волков Игорь Николаевич", "Ершов Дмитрий Павлович"),
+)
+
+KOVALEV = CompanyProfile(
+    id=f"{_ID_PREFIX}kovalev",
+    inn="773344556677",
+    name="ИП Ковалев Д.С. «Эспрессо-Бар у Дома»",
+    legal_form=LegalForm.IP,
+    okved_code="56.10",
+    okved_cluster="Общественное питание (ОКВЭД 56)",
+    business_model=BusinessModel.B2C_OFFLINE,
+    director_name="Ковалев Дмитрий Сергеевич",
+    city="Москва",
+    address="ул. Профсоюзная, 41",
+    latitude=55.6700,
+    longitude=37.5600,
+    age_months=18,
+    monthly_revenue_alfa=680_000,
+    monthly_revenue_multibank=0,
+    declared_monthly_revenue=680_000,
+    annual_revenue=8_160_000,
+    purchases_monthly=210_000,
+    rent_fot_monthly=245_000,
+    taxes_monthly=100_000,
+    bki_monthly_payment=30_000,
+    bki_overdue_days=20,
+    bki_history_months=24,
+    bki_active_contracts=2,
+    fssp_amount=0,
+    revenue_growth_pct=5.0,
+    geo_score=58,
+    buyer_score=45,
+    competitors_count=5,
+    alfa_tenure_months=18,
+    alfa_revenue_share=0.55,
+    account_balance=0,
+    demo_key="kovalev",
+    users=_users("kovalev", LegalForm.IP, "Ковалев Дмитрий Сергеевич", "Никитина Анна Олеговна"),
+)
+
+BODROST_PLUS = CompanyProfile(
+    id=f"{_ID_PREFIX}bodrost",
+    inn="7719009988",
+    name="ООО «Бодрость Плюс»",
+    legal_form=LegalForm.OOO,
+    okved_code="46.37",
+    okved_cluster="Торговля (ОКВЭД 45-47)",
+    business_model=BusinessModel.WHOLESALE,
+    director_name="Орлова Светлана Викторовна",
+    city="Москва",
+    address="ул. Складская, 3",
+    latitude=55.7200,
+    longitude=37.6600,
+    age_months=36,
+    monthly_revenue_alfa=400_000,
+    monthly_revenue_multibank=0,
+    declared_monthly_revenue=400_000,
+    annual_revenue=4_800_000,
+    purchases_monthly=300_000,
+    rent_fot_monthly=160_000,
+    taxes_monthly=40_000,
+    bki_monthly_payment=10_000,
+    bki_overdue_days=45,
+    bki_history_months=40,
+    bki_active_contracts=2,
+    fssp_amount=320_000,
+    revenue_growth_pct=-60.0,
+    geo_score=50,
+    buyer_score=45,
+    competitors_count=6,
+    alfa_tenure_months=24,
+    alfa_revenue_share=0.50,
+    account_balance=50_000,
+    demo_key="bodrost_plus",
+    users=_users("bodrost_plus", LegalForm.OOO, "Орлова Светлана Викторовна", "Гусев Андрей Львович"),
+)
+
+DEMO_COMPANIES: dict[str, CompanyProfile] = {
+    "smirnov": SMIRNOV,
+    "rosters": ROSTERS,
+    "tekhnostroy": TEKHNOSTROY,
+    "kovalev": KOVALEV,
+    "bodrost_plus": BODROST_PLUS,
+}
+
+DEMO_COMPANIES_BY_INN: dict[str, CompanyProfile] = {
+    profile.inn: profile for profile in DEMO_COMPANIES.values()
+}
+
+# Сценарий Чекпоинта-1: запрос и параметры заявки для каждого профиля.
+DEMO_APPLICATION_SCENARIOS: dict[str, dict] = {
+    "smirnov": {
+        "product_type": "INVEST_LEASING",
+        "requested_amount_rub": 900_000,
+        "term_months": 24,
+        "declared_monthly_revenue": 1_450_000,
+    },
+    "rosters": {
+        "product_type": "INVEST_LEASING",
+        "requested_amount_rub": 2_500_000,
+        "term_months": 12,
+        "declared_monthly_revenue": 2_100_000,
+    },
+    "tekhnostroy": {
+        "product_type": "VKL",
+        "requested_amount_rub": 3_200_000,
+        "term_months": 24,
+        "declared_monthly_revenue": 6_000_000,
+    },
+    "kovalev": {
+        "product_type": "OVERDRAFT",
+        "requested_amount_rub": 200_000,
+        "term_months": 12,
+        "declared_monthly_revenue": 680_000,
+    },
+    "bodrost_plus": {
+        "product_type": "INVEST_LEASING",
+        "requested_amount_rub": 1_500_000,
+        "term_months": 12,
+        "declared_monthly_revenue": 400_000,
+    },
+}

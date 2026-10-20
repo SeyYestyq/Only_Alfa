@@ -72,3 +72,10 @@ tmp/
 .vscode/
 *.swp
 *.swo
+
+# local agent monitor state
+.agent_monitor/
+
+# local test DB
+*.db
+backend/tests/test_alfa.db

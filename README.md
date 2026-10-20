@@ -1,28 +1,68 @@
-# Правила для агентов — пакет для репозитория Only_Alfa
+# Only_Alfa — Умный кредитный кабинет предпринимателя
 
-Подготовлено по просьбе Дамира (20.10.2026): «прописать крутые правила для агентов на гите, чтобы все изменения фиксировались» + «по правилам SOLID».
+Хакатон «Альфа-Будущее» · команда Only_Alfa · репозиторий [SeyYestyq/Only_Alfa](https://github.com/SeyYestyq/Only_Alfa)
 
-## Что внутри
+Стек: React 18 + Vite + TypeScript · Python 3.12 + FastAPI · PostgreSQL 16 · `docker compose up --build`
 
-| Файл | Назначение |
-|---|---|
-| `AGENTS.md` | Главный файл правил: стек и архитектура, SOLID, чистый код, фиксация изменений, тесты, Definition of Done. Кладётся в **корень репозитория** — агенты читают его перед любой задачей. |
-| `skills/01-solid-clean-code.md` | SOLID по пунктам с примерами именно этого проекта (скоринг ≠ решение, реестр стратегий вместо if-цепочек, симуляторы за интерфейсом) + правила чистого кода. |
-| `skills/02-backend-fastapi.md` | Слои бэкенда: api → services → domain → repositories; State Machine только в домене; идемпотентные сиды; ошибки и HTTP-коды. |
-| `skills/03-frontend-react-ts.md` | Фронт не считает бизнес, типы из OpenAPI, компонент = одна ответственность, роли — отображение, а не защита. |
-| `skills/04-git-changelog.md` | Фиксация изменений: ветки ТЗ, Conventional Commits, шаблон PR, CHANGELOG (Keep a Changelog), обязательный отчёт агента в конце задачи. |
-| `skills/05-testing-quality.md` | Обязательные тесты (контрольные баллы 5 демо-профилей, границы коридоров, переходы State Machine), ворота качества перед PR, чек-лист ревью. |
+Правила для агентов и команды: [`AGENTS.md`](./AGENTS.md) · скиллы в [`skills/`](./skills/)
 
-## Как подключить (2 минуты)
+## Быстрый старт (жюри / демо)
 
-1. Распаковать в корень репозитория `SeyYestyq/Only_Alfa`: `AGENTS.md` — в корень, папку `skills/` — рядом.
-2. Закоммитить одним коммитом: `docs: правила для агентов (AGENTS.md + skills)`.
-3. Дальше любой ИИ-агент (Claude Code, Cursor, Codex и т.д.) подхватывает `AGENTS.md` автоматически как системные правила проекта; скил из `skills/` агент читает по типу задачи — таблица соответствия лежит в конце `AGENTS.md`. Для Claude Code папку можно продублировать в `.claude/skills/` — формат файлов (frontmatter name/description) это уже поддерживает.
-4. Людям правила тоже обязательны: PR, не соответствующий AGENTS.md, на ревью возвращается.
+```bash
+cp .env.example .env
+docker compose up --build
+```
 
-## Ключевые принципы одной строкой
+| Сервис   | URL |
+|----------|-----|
+| SPA      | http://localhost:8080 |
+| API docs | http://localhost:8000/docs |
+| Health   | http://localhost:8000/health |
+| OpenAPI  | [`openapi.yaml`](./openapi.yaml) |
 
-- SOLID без исключений; домен не зависит от фреймворка и БД.
-- Каждое изменение фиксируется трижды: коммит по Conventional Commits → PR с описанием → строка в CHANGELOG.
-- Агент не сдаёт задачу без отчёта: что изменил, чем проверил.
-- Скоринг считают правила с числами из BRD, а не «модель» — и это тоже зафиксировано тестами.
+Норматив памяти трёх контейнеров: **≤ 4 ГБ ОЗУ** (`docker stats`).
+
+## Чекпоинт 1 — сквозные 5 демо-профилей
+
+| # | Компания | Ожидание |
+|---|----------|----------|
+| 1 | ИП Смирнов (кофейня) | RiskScore **815** → APPROVED → ПЭП → FUNDED |
+| 2 | ООО «Ростерс Кафе» | **610** → 4 контр-оффера → CEO ПЭП (сотрудник = 403) |
+| 3 | ООО «ТехноСтрой» | ANOMALY → Мультибанк → **760** → APPROVED |
+| 4 | ИП Ковалев | **495** → MANUAL_REVIEW (Экран 3 / инспектор) |
+| 5 | ООО «Бодрость Плюс» | Hard Stop → **0** / REJECTED |
+
+Demo Control Bar переключает компанию, роль и экраны «бизнес / банк».
+
+## Локальная разработка без Docker
+
+```bash
+# Backend
+cd backend
+python -m venv ../.venv && source ../.venv/bin/activate
+pip install -r requirements.txt
+export DATABASE_URL=sqlite:///./alfa.db CBR_KEY_RATE=14.0 AI_PROVIDER_MODE=DETERMINISTIC
+uvicorn app.main:app --reload --port 8000
+
+# Frontend (другой терминал)
+cd frontend && npm ci && npm run dev
+# http://localhost:5173  (прокси /api → :8000)
+```
+
+Тесты: `cd backend && pytest -q` (эталон 815 / 610 / 760 / 495 / 0).
+
+## Ветки по ТЗ
+
+| Ветка | Зона |
+|-------|------|
+| `feature/frontend-spa` | ТЗ-01 Frontend |
+| `feature/backend-core` | ТЗ-02 Backend core |
+| `feature/scoring-data` | ТЗ-03 Scoring / Decision |
+| `feature/smart-search` | ТЗ-04 Smart search / PDF |
+| `feature/qa-acceptance` | ТЗ-05 QA |
+
+`main` — защищённая; работа только через feature-ветки и PR.
+
+## Контракт API
+
+11 канонических эндпоинтов ТЗ + SPA-хелперы (`accept-offer`, `invoice-templates`, …) — см. [`openapi.yaml`](./openapi.yaml).
