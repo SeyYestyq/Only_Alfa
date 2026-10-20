@@ -6,15 +6,15 @@ import time
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.constants import (
-    MULTIBANK_LIMIT_BOOST,
-    SEARCH_BALANCE_SILENCE_RATIO,
-    SEARCH_SUPPLIERS_LIMIT,
-)
+from app.core.constants import SEARCH_BALANCE_SILENCE_RATIO, SEARCH_SUPPLIERS_LIMIT
 from app.core.exceptions import EntityNotFound
 from app.domain.cash_forecast import build_cash_forecast, find_cash_gap
 from app.domain.decision.decision_engine import calculate_rate
-from app.domain.finances import calculate_annuity_payment, calculate_max_payment
+from app.domain.finances import (
+    calculate_annuity_payment,
+    calculate_credit_limit,
+    calculate_max_payment,
+)
 from app.domain.scoring.risk_score import calculate_risk_score
 from app.domain.types import ProductType
 from app.infra.models import SearchCatalogItem
@@ -22,9 +22,7 @@ from app.infra.openai_adapter import enrich_search_result
 from app.infra.smart_search_engine import (
     INTENT_INFO_ONLY,
     INTENT_LABELS,
-    INTENT_WORKING_CAPITAL,
     default_term,
-    extract_amount,
     parse_intent,
     pick_suppliers,
     product_for_intent,
@@ -163,9 +161,7 @@ class SearchService:
         score = calculate_risk_score(profile)
         rate = calculate_rate(score.final_score, product, key_rate_pct=settings.cbr_key_rate)
         max_payment = calculate_max_payment(profile)
-        limit = max_payment * term
-        if profile.is_multibank_verified:
-            limit *= 1 + MULTIBANK_LIMIT_BOOST
+        limit = calculate_credit_limit(profile, max_payment, rate, term)
         monthly = calculate_annuity_payment(amount, rate, term)
         is_preapproved = (
             not score.is_hard_stop

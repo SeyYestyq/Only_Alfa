@@ -5,9 +5,11 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.constants import (
+    BANK_FUNDING_AVERAGE_BALANCE_SHARE,
     BANK_LTV_MULTIPLIER,
     BANK_MAX_PD,
     BANK_OPEX_SHARE,
+    SCORE_BASE,
 )
 from app.core.exceptions import EntityNotFound
 from app.domain.cash_forecast import build_cash_forecast, find_cash_gap
@@ -17,6 +19,10 @@ from app.repositories.application_repository import ApplicationRepository
 from app.repositories.company_repository import CompanyRepository
 from app.services.application_service import ApplicationService
 from app.services.presenters import event_row, money
+
+
+def _fmt_money(value: float) -> str:
+    return f"{value:,.0f} ₽".replace(",", " ")
 
 
 class XrayService:
@@ -47,7 +53,14 @@ class XrayService:
 
         expected_income = amount * rate / 100 * months / 12
         # Аннуитет гасится равными платежами: фондирование считаем на средний остаток.
-        funding_cost = amount * settings.cbr_key_rate / 100 * months / 12 * 0.55
+        funding_cost = (
+            amount
+            * settings.cbr_key_rate
+            / 100
+            * months
+            / 12
+            * BANK_FUNDING_AVERAGE_BALANCE_SHARE
+        )
         probability_of_default = min(
             BANK_MAX_PD,
             max(0.01, (1000 - score) / 1000 * BANK_MAX_PD),
@@ -83,7 +96,7 @@ class XrayService:
                 "probability_of_default_pct": round(probability_of_default * 100, 2),
             },
             "waterfall": {
-                "base_score": 500,
+                "base_score": SCORE_BASE,
                 "factors": detail["factors_breakdown"],
                 "final_score": application.risk_score,
                 "raw_score": application.raw_score,
@@ -106,14 +119,15 @@ class XrayService:
                     "PDF-счёт превращается в черновик заявки автоматически: ИНН, сумма и НДС извлечены и проверены по ЕГРЮЛ/ФССП.",
                     "60-дневный прогноз кассы показывает разрыв до выдачи кредита — банк видит целевое назначение, а не «деньги на всё».",
                     "Мультибанк-верификация снимает аномалию выручки и снижает стоимость риска за счёт подтверждённых оборотов.",
-                    f"Расчётный LTV по сделке — {money(expected_income * BANK_LTV_MULTIPLIER)} ₽ при ожидаемой марже {money(margin)} ₽.",
+                    f"Расчётный LTV по сделке — {_fmt_money(expected_income * BANK_LTV_MULTIPLIER)} "
+                    f"при ожидаемой марже {_fmt_money(margin)}.",
                 ],
                 "pdf_value": [
                     "Автоматическое распознавание ИНН и суммы сокращает ввод заявки с 12 минут до 40 секунд.",
                     "Проверка контрагента до оплаты снижает риск мошенничества и невозврата целевого кредита.",
                 ],
                 "cash_forecast_value": [
-                    f"Минимальный остаток на счёте за 60 дней: {money(min_balance)} ₽ (день {min_day}).",
+                    f"Минимальный остаток на счёте за 60 дней: {_fmt_money(min_balance)} (день {min_day}).",
                     f"Дней в минусе: {days_negative}. Это основание для овердрафта или корректировки лимита.",
                 ],
             },

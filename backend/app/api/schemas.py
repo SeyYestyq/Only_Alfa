@@ -275,6 +275,7 @@ class ApplicationSchema(BaseModel):
     monthly_revenue_multibank: float
     fcf_rub: float
     max_payment_rub: float
+    limit_rub: float
     k_sector: float
     factors_breakdown: list[FactorSchema]
     counter_offers: list[CounterOfferSchema]

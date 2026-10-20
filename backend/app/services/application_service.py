@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -16,11 +15,20 @@ from app.core.constants import (
     MANUAL_REVIEW_MAX_LIMIT,
     MANUAL_REVIEW_STARTER_LIMIT,
     MULTIBANK_DEFAULT_SHARE_OF_ALFA,
+    MULTIBANK_REVENUE_TEKHNOSTROY,
 )
 from app.core.exceptions import EntityNotFound, InvalidRequest, InvalidTransition
 from app.domain.anomaly import check_revenue_anomaly
-from app.domain.decision.decision_engine import calculate_rate, make_decision
-from app.domain.finances import calculate_annuity_payment
+from app.domain.decision.decision_engine import (
+    build_counter_offers,
+    calculate_rate,
+    make_decision,
+)
+from app.domain.finances import (
+    calculate_annuity_payment,
+    calculate_credit_limit,
+    calculate_max_payment,
+)
 from app.domain.scoring.risk_score import calculate_risk_score
 from app.domain.state_machine.application_fsm import (
     SIGNING_STATUSES,
@@ -32,7 +40,6 @@ from app.domain.types import (
     ApplicationStatus,
     CompanyProfile,
     DecisionOutcome,
-    LegalForm,
     ProductType,
     ScoreResult,
     UserRole,
@@ -135,13 +142,12 @@ class ApplicationService:
         )
 
         previous_status = application.status
-        if draft is not None:
-            apply_transition(
-                ApplicationStatus(previous_status),
-                pipeline.status,
-                UserRole(body.actor_role),
-                profile.legal_form,
-            )
+        apply_transition(
+            ApplicationStatus(previous_status),
+            pipeline.status,
+            UserRole(body.actor_role),
+            profile.legal_form,
+        )
         self._persist_pipeline(application, profile, pipeline, body)
         self._write_checks(application, pipeline)
         self.companies.sync_financial_state(
@@ -157,7 +163,19 @@ class ApplicationService:
             company_id=profile.id,
             event_type="APPLICATION_SUBMITTED" if draft else "APPLICATION_CREATED",
             actor_role=body.actor_role,
-            previous_status=previous_status if draft else None,
+            previous_status=previous_status,
+            new_status=ApplicationStatus.DRAFT_BY_EMPLOYEE.value,
+            details=(
+                f"{'Черновик отправлен в скоринг' if draft else 'Заявка создана'}, "
+                f"requested={money(body.requested_amount_rub)} ₽"
+            ),
+        )
+        self.applications.add_event(
+            application_id=application.id,
+            company_id=profile.id,
+            event_type="STATUS_CHANGE",
+            actor_role=body.actor_role,
+            previous_status=previous_status,
             new_status=application.status,
             details=(
                 f"RiskScore={application.risk_score}, outcome={application.outcome}, "
@@ -180,10 +198,13 @@ class ApplicationService:
             )
 
         previous_score = application.risk_score
-        previous_limit = application.approved_amount_rub
+        previous_limit = self._calculated_limit(profile, application)
         external_revenue = self._external_revenue(profile)
 
-        profile.monthly_revenue_multibank += external_revenue
+        # Выписки задаются абсолютной суммой: повторная верификация не удваивает оборот.
+        profile.monthly_revenue_multibank = max(
+            profile.monthly_revenue_multibank, external_revenue
+        )
         profile.is_multibank_verified = True
         score = calculate_risk_score(profile)
         decision = make_decision(
@@ -195,6 +216,7 @@ class ApplicationService:
             key_rate_pct=settings.cbr_key_rate,
         )
         new_status = _status_from_decision(decision.outcome)
+        apply_transition(current, new_status, UserRole.UNDERWRITER, profile.legal_form)
 
         self.applications.update(
             application,
@@ -215,6 +237,7 @@ class ApplicationService:
             rejection_checklist_json=decision.rejection_checklist,
             selected_offer_index=None,
         )
+        new_limit = self._calculated_limit(profile, application)
         for check in self.applications.list_checks(application.id):
             if check.check_code == "REVENUE_ANOMALY":
                 check.status = "RESOLVED"
@@ -245,7 +268,8 @@ class ApplicationService:
             new_status=new_status.value,
             details=(
                 f"Балл {previous_score} → {score.final_score}, "
-                f"лимит {previous_limit:,.0f} → {decision.approved_amount_rub:,.0f} ₽"
+                f"расчётный лимит {previous_limit:,.0f} → {new_limit:,.0f} ₽ "
+                f"(бонус +25% за подтверждённые выписки)"
             ),
         )
         self.session.commit()
@@ -255,7 +279,7 @@ class ApplicationService:
             "new_score": score.final_score,
             "score_delta": score.final_score - previous_score,
             "previous_limit": money(previous_limit),
-            "new_limit": money(decision.approved_amount_rub),
+            "new_limit": money(new_limit),
             "external_revenue_rub": money(external_revenue),
         }
 
@@ -309,8 +333,14 @@ class ApplicationService:
         role = UserRole(actor_role)
         ensure_signing_authority(role, profile.legal_form)
 
-        if current == ApplicationStatus.COUNTER_OFFER and application.selected_offer_index:
+        if current == ApplicationStatus.COUNTER_OFFER:
+            if not application.selected_offer_index:
+                raise InvalidTransition(
+                    "Сначала выберите один из встречных офферов, затем подписывайте ПЭП"
+                )
             offers = application.counter_offers_json or []
+            if application.selected_offer_index > len(offers):
+                raise InvalidTransition("Выбранный оффер больше не доступен")
             offer = offers[application.selected_offer_index - 1]
             approved_amount = offer["amount_rub"]
             rate = offer["rate_pct"]
@@ -321,6 +351,9 @@ class ApplicationService:
             rate = application.final_rate_pct
             monthly = application.monthly_payment_rub
             term = application.term_months
+
+        if approved_amount <= 0:
+            raise InvalidTransition("Нельзя профинансировать заявку с нулевой суммой одобрения")
 
         apply_transition(current, ApplicationStatus.FUNDED, role, profile.legal_form)
         previous_balance = profile.account_balance
@@ -395,20 +428,30 @@ class ApplicationService:
         elif body.action == "COUNTER_OFFER":
             target = ApplicationStatus.COUNTER_OFFER
             apply_transition(current, target, role, profile.legal_form)
-            decision = make_decision(
+            product = ProductType(application.product_type)
+            score_result = calculate_risk_score(profile)
+            max_payment = calculate_max_payment(profile)
+            offers = build_counter_offers(
                 profile,
-                calculate_risk_score(profile),
+                product,
                 application.requested_amount_rub,
-                ProductType(application.product_type),
                 application.term_months,
+                score_result.final_score,
+                max_payment,
+                key_rate_pct=settings.cbr_key_rate,
             )
             self.applications.update(
                 application,
                 status=target.value,
                 outcome=DecisionOutcome.COUNTER_OFFER.value,
-                counter_offers_json=[asdict(offer) for offer in decision.counter_offers],
+                final_rate_pct=calculate_rate(
+                    score_result.final_score, product, settings.cbr_key_rate
+                ),
+                max_payment_rub=max_payment,
+                counter_offers_json=[asdict(offer) for offer in offers],
+                selected_offer_index=None,
             )
-            details = "Инспектор сформировал встречные предложения"
+            details = f"Инспектор сформировал {len(offers)} встречных предложения"
         else:
             if current == ApplicationStatus.NEED_MORE_INFO and not body.document_name:
                 raise InvalidRequest(
@@ -655,7 +698,21 @@ class ApplicationService:
                 {"reasons": score.hard_stop_reasons},
             )
 
+    def _calculated_limit(self, profile: CompanyProfile, application: Application) -> float:
+        if application.max_payment_rub <= 0 or application.final_rate_pct <= 0:
+            return 0.0
+        return calculate_credit_limit(
+            profile,
+            application.max_payment_rub,
+            application.final_rate_pct,
+            application.term_months,
+        )
+
     def _external_revenue(self, profile: CompanyProfile) -> float:
-        if profile.demo_key == "tekhnostroy":
-            return 4_200_000.0
-        return round(profile.monthly_revenue_alfa * MULTIBANK_DEFAULT_SHARE_OF_ALFA, 2)
+        base = (
+            MULTIBANK_REVENUE_TEKHNOSTROY
+            if profile.demo_key == "tekhnostroy"
+            else profile.monthly_revenue_alfa * MULTIBANK_DEFAULT_SHARE_OF_ALFA
+        )
+        declared_shortfall = max(0.0, profile.declared_monthly_revenue - profile.monthly_revenue_alfa)
+        return round(max(base, declared_shortfall), 2)

@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from app.domain.cash_forecast import build_cash_forecast, detect_radar_triggers, find_cash_gap
 from app.domain.dna import build_dna_payload
+from app.domain.finances import calculate_credit_limit
 from app.domain.types import ApplicationStatus, CompanyProfile
 from app.infra.models import Application, ApplicationCheck, ApplicationEvent, NewsFeedItem, Transaction
 
@@ -212,6 +213,16 @@ def application_detail(
     checks: list[ApplicationCheck],
 ) -> dict:
     anomaly_check = next((check for check in checks if check.check_code == "REVENUE_ANOMALY"), None)
+    credit_limit = (
+        calculate_credit_limit(
+            profile,
+            application.max_payment_rub,
+            application.final_rate_pct,
+            application.term_months,
+        )
+        if application.final_rate_pct > 0
+        else 0.0
+    )
     return {
         "application_id": application.id,
         "company": company_brief(profile),
@@ -235,6 +246,7 @@ def application_detail(
         "monthly_revenue_multibank": money(profile.monthly_revenue_multibank),
         "fcf_rub": money(application.fcf_rub),
         "max_payment_rub": money(application.max_payment_rub),
+        "limit_rub": money(credit_limit),
         "k_sector": application.k_sector,
         "factors_breakdown": [factor_row(factor) for factor in application.factors_breakdown_json],
         "counter_offers": counter_offer_rows(application.counter_offers_json),
@@ -253,9 +265,7 @@ def application_detail(
         ),
         "checks": [check_row(check) for check in checks],
         "multibank": {
-            "available": bool(anomaly_check)
-            and anomaly_check.status == "ANOMALY"
-            and not profile.is_multibank_verified,
+            "available": bool(anomaly_check) and anomaly_check.status == "ANOMALY",
             "verified": profile.is_multibank_verified,
             "external_revenue_rub": money(profile.monthly_revenue_multibank),
         },

@@ -1,6 +1,7 @@
 """Сборка 5 блоков «360°-ДНК бизнеса» из доменного профиля."""
 from __future__ import annotations
 
+from app.core.constants import GEO_SCORE_LOW_THRESHOLD
 from app.domain.finances import calculate_fcf
 from app.domain.types import CompanyProfile, DnaBlock, StatusTone
 
@@ -45,7 +46,7 @@ def build_business_dna(profile: CompanyProfile) -> list[DnaBlock]:
         sector_value = f"GeoScore {profile.geo_score}"
         if profile.geo_score >= 75:
             sector_status = StatusTone.GOOD
-        elif profile.geo_score >= 45:
+        elif profile.geo_score >= GEO_SCORE_LOW_THRESHOLD:
             sector_status = StatusTone.WARN
         else:
             sector_status = StatusTone.RISK

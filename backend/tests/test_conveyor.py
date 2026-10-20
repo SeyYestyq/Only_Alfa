@@ -156,6 +156,64 @@ def test_manual_review_flow_need_more_info(client, companies):
     assert signed.json()["status"] == "FUNDED"
 
 
+def test_underwriter_counter_offer_can_be_selected_and_funded(client, companies):
+    application = create_application(client, companies["kovalev"], DEMO_APPLICATION_SCENARIOS["kovalev"])
+    application_id = application["application_id"]
+
+    response = client.post(
+        f"/api/v1/applications/{application_id}/underwriter-action",
+        json={"action": "COUNTER_OFFER", "actor_role": "UNDERWRITER", "comment": "Инспектор предлагает варианты"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "COUNTER_OFFER"
+    assert len(payload["counter_offers"]) == 4
+
+    no_offer = client.post(
+        f"/api/v1/applications/{application_id}/ceo-approve",
+        json={"actor_role": "IP_OWNER"},
+    )
+    assert no_offer.status_code == 409
+
+    accepted = client.post(
+        f"/api/v1/applications/{application_id}/accept-offer",
+        json={"offer_index": 1, "actor_role": "IP_OWNER"},
+    )
+    assert accepted.status_code == 200
+    assert accepted.json()["approved_amount_rub"] > 0
+
+    funded = client.post(
+        f"/api/v1/applications/{application_id}/ceo-approve",
+        json={"actor_role": "IP_OWNER"},
+    )
+    assert funded.status_code == 200
+    assert funded.json()["status"] == "FUNDED"
+    assert funded.json()["account_balance"] > 0
+
+
+def test_repeated_tekhnostroy_is_not_stuck_in_anomaly(client, companies):
+    first = create_application(client, companies["tekhnostroy"], DEMO_APPLICATION_SCENARIOS["tekhnostroy"])
+    verified = client.post(f"/api/v1/applications/{first['application_id']}/verify-multibank")
+    assert verified.status_code == 200
+    assert verified.json()["new_score"] == 760
+    assert verified.json()["new_limit"] > verified.json()["previous_limit"]
+    assert verified.json()["application"]["limit_rub"] > 0
+
+    second = create_application(client, companies["tekhnostroy"], DEMO_APPLICATION_SCENARIOS["tekhnostroy"])
+    assert second["status"] == "APPROVED"
+    assert second["risk_score"] == 760
+    assert second["anomaly"] is None
+    assert second["multibank"]["verified"] is True
+
+
+def test_demo_inns_are_trusted_seeds(client):
+    """4 из 5 ИНН ТЗ не проходят контрольную сумму — это синтетические демо-данные."""
+    for inn in ("771589012345", "7728901122", "773344556677", "7719009988"):
+        response = client.post("/api/v1/companies/lookup-inn", json={"inn": inn})
+        assert response.status_code == 200, inn
+        assert response.json()["company"]["demo_key"] is not None
+
+
 def test_rejected_application_cannot_be_signed(client, companies):
     application = create_application(client, companies["bodrost_plus"], DEMO_APPLICATION_SCENARIOS["bodrost_plus"])
     response = client.post(

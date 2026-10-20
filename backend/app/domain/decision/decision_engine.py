@@ -6,9 +6,9 @@ Decision Engine: 4 коридора, ставка от ключевой став
 """
 from __future__ import annotations
 
+from app.core.config import settings
 from app.core.constants import (
-    DEFAULT_CBR_KEY_RATE,
-    MULTIBANK_LIMIT_BOOST,
+    GEO_SCORE_LOW_THRESHOLD,
     RATE_ADJUSTMENT_HIGH,
     RATE_ADJUSTMENT_HIGH_MIN_SCORE,
     RATE_ADJUSTMENT_LOW,
@@ -20,6 +20,7 @@ from app.core.constants import (
 )
 from app.domain.finances import (
     calculate_annuity_payment,
+    calculate_credit_limit,
     calculate_fcf,
     calculate_k_sector,
     calculate_max_payment,
@@ -43,8 +44,7 @@ _PRODUCT_LABELS = {
 
 def calculate_rate(score: int, product: ProductType, key_rate_pct: float | None = None) -> float:
     """FinalRate = CBR_KEY_RATE + ProductSpread + RiskAdjustment."""
-    # Ставка ЦБ прокидывается с сервиса; дефолт — константа домена (не settings).
-    key_rate = DEFAULT_CBR_KEY_RATE if key_rate_pct is None else key_rate_pct
+    key_rate = settings.cbr_key_rate if key_rate_pct is None else key_rate_pct
     if score >= RATE_ADJUSTMENT_HIGH_MIN_SCORE:
         adjustment = RATE_ADJUSTMENT_HIGH
     elif score >= RATE_ADJUSTMENT_MID_MIN_SCORE:
@@ -54,15 +54,7 @@ def calculate_rate(score: int, product: ProductType, key_rate_pct: float | None 
     return round(key_rate + product_spread(product) + adjustment, 2)
 
 
-def _limit_amount(profile: CompanyProfile, max_payment: float, term_months: int) -> float:
-    """Предельная сумма кредита при платеже не выше MaxPayment."""
-    limit = max_payment * term_months
-    if profile.is_multibank_verified:
-        limit *= 1 + MULTIBANK_LIMIT_BOOST
-    return max(0.0, limit)
-
-
-def _counter_offers(
+def build_counter_offers(
     profile: CompanyProfile,
     product: ProductType,
     requested_amount: float,
@@ -72,13 +64,18 @@ def _counter_offers(
     key_rate_pct: float | None = None,
 ) -> list[CounterOffer]:
     """4 встречных варианта: сумма, срок, овердрафт под эквайринг, ВКЛ."""
-    limit = _limit_amount(profile, max_payment, term_months)
     base_rate = calculate_rate(score, product, key_rate_pct=key_rate_pct)
+    limit = calculate_credit_limit(profile, max_payment, base_rate, term_months)
     overdraft_rate = calculate_rate(score, ProductType.OVERDRAFT, key_rate_pct=key_rate_pct)
     vkl_rate = calculate_rate(score, ProductType.VKL, key_rate_pct=key_rate_pct)
 
     reduced_amount = max(1.0, min(requested_amount, limit))
     extended_term = min(60, max(term_months + 12, term_months + 1))
+    while (
+        calculate_annuity_payment(requested_amount, base_rate, extended_term) > max_payment
+        and extended_term < 60
+    ):
+        extended_term = min(60, extended_term + 6)
     overdraft_limit = max(1.0, max_payment * 3)
     vkl_limit = max(1.0, max_payment * 6)
 
@@ -101,7 +98,7 @@ def _counter_offers(
             rate_pct=base_rate,
             monthly_payment_rub=round(calculate_annuity_payment(requested_amount, base_rate, extended_term), 2),
             label=f"Удлинить срок до {extended_term} мес.",
-            features=["Сумма заявки сохраняется", "Платёж снижается за счёт срока"],
+            features=["Сумма заявки сохраняется", "Платёж укладывается в MaxPayment за счёт срока"],
         ),
         CounterOffer(
             product_type=ProductType.OVERDRAFT.value,
@@ -158,7 +155,7 @@ def make_decision(
     fcf = calculate_fcf(profile)
     k_sector = calculate_k_sector(profile)
     max_payment = calculate_max_payment(profile)
-    key_rate = DEFAULT_CBR_KEY_RATE if key_rate_pct is None else key_rate_pct
+    key_rate = settings.cbr_key_rate if key_rate_pct is None else key_rate_pct
 
     if score_result.is_hard_stop:
         return DecisionResult(
@@ -175,12 +172,12 @@ def make_decision(
     score = score_result.final_score
     rate = calculate_rate(score, product, key_rate_pct=key_rate)
     monthly_payment = calculate_annuity_payment(requested_amount_rub, rate, term_months)
-    limit = _limit_amount(profile, max_payment, term_months)
+    limit = calculate_credit_limit(profile, max_payment, rate, term_months)
     approved_amount = min(requested_amount_rub, limit)
 
     payment_exceeds_limit = monthly_payment > max_payment
     weak_location = (
-        profile.geo_score < 45
+        profile.geo_score < GEO_SCORE_LOW_THRESHOLD
         and profile.business_model.value == "B2C_OFFLINE"
     )
 
@@ -204,7 +201,7 @@ def make_decision(
             fcf_rub=fcf,
             max_payment_rub=round(max_payment, 2),
             k_sector=k_sector,
-            counter_offers=_counter_offers(
+            counter_offers=build_counter_offers(
                 profile,
                 product,
                 requested_amount_rub,

@@ -42,6 +42,10 @@ def test_rosters_610_counter_offer_four_variants_rate_18():
     assert any(offer.rate_pct == 18.0 for offer in decision.counter_offers)
     assert any("9%" in feature for offer in decision.counter_offers for feature in offer.features)
 
+    affordable = decision.counter_offers[0]
+    assert affordable.amount_rub < 2_500_000
+    assert affordable.monthly_payment_rub <= decision.max_payment_rub + 0.01
+
 
 def test_tekhnostroy_760_after_multibank_rate_15_5():
     from dataclasses import replace

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from app.core.constants import (
+    CAPEX_HIGH_SHARE_THRESHOLD,
     CASH_FORECAST_DAYS,
     CASH_FORECAST_RENT_DAYS,
     DAYS_IN_MONTH,
@@ -99,7 +100,7 @@ def detect_radar_triggers(
         ))
 
     capex_share = profile.purchases_monthly / max(profile.monthly_revenue_total, 1)
-    if capex_share > 0.45:
+    if capex_share > CAPEX_HIGH_SHARE_THRESHOLD:
         triggers.append(RadarTrigger(
             code=TRIGGER_CAPEX_EXP,
             title="Высокая доля закупок в выручке",

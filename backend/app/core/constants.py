@@ -105,6 +105,7 @@ FSSP_HARD_STOP_SHARE: float = 0.20
 ANOMALY_REVENUE_DEVIATION_THRESHOLD: float = 0.50
 MULTIBANK_LIMIT_BOOST: float = 0.25
 MULTIBANK_DEFAULT_SHARE_OF_ALFA: float = 0.35
+MULTIBANK_REVENUE_TEKHNOSTROY: float = 4_200_000.0
 
 # ── Прогноз кассы ────────────────────────────────────────────────────────────
 CASH_FORECAST_DAYS: int = 60
@@ -129,6 +130,9 @@ MANUAL_REVIEW_MAX_LIMIT: float = 750_000.0
 BANK_OPEX_SHARE: float = 0.005
 BANK_LTV_MULTIPLIER: float = 1.4
 BANK_MAX_PD: float = 0.15
+BANK_FUNDING_AVERAGE_BALANCE_SHARE: float = 0.55
+# Доля закупок в обороте, выше которой радар показывает CAPEX-сигнал.
+CAPEX_HIGH_SHARE_THRESHOLD: float = 0.45
 
 # ── Умный поиск ──────────────────────────────────────────────────────────────
 SEARCH_DEFAULT_TERM_MONTHS: dict[str, int] = {

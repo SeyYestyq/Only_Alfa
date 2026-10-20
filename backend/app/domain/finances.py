@@ -9,6 +9,7 @@ from app.core.constants import (
     K_SECTOR_LOW,
     K_SECTOR_MID,
     MAX_PAYMENT_FCF_RATIO,
+    MULTIBANK_LIMIT_BOOST,
 )
 from app.domain.types import CompanyProfile, ProductType
 
@@ -51,6 +52,29 @@ def calculate_annuity_payment(principal: float, annual_rate_pct: float, months: 
         return principal / months
     factor = (1 + monthly_rate) ** months
     return principal * monthly_rate * factor / (factor - 1)
+
+
+def calculate_max_principal(max_payment: float, annual_rate_pct: float, months: int) -> float:
+    """Обратная аннуитету задача: какой основной долг даёт платёж не выше max_payment."""
+    if max_payment <= 0 or months <= 0:
+        return 0.0
+    monthly_rate = annual_rate_pct / 100 / 12
+    if monthly_rate == 0:
+        return max_payment * months
+    return max_payment * (1 - (1 + monthly_rate) ** (-months)) / monthly_rate
+
+
+def calculate_credit_limit(
+    profile: CompanyProfile,
+    max_payment: float,
+    annual_rate_pct: float,
+    months: int,
+) -> float:
+    """Расчётный лимит по платежеспособности + бонус Мультибанка +25%."""
+    limit = calculate_max_principal(max_payment, annual_rate_pct, months)
+    if profile.is_multibank_verified:
+        limit *= 1 + MULTIBANK_LIMIT_BOOST
+    return max(0.0, limit)
 
 
 def product_spread(product: ProductType) -> float:
