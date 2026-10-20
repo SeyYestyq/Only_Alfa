@@ -1,12 +1,20 @@
 import type { Xray } from "../api/types";
 
+const BUSINESS_MODEL_LABELS: Record<string, string> = {
+  B2C_OFFLINE: "офлайн-точка B2C",
+  B2B_CONTRACTOR: "B2B-подрядчик",
+  WHOLESALE: "оптовая торговля",
+};
+
 export function GeoPanel({ xray }: { xray: Xray }) {
   const { geo, bank_value } = xray;
+  const modelLabel = BUSINESS_MODEL_LABELS[geo.business_model] ?? geo.business_model;
+  const osmUrl = `https://www.openstreetmap.org/?mlat=${geo.latitude}&mlon=${geo.longitude}#map=16/${geo.latitude}/${geo.longitude}`;
   return (
     <div className="geo-grid">
       <div>
         <div className="card-subtitle" style={{ marginBottom: 6 }}>
-          Локация и рейтинг заказчика · {geo.business_model}
+          Локация и рейтинг заказчика · {modelLabel}
         </div>
         <div className="map-frame">
           <iframe
@@ -15,6 +23,12 @@ export function GeoPanel({ xray }: { xray: Xray }) {
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
           />
+          <div className="map-caption">
+            <span>OpenStreetMap · {geo.latitude.toFixed(4)}, {geo.longitude.toFixed(4)}</span>
+            <a href={osmUrl} target="_blank" rel="noreferrer">
+              Открыть карту ↗
+            </a>
+          </div>
         </div>
         <div className="geo-stats section-gap">
           <div className="geo-stat">

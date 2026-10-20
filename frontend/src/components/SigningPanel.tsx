@@ -71,7 +71,7 @@ export function SigningPanel({ application }: { application: Application }) {
               <p className="muted" style={{ fontSize: 12, maxWidth: 520 }}>
                 {isSigningRole
                   ? "Ваша роль даёт право подписи. ПЭП — простая электронная подпись, фиксируется в audit trail."
-                  : "У вашей роли нет права подписи. Нажмите кнопку — бэкенд вернёт 403 Forbidden, как в проде."}
+                  : "У вашей роли нет права подписи: кнопка заблокирована. Прямой запрос к API вернёт 403 Forbidden."}
               </p>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {["MANUAL_REVIEW", "NEED_MORE_INFO"].includes(application.status) && (
@@ -82,8 +82,13 @@ export function SigningPanel({ application }: { application: Application }) {
                 <button
                   type="button"
                   className="btn btn-primary"
-                  disabled={isBusy || !canSign || viewMode === "bank"}
+                  disabled={isBusy || !canSign || !isSigningRole || viewMode === "bank"}
                   onClick={() => void signApplication()}
+                  title={
+                    isSigningRole
+                      ? "Подписать простой электронной подписью"
+                      : "У вашей роли нет права подписи — бэкенд вернёт 403"
+                  }
                 >
                   Подписать ПЭП
                 </button>

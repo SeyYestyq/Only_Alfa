@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -24,6 +25,15 @@ import type {
   Xray,
 } from "../api/types";
 
+export interface MultibankResult {
+  previousScore: number;
+  newScore: number;
+  scoreDelta: number;
+  previousLimit: number;
+  newLimit: number;
+  externalRevenue: number;
+}
+
 interface AppContextValue {
   companies: CompanyBrief[];
   companyId: string | null;
@@ -41,6 +51,7 @@ interface AppContextValue {
   searchResult: SearchResult | null;
   invoiceResult: InvoiceParseResult | null;
   templates: InvoiceTemplate[];
+  multibankResult: MultibankResult | null;
   selectCompany: (companyId: string) => Promise<void>;
   lookupInn: (inn: string) => Promise<void>;
   setUserRole: (role: ActorRole) => void;
@@ -88,6 +99,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [invoiceResult, setInvoiceResult] = useState<InvoiceParseResult | null>(null);
   const [templates, setTemplates] = useState<InvoiceTemplate[]>([]);
+  const [multibankResult, setMultibankResult] = useState<MultibankResult | null>(null);
+  const companyRef = useRef<string | null>(null);
 
   const effectiveRole: ActorRole = viewMode === "bank" ? "UNDERWRITER" : userRole;
 
@@ -106,27 +119,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const loadDashboard = useCallback(async (id: string) => {
     const payload = await api.getDashboard(id);
+    if (companyRef.current && companyRef.current !== id) {
+      return null;
+    }
     setDashboard(payload);
     return payload;
   }, []);
 
   const loadXray = useCallback(async (applicationId: string) => {
     const payload = await api.getXray(applicationId);
+    if (companyRef.current && payload.application.company.id !== companyRef.current) {
+      return null;
+    }
     setXray(payload);
     return payload;
   }, []);
 
   const selectCompany = useCallback(async (id: string) => {
+    companyRef.current = id;
     setCompanyId(id);
     setSearchResult(null);
     setInvoiceResult(null);
     setApplication(null);
     setXray(null);
+    setMultibankResult(null);
     setScreen(1);
     setError(null);
     setIsBusy(true);
     try {
       const payload = await loadDashboard(id);
+      if (!payload || companyRef.current !== id) {
+        return;
+      }
       setUserRole(ownerRole(payload.company));
     } catch (cause) {
       handleError(cause);
@@ -152,10 +176,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setTemplates(templateResponse);
         if (companyResponse.companies.length > 0) {
           const first = companyResponse.companies[0];
+          companyRef.current = first.id;
           setCompanyId(first.id);
           setUserRole(ownerRole(first));
           const payload = await api.getDashboard(first.id);
-          if (!cancelled) {
+          if (!cancelled && companyRef.current === first.id) {
             setDashboard(payload);
             setUserRole(ownerRole(payload.company));
           }
@@ -184,11 +209,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const exists = current.some((row) => row.id === company.id);
         return exists ? current : [...current, company];
       });
+      companyRef.current = company.id;
       setCompanyId(company.id);
       setSearchResult(null);
       setInvoiceResult(null);
       setApplication(null);
       setXray(null);
+      setMultibankResult(null);
       setScreen(1);
       const payload = await api.getDashboard(company.id);
       setDashboard(payload);
@@ -221,7 +248,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     try {
       const payload = await loadDashboard(companyId);
-      if (payload.company.account_balance !== dashboard?.account_balance) {
+      if (payload && payload.company.account_balance !== dashboard?.account_balance) {
         syncCompanyBalance(payload.company.account_balance);
       }
     } catch (cause) {
@@ -237,6 +264,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const result = await api.smartSearch(companyId, query);
+      if (companyRef.current !== companyId) {
+        return;
+      }
       setSearchResult(result);
       await loadDashboard(companyId);
     } catch (cause) {
@@ -254,6 +284,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const result = await api.parseInvoiceTemplate(companyId, code);
+      if (companyRef.current !== companyId) {
+        return;
+      }
       setInvoiceResult(result);
     } catch (cause) {
       handleError(cause);
@@ -270,6 +303,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const result = await api.parseInvoiceFile(companyId, file);
+      if (companyRef.current !== companyId) {
+        return;
+      }
       setInvoiceResult(result);
     } catch (cause) {
       handleError(cause);
@@ -279,7 +315,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [companyId, handleError]);
 
   const afterApplicationChange = useCallback(async (updated: Application) => {
+    if (companyRef.current && updated.company.id !== companyRef.current) {
+      return;
+    }
     setApplication(updated);
+    setMultibankResult(null);
     setCompanies((current) =>
       current.map((company) =>
         company.id === updated.company.id
@@ -310,6 +350,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         actor_role: effectiveRole === "UNDERWRITER" ? "ACCOUNTANT" : effectiveRole,
         draft_application_id: invoiceResult.draft.application_id,
       });
+      if (companyRef.current !== companyId) {
+        return;
+      }
       await afterApplicationChange(created);
       setScreen(2);
     } catch (cause) {
@@ -333,6 +376,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         company_id: companyId,
         actor_role: effectiveRole === "UNDERWRITER" ? "ACCOUNTANT" : effectiveRole,
       });
+      if (companyRef.current !== companyId) {
+        return;
+      }
       await afterApplicationChange(created);
       setScreen(2);
     } catch (cause) {
@@ -350,7 +396,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const response = await api.verifyMultibank(application.application_id);
+      if (response.application.company.id !== companyRef.current) {
+        return;
+      }
       await afterApplicationChange(response.application);
+      setMultibankResult({
+        previousScore: response.previous_score,
+        newScore: response.new_score,
+        scoreDelta: response.score_delta,
+        previousLimit: response.previous_limit,
+        newLimit: response.new_limit,
+        externalRevenue: response.external_revenue_rub,
+      });
     } catch (cause) {
       handleError(cause);
     } finally {
@@ -366,6 +423,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const updated = await api.acceptOffer(application.application_id, index, effectiveRole);
+      if (updated.company.id !== companyRef.current) {
+        return;
+      }
       setApplication(updated);
       await loadXray(updated.application_id);
     } catch (cause) {
@@ -383,6 +443,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const updated = await api.ceoApprove(application.application_id, effectiveRole);
+      if (updated.company.id !== companyRef.current) {
+        return;
+      }
       await afterApplicationChange(updated);
     } catch (cause) {
       handleError(cause);
@@ -408,6 +471,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         comment,
         document_name: documentName,
       });
+      if (updated.company.id !== companyRef.current) {
+        return;
+      }
       await afterApplicationChange(updated);
     } catch (cause) {
       handleError(cause);
@@ -450,6 +516,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     searchResult,
     invoiceResult,
     templates,
+    multibankResult,
     selectCompany,
     lookupInn,
     setUserRole,
@@ -469,8 +536,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     clearError: () => setError(null),
   }), [
     acceptOffer, application, cbrRate, companies, companyId, createApplication, dashboard,
-    effectiveRole, error, goToScreen, invoiceResult, isBusy, isReady, lookupInn, parseFile,
-    parseTemplate, refresh, runInstallment, runSearch, screen, searchResult, selectCompany,
+    effectiveRole, error, goToScreen, invoiceResult, isBusy, isReady, lookupInn, multibankResult,
+    parseFile, parseTemplate, refresh, runInstallment, runSearch, screen, searchResult, selectCompany,
     setViewMode, signApplication, submitDraft, templates, underwriterAction, userRole,
     verifyMultibank, viewMode, xray,
   ]);

@@ -117,7 +117,7 @@ export function SmartSearchPanel() {
                     <button
                       type="button"
                       className="btn btn-primary btn-sm btn-block"
-                      disabled={isBusy || viewMode === "bank"}
+                      disabled={viewMode === "bank"}
                       onClick={() =>
                         void createApplication({
                           product_type: badge.product_type,

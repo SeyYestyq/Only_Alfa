@@ -38,6 +38,9 @@ export function PassportPanel({ application }: { application: Application }) {
           {formatMoney(application.approved_amount_rub)} · {formatMoney(application.monthly_payment_rub)}/мес. ·{" "}
           {application.term_months} мес.
         </div>
+        <div className="passport-sub">
+          Расчётный лимит: {formatMoney(application.limit_rub)}
+        </div>
       </article>
 
       <article className="passport-card">

@@ -73,6 +73,10 @@ export function WaterfallChart({
           const previous = series[index - 1];
           return (
             <g key={item.factor.code}>
+              <title>
+                {item.factor.label}: {item.factor.score_delta > 0 ? "+" : ""}
+                {item.factor.score_delta} ({item.factor.condition})
+              </title>
               {previous && (
                 <line
                   x1={xFor(index - 1) + barWidth / 2}

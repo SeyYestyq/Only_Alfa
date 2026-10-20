@@ -56,7 +56,7 @@ export function ApplicationForm() {
                 className="field-input"
                 type="number"
                 min={10_000}
-                step={10_000}
+                step={1_000}
                 value={amount}
                 onChange={(event) => setAmount(Number(event.target.value))}
                 required
@@ -94,7 +94,7 @@ export function ApplicationForm() {
                 className="field-input"
                 type="number"
                 min={10_000}
-                step={10_000}
+                step={1_000}
                 value={declaredRevenue}
                 onChange={(event) => setDeclaredRevenue(Number(event.target.value))}
                 required

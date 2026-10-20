@@ -209,6 +209,7 @@ export interface Application {
   monthly_revenue_multibank: number;
   fcf_rub: number;
   max_payment_rub: number;
+  limit_rub: number;
   k_sector: number;
   factors_breakdown: Factor[];
   counter_offers: CounterOffer[];

@@ -1364,13 +1364,46 @@ p {
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
-  background: var(--bg-alt);
+  background:
+    linear-gradient(rgba(26, 29, 36, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 29, 36, 0.04) 1px, transparent 1px),
+    var(--bg-alt);
+  background-size: 28px 28px;
+  position: relative;
 }
 
 .map-frame iframe {
   width: 100%;
   height: 100%;
   border: none;
+  position: relative;
+  z-index: 1;
+}
+
+.map-caption {
+  position: absolute;
+  z-index: 2;
+  left: 10px;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 10.5px;
+  color: var(--ink-muted);
+  backdrop-filter: blur(4px);
+}
+
+.map-caption a {
+  color: var(--alfa-red);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .geo-stats {

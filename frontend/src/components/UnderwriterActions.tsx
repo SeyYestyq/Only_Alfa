@@ -95,14 +95,16 @@ export function UnderwriterActions() {
           >
             {needsDocument ? "APPROVE · принять документ и одобрить" : "APPROVE · одобрить лимит"}
           </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            disabled={isBusy}
-            onClick={() => void underwriterAction("COUNTER_OFFER", comment || "Сформировать встречные условия")}
-          >
-            COUNTER_OFFER
-          </button>
+          {application.status === "MANUAL_REVIEW" && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={isBusy}
+              onClick={() => void underwriterAction("COUNTER_OFFER", comment || "Сформировать встречные условия")}
+            >
+              COUNTER_OFFER
+            </button>
+          )}
           <button
             type="button"
             className="btn btn-danger"

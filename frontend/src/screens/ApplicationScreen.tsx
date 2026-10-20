@@ -74,7 +74,7 @@ export function ApplicationScreen() {
 
       <PassportPanel application={application} />
 
-      {application.status === "ANOMALY_VERIFICATION" && application.multibank.available && (
+      {(application.multibank.available || application.multibank.verified) && (
         <div className="section-gap">
           <MultibankPanel application={application} />
         </div>
@@ -108,9 +108,11 @@ export function ApplicationScreen() {
         <CounterOffersPanel application={application} />
       </div>
 
-      <div className="section-gap">
-        <SigningPanel application={application} />
-      </div>
+      {application.status !== "REJECTED" && (
+        <div className="section-gap">
+          <SigningPanel application={application} />
+        </div>
+      )}
 
       {invoice && (
         <section className="card section-gap">
