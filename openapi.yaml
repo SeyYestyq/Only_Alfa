@@ -1,9 +1,52 @@
-openapi: 3.1.0
+openapi: 3.0.3
 info:
   title: Умный кредитный кабинет предпринимателя
-  description: 'Only_Alfa · хакатон «Альфа-Будущее». 11 эндпоинтов ТЗ v3.2: 360°-ДНК,
-    дискретный RiskScore, Decision Engine, Мультибанк, ПЭП, Xray.'
+  description: |
+    Only_Alfa · хакатон «Альфа-Будущее». Умный кредитный кабинет предпринимателя:
+    360°-ДНК бизнеса, дискретный RiskScore (0–1000), Decision Engine,
+    Open Banking «Мультибанк», ПЭП и Xray.
+
+    ## 11 обязательных эндпоинтов ТЗ v3.2
+    1. `GET /api/v1/companies` — 5 демо-компаний и их пользователи.
+    2. `POST /api/v1/companies/lookup-inn` — 360°-портрет по ИНН (симулятор реестра).
+    3. `GET /api/v1/companies/{company_id}/dashboard` — данные Экрана 1: ДНК, прогноз кассы, радар, новости, выписка.
+    4. `POST /api/v1/companies/{company_id}/smart-search` — Search-to-Credit: Intent Parser, поставщики, плашка или Режим тишины.
+    5. `POST /api/v1/applications/parse-invoice` — PDF-счёт (multipart) или демо-шаблон → черновик заявки.
+    6. `POST /api/v1/transactions/{transaction_id}/installment` — пост-транзакционная рассрочка на 3–6 месяцев.
+    7. `POST /api/v1/applications` — создание заявки: Hard Stop → аномалия → RiskScore → решение.
+    8. `POST /api/v1/applications/{application_id}/verify-multibank` — симулятор Open Banking, снятие аномалии.
+    9. `GET /api/v1/applications/{application_id}/xray` — Экран 3: P&L банка, Waterfall, OSM, аудит.
+    10. `POST /api/v1/applications/{application_id}/underwriter-action` — действие инспектора.
+    11. `POST /api/v1/applications/{application_id}/ceo-approve` — подписание ПЭП владельцем бизнеса.
+
+    ## Дополнительные эндпоинты (сверх 11 обязательных)
+    - `GET /api/v1/applications/{application_id}` — текущее состояние заявки для SPA.
+    - `POST /api/v1/applications/{application_id}/accept-offer` — выбор одного из 4 встречных офферов.
+    - `GET /api/v1/applications/invoice-templates` — 3 предзаготовленных демо-счёта.
+    - `GET /api/v1/companies/{company_id}/applications` — история заявок компании.
+    - `GET /health` — проверка живости сервиса.
+
+    ## Коды ошибок
+    - `400` — рассрочка недоступна или уже взята; `APPROVE` после `NEED_MORE_INFO` без `document_name`.
+    - `403` — подпись ПЭП сотрудником ООО (не `CEO_OWNER`); действие инспектора не от `UNDERWRITER`.
+    - `404` — компания, заявка или транзакция не найдена.
+    - `409` — невалидный переход State Machine (например, `ceo-approve` из `MANUAL_REVIEW`/`REJECTED`, повторный `verify-multibank`).
+    - `422` — невалидный ИНН, битый PDF или ошибка валидации схемы.
   version: 1.0.0
+servers:
+- url: http://localhost:8000
+  description: Локальный запуск (uvicorn / docker compose)
+- url: http://localhost:8080
+  description: SPA-прокси / альтернативный порт
+tags:
+- name: companies
+  description: Компании, 360°-портрет по ИНН и дашборд Экрана 1.
+- name: smart-search
+  description: 'Search-to-Credit: Intent Parser, поставщики, кредитная плашка, Режим тишины.'
+- name: applications
+  description: Заявки, счёт, рассрочка, Мультибанк, действия инспектора, ПЭП и Xray.
+- name: system
+  description: Дополнительные служебные эндпоинты (health-check).
 paths:
   /api/v1/companies:
     get:
@@ -50,8 +93,7 @@ paths:
       tags:
       - companies
       summary: Company Dashboard
-      description: 'Данные Экрана 1: ДНК, прогноз кассы, радар, новости, выписка,
-        чипсы.'
+      description: 'Данные Экрана 1: ДНК, прогноз кассы, радар, новости, выписка, чипсы.'
       operationId: company_dashboard_api_v1_companies__company_id__dashboard_get
       parameters:
       - name: company_id
@@ -78,8 +120,7 @@ paths:
       tags:
       - companies
       summary: Company Applications
-      description: История заявок компании (дополнительный эндпоинт для навигации
-        SPA).
+      description: Дополнительный эндпоинт (сверх 11 обязательных ТЗ). История заявок компании (дополнительный эндпоинт для навигации SPA).
       operationId: company_applications_api_v1_companies__company_id__applications_get
       parameters:
       - name: company_id
@@ -139,7 +180,7 @@ paths:
       tags:
       - applications
       summary: Invoice Templates
-      description: 3 предзаготовленных демо-счёта для мгновенной демонстрации.
+      description: Дополнительный эндпоинт (сверх 11 обязательных ТЗ). 3 предзаготовленных демо-счёта для мгновенной демонстрации.
       operationId: invoice_templates_api_v1_applications_invoice_templates_get
       responses:
         '200':
@@ -150,8 +191,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/InvoiceTemplateSchema'
                 type: array
-                title: Response Invoice Templates Api V1 Applications Invoice Templates
-                  Get
+                title: Response Invoice Templates Api V1 Applications Invoice Templates Get
   /api/v1/applications:
     post:
       tags:
@@ -183,8 +223,7 @@ paths:
       tags:
       - applications
       summary: Parse Invoice
-      description: PDF-счёт (pdfplumber) или демо-шаблон → проверка ИНН → черновик
-        заявки.
+      description: PDF-счёт (pdfplumber) или демо-шаблон → проверка ИНН → черновик заявки.
       operationId: parse_invoice_api_v1_applications_parse_invoice_post
       requestBody:
         content:
@@ -210,7 +249,7 @@ paths:
       tags:
       - applications
       summary: Get Application
-      description: Текущее состояние заявки (дополнительный эндпоинт для SPA).
+      description: Дополнительный эндпоинт (сверх 11 обязательных ТЗ). Текущее состояние заявки (дополнительный эндпоинт для SPA).
       operationId: get_application_api_v1_applications__application_id__get
       parameters:
       - name: application_id
@@ -264,7 +303,7 @@ paths:
       tags:
       - applications
       summary: Accept Offer
-      description: Клиент выбирает один из 4 встречных офферов (дополнительный эндпоинт).
+      description: Дополнительный эндпоинт (сверх 11 обязательных ТЗ). Клиент выбирает один из 4 встречных офферов (дополнительный эндпоинт).
       operationId: accept_offer_api_v1_applications__application_id__accept_offer_post
       parameters:
       - name: application_id
@@ -297,8 +336,7 @@ paths:
       tags:
       - applications
       summary: Underwriter Action
-      description: 'Действие инспектора: APPROVE / COUNTER_OFFER / NEED_MORE_INFO
-        / REJECT.'
+      description: 'Действие инспектора: APPROVE / COUNTER_OFFER / NEED_MORE_INFO / REJECT.'
       operationId: underwriter_action_api_v1_applications__application_id__underwriter_action_post
       parameters:
       - name: application_id
@@ -331,8 +369,7 @@ paths:
       tags:
       - applications
       summary: Ceo Approve
-      description: 'Подписание ПЭП: ООО — только CEO_OWNER (иначе 403), невалидный
-        статус — 409.'
+      description: 'Подписание ПЭП: ООО — только CEO_OWNER (иначе 403), невалидный статус — 409.'
       operationId: ceo_approve_api_v1_applications__application_id__ceo_approve_post
       parameters:
       - name: application_id
@@ -533,8 +570,9 @@ components:
           title: Product Type
         requested_amount_rub:
           type: number
-          exclusiveMinimum: 0.0
+          exclusiveMinimum: true
           title: Requested Amount Rub
+          minimum: 0.0
         term_months:
           type: integer
           maximum: 120.0
@@ -542,8 +580,9 @@ components:
           title: Term Months
         declared_monthly_revenue:
           type: number
-          exclusiveMinimum: 0.0
+          exclusiveMinimum: true
           title: Declared Monthly Revenue
+          minimum: 0.0
         actor_role:
           type: string
           enum:
@@ -554,10 +593,9 @@ components:
           title: Actor Role
           default: ACCOUNTANT
         draft_application_id:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Draft Application Id
+          type: string
+          nullable: true
       type: object
       required:
       - company_id
@@ -612,10 +650,9 @@ components:
           type: boolean
           title: Is Hard Stop
         hard_stop_reason:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Hard Stop Reason
+          type: string
+          nullable: true
         requested_amount_rub:
           type: number
           title: Requested Amount Rub
@@ -646,6 +683,9 @@ components:
         max_payment_rub:
           type: number
           title: Max Payment Rub
+        limit_rub:
+          type: number
+          title: Limit Rub
         k_sector:
           type: number
           title: K Sector
@@ -665,14 +705,13 @@ components:
           type: array
           title: Rejection Checklist
         selected_offer_index:
-          anyOf:
-          - type: integer
-          - type: 'null'
           title: Selected Offer Index
+          type: integer
+          nullable: true
         anomaly:
-          anyOf:
+          allOf:
           - $ref: '#/components/schemas/AnomalySchema'
-          - type: 'null'
+          nullable: true
         checks:
           items:
             $ref: '#/components/schemas/CheckSchema'
@@ -681,23 +720,20 @@ components:
         multibank:
           $ref: '#/components/schemas/MultibankInfoSchema'
         invoice:
-          anyOf:
-          - type: object
-          - type: 'null'
           title: Invoice
+          type: object
+          nullable: true
         account_balance:
           type: number
           title: Account Balance
         created_at:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Created At
+          type: string
+          nullable: true
         updated_at:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Updated At
+          type: string
+          nullable: true
       type: object
       required:
       - application_id
@@ -721,6 +757,7 @@ components:
       - monthly_revenue_multibank
       - fcf_rub
       - max_payment_rub
+      - limit_rub
       - k_sector
       - factors_breakdown
       - counter_offers
@@ -811,16 +848,14 @@ components:
           type: string
           title: Company Id
         template_code:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Template Code
+          type: string
+          nullable: true
         file:
-          anyOf:
-          - type: string
-            format: binary
-          - type: 'null'
           title: File
+          type: string
+          format: binary
+          nullable: true
       type: object
       required:
       - company_id
@@ -920,10 +955,9 @@ components:
           type: object
           title: Details
         created_at:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Created At
+          type: string
+          nullable: true
       type: object
       required:
       - id
@@ -956,10 +990,9 @@ components:
           type: number
           title: Account Balance
         demo_key:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Demo Key
+          type: string
+          nullable: true
         users:
           items:
             $ref: '#/components/schemas/CompanyUserSchema'
@@ -1000,10 +1033,9 @@ components:
           type: number
           title: Account Balance
         demo_key:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Demo Key
+          type: string
+          nullable: true
         users:
           items:
             $ref: '#/components/schemas/CompanyUserSchema'
@@ -1314,10 +1346,9 @@ components:
           type: number
           title: Requested Amount Rub
         created_at:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Created At
+          type: string
+          nullable: true
       type: object
       required:
       - application_id
@@ -1337,23 +1368,20 @@ components:
           type: string
           title: Actor Role
         previous_status:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Previous Status
+          type: string
+          nullable: true
         new_status:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: New Status
+          type: string
+          nullable: true
         details:
           type: string
           title: Details
         created_at:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Created At
+          type: string
+          nullable: true
       type: object
       required:
       - id
@@ -1398,10 +1426,9 @@ components:
           type: number
           title: Balance Rub
         trigger:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Trigger
+          type: string
+          nullable: true
       type: object
       required:
       - day
@@ -1519,10 +1546,9 @@ components:
           type: string
           title: Purpose
         template_code:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Template Code
+          type: string
+          nullable: true
       type: object
       required:
       - source
@@ -1769,10 +1795,9 @@ components:
           type: boolean
           title: Silence Mode
         silence_reason:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Silence Reason
+          type: string
+          nullable: true
         amount_estimate_rub:
           type: number
           title: Amount Estimate Rub
@@ -1790,13 +1815,13 @@ components:
           type: array
           title: Suppliers
         credit_badge:
-          anyOf:
+          allOf:
           - $ref: '#/components/schemas/CreditBadgeSchema'
-          - type: 'null'
+          nullable: true
         news_item:
-          anyOf:
+          allOf:
           - $ref: '#/components/schemas/NewsItemSchema'
-          - type: 'null'
+          nullable: true
         classification_ms:
           type: number
           title: Classification Ms
@@ -1804,9 +1829,9 @@ components:
           type: string
           title: Ai Provider Mode
         ai_enrichment:
-          anyOf:
+          allOf:
           - $ref: '#/components/schemas/AiEnrichmentSchema'
-          - type: 'null'
+          nullable: true
         total_ms:
           type: number
           title: Total Ms
@@ -1914,15 +1939,13 @@ components:
           title: Actor Role
           default: UNDERWRITER
         comment:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Comment
+          type: string
+          nullable: true
         document_name:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Document Name
+          type: string
+          nullable: true
       type: object
       required:
       - action
