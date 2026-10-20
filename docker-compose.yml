@@ -1,0 +1,71 @@
+# Only_Alfa — «Умный кредитный кабинет предпринимателя»
+# Запуск с нуля одной командой: docker compose up --build
+# Схема: db (PostgreSQL 16) → backend (FastAPI) → frontend (nginx + SPA).
+# Норматив памяти: суммарно ≤ 4 ГБ ОЗУ (ТЗ-00 / ТЗ-05).
+# Имя проекта задано явно: путь к репозиторию может содержать кириллицу,
+# из-за которой compose не выведет корректное имя проекта автоматически.
+name: only-alfa
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: alfa-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-alfadb}
+      POSTGRES_USER: ${POSTGRES_USER:-alfa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-alfa}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-alfa} -d ${POSTGRES_DB:-alfadb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    mem_limit: 512m
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: alfa-backend
+    environment:
+      # Пароль по умолчанию без спецсимволов — иначе его нужно URL-кодировать.
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-alfa}:${POSTGRES_PASSWORD:-alfa}@db:5432/${POSTGRES_DB:-alfadb}
+      CBR_KEY_RATE: ${CBR_KEY_RATE:-14.0}
+      AI_PROVIDER_MODE: ${AI_PROVIDER_MODE:-DETERMINISTIC}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL_NAME: ${OPENAI_MODEL_NAME:-}
+      OPENAI_TIMEOUT_MS: ${OPENAI_TIMEOUT_MS:-1500}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8080}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    mem_limit: 1g
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: alfa-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    mem_limit: 256m
+    restart: unless-stopped
+
+volumes:
+  pgdata:

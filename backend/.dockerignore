@@ -1,0 +1,22 @@
+# Кэш Python и локальные артефакты не нужны внутри образа.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Тесты и локальные БД в образ не попадают.
+tests/
+*.db
+
+# Виртуальное окружение и секреты.
+.venv/
+venv/
+.env
+.env.*
+
+# Служебные файлы репозитория.
+.git/
+.gitignore
+Dockerfile
+.dockerignore

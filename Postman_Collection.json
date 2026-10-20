@@ -1,0 +1,1880 @@
+{
+  "info": {
+    "_postman_id": "8ba7e8d8-8fc3-41c1-bb21-01cee6d05a47",
+    "name": "Only_Alfa · Умный кредитный кабинет предпринимателя",
+    "description": "Коллекция для проверки 11 обязательных эндпоинтов ТЗ v3.2 и вспомогательных методов\n«Умного кредитного кабинета предпринимателя» (Only_Alfa, хакатон «Альфа-Будущее»).\n\n## Как запускать\n1. Поднять бэкенд: `docker compose up --build` (или `cd backend && uvicorn app.main:app --port 8000`).\n2. Убедиться, что БД чистая (демо-сид выполняется при старте).\n3. Запустить коллекцию целиком: папки идут по порядку, переменные `applicationId`\n   и ID компаний заполняются автоматически из ответов.\n\n## Порядок и зависимости\n- `01 Companies` — список компаний, lookup по ИНН (валидный и невалидный), дашборд.\n- `02 Smart Search` — CAPEX-запрос и информационный запрос (Режим тишины).\n- `03 Invoice` — демо-шаблоны счёта, парсинг LA_MARZOCCO, битый запрос без файла.\n- `04 Applications` — 5 демо-сценариев, Мультибанк, Xray, действия инспектора, ПЭП, рассрочка.\n- `05 Дополнительные эндпоинты` — health, история заявок компании, карточка заявки.\n\nОжидаемые баллы: Смирнов 815 APPROVED · Ростерс 610 COUNTER_OFFER ·\nТехноСтрой 295 → 760 после Мультибанка · Ковалёв 495 MANUAL_REVIEW ·\nБодрость Плюс 0 Hard Stop (REJECTED).\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 Companies",
+      "description": "Список 5 демо-компаний, 360°-портрет по ИНН и дашборд Экрана 1.",
+      "item": [
+        {
+          "name": "01.01 Список компаний (5 демо-профилей)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies"
+              ]
+            },
+            "description": "5 демо-компаний и их пользователи для Demo Control Bar. ID компаний сохраняются в переменные."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const keys = {",
+                  "  smirnov: \"companyId\",",
+                  "  rosters: \"companyIdRosters\",",
+                  "  tekhnostroy: \"companyIdTekhnostroy\",",
+                  "  kovalev: \"companyIdKovalev\",",
+                  "  bodrost_plus: \"companyIdBodrost\"",
+                  "};",
+                  "if (Array.isArray(body.companies)) {",
+                  "  body.companies.forEach(function (company) {",
+                  "    if (keys[company.demo_key]) {",
+                  "      pm.collectionVariables.set(keys[company.demo_key], company.id);",
+                  "    }",
+                  "  });",
+                  "}",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"5 демо-компаний\", function () {",
+                  "  pm.expect(body.companies).to.be.an(\"array\").with.lengthOf(5);",
+                  "});",
+                  "pm.test(\"порядок demo_key по ТЗ\", function () {",
+                  "  pm.expect(body.companies.map(function (c) { return c.demo_key; }))",
+                  "    .to.eql([\"smirnov\", \"rosters\", \"tekhnostroy\", \"kovalev\", \"bodrost_plus\"]);",
+                  "});",
+                  "pm.test(\"у каждой компании 2 пользователя\", function () {",
+                  "  body.companies.forEach(function (c) { pm.expect(c.users).to.have.lengthOf(2); });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "01.02 Lookup ИНН 7704561238 (валидный, ООО «Ростерс Кафе»)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/lookup-inn",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "lookup-inn"
+              ]
+            },
+            "description": "360°-портрет по валидному ИНН (симулятор реестра, seed=hash(INN)).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inn\": \"7704561238\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"ИНН совпадает с запросом\", function () {",
+                  "  pm.expect(body.company.inn).to.eql(\"7704561238\");",
+                  "});",
+                  "pm.test(\"ООО «Ростерс Кафе» найдено\", function () {",
+                  "  pm.expect(body.company.legal_form).to.eql(\"OOO\");",
+                  "  pm.expect(body.company.name).to.include(\"Ростерс\");",
+                  "});",
+                  "pm.test(\"источник ответа указан\", function () {",
+                  "  pm.expect(body.source).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "01.03 Lookup ИНН 1234567890 (невалидный) → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/lookup-inn",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "lookup-inn"
+              ]
+            },
+            "description": "Негативный сценарий: невалидная контрольная сумма ИНН → 422.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inn\": \"1234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"422 Unprocessable Entity\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"ошибка валидации ИНН в detail\", function () {",
+                  "  pm.expect(JSON.stringify(body.detail)).to.match(/inn|ИНН/i);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "01.04 Дашборд компании (Экран 1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "dashboard"
+              ]
+            },
+            "description": "Данные Экрана 1: ДНК, прогноз кассы, радар, новости, выписка, чипсы."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"5 блоков ДНК\", function () {",
+                  "  pm.expect(body.business_dna.blocks).to.have.lengthOf(5);",
+                  "});",
+                  "pm.test(\"прогноз кассы на 60 дней\", function () {",
+                  "  pm.expect(body.cash_forecast.days).to.have.lengthOf(60);",
+                  "});",
+                  "pm.test(\"4 транзакции выписки\", function () {",
+                  "  pm.expect(body.transactions).to.have.lengthOf(4);",
+                  "});",
+                  "pm.test(\"чипсы умного поиска не пустые\", function () {",
+                  "  pm.expect(body.search_chips).to.be.an(\"array\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 Smart Search",
+      "description": "Search-to-Credit: CAPEX-запрос с кредитной плашкой и INFO_ONLY в Режиме тишины.",
+      "item": [
+        {
+          "name": "02.01 CAPEX: «Кофемашина La Marzocco 900 000»",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/smart-search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "smart-search"
+              ]
+            },
+            "description": "Intent Parser → поставщики → кредитная плашка для покупки оборудования.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Кофемашина La Marzocco 900 000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"intent = CAPEX\", function () { pm.expect(body.intent).to.eql(\"CAPEX\"); });",
+                  "pm.test(\"Режим тишины выключен\", function () {",
+                  "  pm.expect(body.silence_mode).to.eql(false);",
+                  "});",
+                  "pm.test(\"сумма распознана из запроса\", function () {",
+                  "  pm.expect(body.amount_estimate_rub).to.eql(900000);",
+                  "});",
+                  "pm.test(\"3 поставщика\", function () {",
+                  "  pm.expect(body.suppliers).to.have.lengthOf(3);",
+                  "});",
+                  "pm.test(\"кредитная плашка предодобрена под 14,5%\", function () {",
+                  "  pm.expect(body.credit_badge).to.not.be.null;",
+                  "  pm.expect(body.credit_badge.is_preapproved).to.eql(true);",
+                  "  pm.expect(body.credit_badge.rate_pct).to.eql(14.5);",
+                  "});",
+                  "pm.test(\"классификация ≤ 50 мс\", function () {",
+                  "  pm.expect(body.classification_ms).to.be.at.most(50);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02.02 INFO_ONLY: «Календарь УСН» (Режим тишины)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/smart-search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "smart-search"
+              ]
+            },
+            "description": "Информационный запрос не должен продавать кредит — Режим тишины.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Календарь УСН\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"intent = INFO_ONLY\", function () { pm.expect(body.intent).to.eql(\"INFO_ONLY\"); });",
+                  "pm.test(\"Режим тишины включён\", function () {",
+                  "  pm.expect(body.silence_mode).to.eql(true);",
+                  "});",
+                  "pm.test(\"кредитной плашки нет\", function () {",
+                  "  pm.expect(body.credit_badge).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 Invoice",
+      "description": "Демо-шаблоны счёта, парсинг LA_MARZOCCO в черновик заявки и негативный сценарий.",
+      "item": [
+        {
+          "name": "03.01 Список демо-шаблонов счёта",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/invoice-templates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "invoice-templates"
+              ]
+            },
+            "description": "Дополнительный эндпоинт: 3 предзаготовленных демо-счёта для мгновенной демонстрации."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"3 демо-шаблона\", function () {",
+                  "  pm.expect(body).to.be.an(\"array\").with.lengthOf(3);",
+                  "});",
+                  "pm.test(\"шаблон LA_MARZOCCO доступен\", function () {",
+                  "  pm.expect(body.map(function (row) { return row.code; })).to.include(\"LA_MARZOCCO\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03.02 Парсинг счёта LA_MARZOCCO → черновик заявки",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/parse-invoice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "parse-invoice"
+              ]
+            },
+            "description": "PDF-счёт (multipart) или демо-шаблон → проверка ИНН → черновик заявки.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "company_id",
+                  "value": "{{companyId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "template_code",
+                  "value": "LA_MARZOCCO",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.draft && body.draft.application_id) {",
+                  "  pm.collectionVariables.set(\"draftApplicationId\", body.draft.application_id);",
+                  "}",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"шаблон распознан\", function () {",
+                  "  pm.expect(body.invoice.template_code).to.eql(\"LA_MARZOCCO\");",
+                  "});",
+                  "pm.test(\"сумма счёта 900 000 ₽\", function () {",
+                  "  pm.expect(body.invoice.amount_rub).to.eql(900000);",
+                  "});",
+                  "pm.test(\"антифрод проверен\", function () {",
+                  "  pm.expect(body.antifraud.is_verified).to.be.a(\"boolean\");",
+                  "});",
+                  "pm.test(\"создан черновик заявки\", function () {",
+                  "  pm.expect(body.draft.status).to.eql(\"DRAFT_BY_EMPLOYEE\");",
+                  "  pm.expect(body.draft.risk_score).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03.03 Парсинг счёта без файла и шаблона → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/parse-invoice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "parse-invoice"
+              ]
+            },
+            "description": "Негативный сценарий: нет ни PDF, ни template_code → 422.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "company_id",
+                  "value": "{{companyId}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"422 Unprocessable Entity\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"detail объясняет причину\", function () {",
+                  "  pm.expect(body.detail).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 Applications",
+      "description": "5 демо-сценариев, Мультибанк, Xray, действия инспектора, ПЭП и рассрочка. Запускать на чистой БД и строго по порядку.",
+      "item": [
+        {
+          "name": "04.01 Смирнов (ИП): APPROVED 815",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications"
+              ]
+            },
+            "description": "Создание заявки: Hard Stop → аномалия → RiskScore → решение. Ожидается APPROVED, 815 баллов.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{companyId}}\",\n  \"product_type\": \"INVEST_LEASING\",\n  \"requested_amount_rub\": 900000,\n  \"term_months\": 24,\n  \"declared_monthly_revenue\": 1450000,\n  \"actor_role\": \"ACCOUNTANT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.application_id) {",
+                  "  pm.collectionVariables.set(\"applicationId\", body.application_id);",
+                  "}",
+                  "pm.test(\"201 Created\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"status = APPROVED\", function () {",
+                  "  pm.expect(body.status).to.eql(\"APPROVED\");",
+                  "});",
+                  "pm.test(\"risk_score = 815\", function () {",
+                  "  pm.expect(body.risk_score).to.eql(815);",
+                  "});",
+                  "pm.test(\"application_id сохранён в переменную\", function () {",
+                  "  pm.expect(body.application_id).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "pm.test(\"Hard Stop не сработал\", function () {",
+                  "  pm.expect(body.is_hard_stop).to.eql(false);",
+                  "});",
+                  "pm.test(\"лимит одобрен\", function () {",
+                  "  pm.expect(body.approved_amount_rub).to.be.above(0);",
+                  "});",
+                  "pm.test(\"подпись доступна владельцу ИП\", function () {",
+                  "  pm.expect(body.company.legal_form).to.eql(\"IP\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.02 Ростерс (ООО): COUNTER_OFFER 610",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications"
+              ]
+            },
+            "description": "Создание заявки: Hard Stop → аномалия → RiskScore → решение. Ожидается COUNTER_OFFER, 610 баллов.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{companyIdRosters}}\",\n  \"product_type\": \"INVEST_LEASING\",\n  \"requested_amount_rub\": 2500000,\n  \"term_months\": 12,\n  \"declared_monthly_revenue\": 2100000,\n  \"actor_role\": \"ACCOUNTANT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.application_id) {",
+                  "  pm.collectionVariables.set(\"rostersApplicationId\", body.application_id);",
+                  "}",
+                  "pm.test(\"201 Created\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"status = COUNTER_OFFER\", function () {",
+                  "  pm.expect(body.status).to.eql(\"COUNTER_OFFER\");",
+                  "});",
+                  "pm.test(\"risk_score = 610\", function () {",
+                  "  pm.expect(body.risk_score).to.eql(610);",
+                  "});",
+                  "pm.test(\"application_id сохранён в переменную\", function () {",
+                  "  pm.expect(body.application_id).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "pm.test(\"4 встречных оффера\", function () {",
+                  "  pm.expect(body.counter_offers).to.have.lengthOf(4);",
+                  "});",
+                  "pm.test(\"компания — ООО\", function () {",
+                  "  pm.expect(body.company.legal_form).to.eql(\"OOO\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.03 ТехноСтрой (ООО): ANOMALY_VERIFICATION 295",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications"
+              ]
+            },
+            "description": "Создание заявки: Hard Stop → аномалия → RiskScore → решение. Ожидается ANOMALY_VERIFICATION, 295 баллов.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{companyIdTekhnostroy}}\",\n  \"product_type\": \"VKL\",\n  \"requested_amount_rub\": 3200000,\n  \"term_months\": 24,\n  \"declared_monthly_revenue\": 6000000,\n  \"actor_role\": \"ACCOUNTANT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.application_id) {",
+                  "  pm.collectionVariables.set(\"tekhnostroyApplicationId\", body.application_id);",
+                  "}",
+                  "pm.test(\"201 Created\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"status = ANOMALY_VERIFICATION\", function () {",
+                  "  pm.expect(body.status).to.eql(\"ANOMALY_VERIFICATION\");",
+                  "});",
+                  "pm.test(\"risk_score = 295\", function () {",
+                  "  pm.expect(body.risk_score).to.eql(295);",
+                  "});",
+                  "pm.test(\"application_id сохранён в переменную\", function () {",
+                  "  pm.expect(body.application_id).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "pm.test(\"аномалия выручки обнаружена\", function () {",
+                  "  pm.expect(body.anomaly.detected).to.eql(true);",
+                  "  pm.expect(body.anomaly.deviation_pct).to.be.above(50);",
+                  "});",
+                  "pm.test(\"Мультибанк доступен\", function () {",
+                  "  pm.expect(body.multibank.available).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.04 Мультибанк ТехноСтроя: 295 → 760, APPROVED",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{tekhnostroyApplicationId}}/verify-multibank",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{tekhnostroyApplicationId}}",
+                "verify-multibank"
+              ]
+            },
+            "description": "Симулятор Open Banking: +465 баллов, снятие аномалии, переход в APPROVED."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"балл вырос с 295 до 760\", function () {",
+                  "  pm.expect(body.previous_score).to.eql(295);",
+                  "  pm.expect(body.new_score).to.eql(760);",
+                  "  pm.expect(body.score_delta).to.eql(465);",
+                  "});",
+                  "pm.test(\"аномалия снята, заявка одобрена\", function () {",
+                  "  pm.expect(body.application.status).to.eql(\"APPROVED\");",
+                  "  pm.expect(body.application.final_rate_pct).to.eql(15.5);",
+                  "  pm.expect(body.application.multibank.verified).to.eql(true);",
+                  "});",
+                  "pm.test(\"внешняя выручка учтена\", function () {",
+                  "  pm.expect(body.external_revenue_rub).to.eql(4200000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.05 Ковалёв (ИП): MANUAL_REVIEW 495",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications"
+              ]
+            },
+            "description": "Создание заявки: Hard Stop → аномалия → RiskScore → решение. Ожидается MANUAL_REVIEW, 495 баллов.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{companyIdKovalev}}\",\n  \"product_type\": \"OVERDRAFT\",\n  \"requested_amount_rub\": 200000,\n  \"term_months\": 12,\n  \"declared_monthly_revenue\": 680000,\n  \"actor_role\": \"ACCOUNTANT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.application_id) {",
+                  "  pm.collectionVariables.set(\"kovalevApplicationId\", body.application_id);",
+                  "}",
+                  "pm.test(\"201 Created\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"status = MANUAL_REVIEW\", function () {",
+                  "  pm.expect(body.status).to.eql(\"MANUAL_REVIEW\");",
+                  "});",
+                  "pm.test(\"risk_score = 495\", function () {",
+                  "  pm.expect(body.risk_score).to.eql(495);",
+                  "});",
+                  "pm.test(\"application_id сохранён в переменную\", function () {",
+                  "  pm.expect(body.application_id).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "pm.test(\"решение — ручное рассмотрение\", function () {",
+                  "  pm.expect(body.outcome).to.eql(\"MANUAL_REVIEW\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.06 ceo-approve из MANUAL_REVIEW → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{kovalevApplicationId}}/ceo-approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{kovalevApplicationId}}",
+                "ceo-approve"
+              ]
+            },
+            "description": "Негативный сценарий State Machine: подписание заявки в MANUAL_REVIEW запрещено.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actor_role\": \"IP_OWNER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"409 Conflict\", function () { pm.response.to.have.status(409); });",
+                  "pm.test(\"detail описывает невалидный переход\", function () {",
+                  "  pm.expect(body.detail).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.07 Бодрость Плюс (ООО): Hard Stop → REJECTED 0",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications"
+              ]
+            },
+            "description": "Создание заявки: Hard Stop → аномалия → RiskScore → решение. Ожидается REJECTED, 0 баллов.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{companyIdBodrost}}\",\n  \"product_type\": \"INVEST_LEASING\",\n  \"requested_amount_rub\": 1500000,\n  \"term_months\": 12,\n  \"declared_monthly_revenue\": 400000,\n  \"actor_role\": \"ACCOUNTANT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.application_id) {",
+                  "  pm.collectionVariables.set(\"bodrostApplicationId\", body.application_id);",
+                  "}",
+                  "pm.test(\"201 Created\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"status = REJECTED\", function () {",
+                  "  pm.expect(body.status).to.eql(\"REJECTED\");",
+                  "});",
+                  "pm.test(\"risk_score = 0\", function () {",
+                  "  pm.expect(body.risk_score).to.eql(0);",
+                  "});",
+                  "pm.test(\"application_id сохранён в переменную\", function () {",
+                  "  pm.expect(body.application_id).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "pm.test(\"Hard Stop сработал\", function () {",
+                  "  pm.expect(body.is_hard_stop).to.eql(true);",
+                  "});",
+                  "pm.test(\"причины Hard Stop: БКИ и ФССП\", function () {",
+                  "  pm.expect(body.hard_stop_reason).to.include(\"БКИ\");",
+                  "  pm.expect(body.hard_stop_reason).to.include(\"ФССП\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.08 Рассрочка trn_smirnov_1 на 6 месяцев",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions/{{transactionId}}/installment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transactions",
+                "{{transactionId}}",
+                "installment"
+              ]
+            },
+            "description": "Пост-транзакционная рассрочка на 3–6 месяцев (на чистой БД баланс 420 000 + 180 000).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"months\": 6\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"восстановлено 180 000 ₽\", function () {",
+                  "  pm.expect(body.restored_amount_rub).to.eql(180000);",
+                  "});",
+                  "pm.test(\"платёж 30 000 ₽/мес\", function () {",
+                  "  pm.expect(body.monthly_payment_rub).to.eql(30000);",
+                  "});",
+                  "pm.test(\"баланс счёта восстановлен до 600 000 ₽\", function () {",
+                  "  pm.expect(body.account_balance).to.eql(600000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.09 Повторная рассрочка той же транзакции → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions/{{transactionId}}/installment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transactions",
+                "{{transactionId}}",
+                "installment"
+              ]
+            },
+            "description": "Негативный сценарий: рассрочка уже взята → 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"months\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"400 Bad Request\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"detail объясняет причину\", function () {",
+                  "  pm.expect(body.detail).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.10 ceo-approve Смирнова (IP_OWNER) → 200 FUNDED",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{applicationId}}/ceo-approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{applicationId}}",
+                "ceo-approve"
+              ]
+            },
+            "description": "ПЭП: ИП подписывает заявку сам, статус APPROVED → FUNDED.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actor_role\": \"IP_OWNER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"заявка профинансирована\", function () {",
+                  "  pm.expect(body.status).to.eql(\"FUNDED\");",
+                  "});",
+                  "pm.test(\"баланс вырос после выдачи\", function () {",
+                  "  pm.expect(body.account_balance).to.be.above(600000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.11 Xray заявки Смирнова (Экран 3)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{applicationId}}/xray",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{applicationId}}",
+                "xray"
+              ]
+            },
+            "description": "Экран 3: P&L банка, Waterfall, гео-профиль OSM, история событий и проверок."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Waterfall финальный балл 815\", function () {",
+                  "  pm.expect(body.waterfall.final_score).to.eql(815);",
+                  "});",
+                  "pm.test(\"P&L банка положительный\", function () {",
+                  "  pm.expect(body.bank_pnl.expected_margin_rub).to.be.above(0);",
+                  "});",
+                  "pm.test(\"карта OSM на месте\", function () {",
+                  "  pm.expect(body.geo.map_url).to.match(/^https:\\/\\/www\\.openstreetmap\\.org\\//);",
+                  "});",
+                  "pm.test(\"аудит событий и проверок не пуст\", function () {",
+                  "  pm.expect(body.events).to.be.an(\"array\").and.not.empty;",
+                  "  pm.expect(body.checks).to.be.an(\"array\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.12 ceo-approve ООО бухгалтером (ACCOUNTANT) → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{rostersApplicationId}}/ceo-approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{rostersApplicationId}}",
+                "ceo-approve"
+              ]
+            },
+            "description": "Негативный сценарий ПЭП: сотрудник ООО не может подписать заявку.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actor_role\": \"ACCOUNTANT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"403 Forbidden\", function () { pm.response.to.have.status(403); });",
+                  "pm.test(\"detail про право подписи\", function () {",
+                  "  pm.expect(body.detail).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.13 Ростерс: выбор оффера №1 (доп.)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{rostersApplicationId}}/accept-offer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{rostersApplicationId}}",
+                "accept-offer"
+              ]
+            },
+            "description": "Дополнительный эндпоинт: клиент выбирает один из 4 встречных офферов.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offer_index\": 1,\n  \"actor_role\": \"ACCOUNTANT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"заявка ждёт подписи директора\", function () {",
+                  "  pm.expect(body.status).to.eql(\"AWAITING_CEO_APPROVAL\");",
+                  "  pm.expect(body.selected_offer_index).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.14 Ростерс: ceo-approve CEO_OWNER → 200 FUNDED",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{rostersApplicationId}}/ceo-approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{rostersApplicationId}}",
+                "ceo-approve"
+              ]
+            },
+            "description": "Полный цикл ООО: COUNTER_OFFER → accept-offer → подпись CEO_OWNER → FUNDED.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actor_role\": \"CEO_OWNER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"заявка профинансирована директором\", function () {",
+                  "  pm.expect(body.status).to.eql(\"FUNDED\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.15 Ковалёв: инспектор запрашивает документы (NEED_MORE_INFO)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{kovalevApplicationId}}/underwriter-action",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{kovalevApplicationId}}",
+                "underwriter-action"
+              ]
+            },
+            "description": "Действие инспектора из MANUAL_REVIEW → NEED_MORE_INFO.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"NEED_MORE_INFO\",\n  \"actor_role\": \"UNDERWRITER\",\n  \"comment\": \"Запрошен договор аренды помещения\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"статус NEED_MORE_INFO\", function () {",
+                  "  pm.expect(body.status).to.eql(\"NEED_MORE_INFO\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.16 Ковалёв: APPROVE без document_name → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{kovalevApplicationId}}/underwriter-action",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{kovalevApplicationId}}",
+                "underwriter-action"
+              ]
+            },
+            "description": "Негативный сценарий: APPROVE после NEED_MORE_INFO без имени документа → 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"APPROVE\",\n  \"actor_role\": \"UNDERWRITER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"400 Bad Request\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"detail требует document_name\", function () {",
+                  "  pm.expect(body.detail.toLowerCase()).to.include(\"document_name\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.17 Ковалёв: APPROVE с document_name → 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{kovalevApplicationId}}/underwriter-action",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{kovalevApplicationId}}",
+                "underwriter-action"
+              ]
+            },
+            "description": "Инспектор одобряет заявку после получения документа.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"APPROVE\",\n  \"actor_role\": \"UNDERWRITER\",\n  \"document_name\": \"Договор аренды.pdf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"заявка одобрена инспектором\", function () {",
+                  "  pm.expect(body.status).to.eql(\"APPROVED\");",
+                  "  pm.expect(body.approved_amount_rub).to.eql(300000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.18 Ковалёв: ceo-approve IP_OWNER → 200 FUNDED",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{kovalevApplicationId}}/ceo-approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{kovalevApplicationId}}",
+                "ceo-approve"
+              ]
+            },
+            "description": "Завершение ручного сценария: инспектор APPROVE → подпись ИП → FUNDED.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actor_role\": \"IP_OWNER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"заявка профинансирована\", function () {",
+                  "  pm.expect(body.status).to.eql(\"FUNDED\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04.19 Бодрость Плюс: ceo-approve из REJECTED → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{bodrostApplicationId}}/ceo-approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{bodrostApplicationId}}",
+                "ceo-approve"
+              ]
+            },
+            "description": "Негативный сценарий: Hard Stop / REJECTED нельзя подписать.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actor_role\": \"CEO_OWNER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"409 Conflict\", function () { pm.response.to.have.status(409); });",
+                  "pm.test(\"detail описывает невалидный переход\", function () {",
+                  "  pm.expect(body.detail).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 Дополнительные эндпоинты",
+      "description": "Эндпоинты сверх 11 обязательных ТЗ: health, история заявок компании, карточка заявки.",
+      "item": [
+        {
+          "name": "05.01 Health-check (доп.)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Дополнительный эндпоинт: проверка живости сервиса."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"сервис жив\", function () {",
+                  "  pm.expect(body.status).to.eql(\"ok\");",
+                  "  pm.expect(body.service).to.eql(\"only-alfa-backend\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05.02 История заявок компании (доп.)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/{{companyId}}/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{{companyId}}",
+                "applications"
+              ]
+            },
+            "description": "Дополнительный эндпоинт: история заявок компании для навигации SPA."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"заявка Смирнова в истории\", function () {",
+                  "  pm.expect(body.applications).to.be.an(\"array\").and.not.empty;",
+                  "  pm.expect(body.applications.map(function (row) { return row.application_id; }))",
+                  "    .to.include(pm.collectionVariables.get(\"applicationId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05.03 Карточка заявки (доп.)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/applications/{{applicationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "applications",
+                "{{applicationId}}"
+              ]
+            },
+            "description": "Дополнительный эндпоинт: текущее состояние заявки для SPA."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"application_id совпадает с переменной\", function () {",
+                  "  pm.expect(body.application_id).to.eql(pm.collectionVariables.get(\"applicationId\"));",
+                  "});",
+                  "pm.test(\"статус и балл присутствуют\", function () {",
+                  "  pm.expect(body.status).to.be.a(\"string\");",
+                  "  pm.expect(body.risk_score).to.eql(815);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "companyId",
+      "value": "cmp_smirnov",
+      "type": "string"
+    },
+    {
+      "key": "applicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "transactionId",
+      "value": "trn_smirnov_1",
+      "type": "string"
+    },
+    {
+      "key": "profileKey",
+      "value": "smirnov",
+      "type": "string"
+    },
+    {
+      "key": "companyIdRosters",
+      "value": "cmp_rosters",
+      "type": "string"
+    },
+    {
+      "key": "companyIdTekhnostroy",
+      "value": "cmp_tekhnostroy",
+      "type": "string"
+    },
+    {
+      "key": "companyIdKovalev",
+      "value": "cmp_kovalev",
+      "type": "string"
+    },
+    {
+      "key": "companyIdBodrost",
+      "value": "cmp_bodrost",
+      "type": "string"
+    },
+    {
+      "key": "rostersApplicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tekhnostroyApplicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "kovalevApplicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bodrostApplicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "draftApplicationId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "noauth"
+  }
+}
