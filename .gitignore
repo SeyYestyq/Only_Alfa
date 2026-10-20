@@ -1,0 +1,74 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Разборы встреч, вебинары, медиа и записи (не пушить в репозиторий)
+*.mp4
+*.m4v
+*.mov
+*.avi
+*.mkv
+*.wav
+*.mp3
+*.aac
+*.srt
+*.vtt
+*.lrc
+*Альфа Хакатон*
+*Хакатон*
+*Воркшоп*
+*вебинар*
+Умный кредитный кабинет*
+Умный кредитный кабинет*
+
+# Секреты и конфигурации окружения
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+ENV/
+env/
+
+# Node / Frontend
+node_modules/
+.npm
+dist/
+dist-ssr/
+*.local
+
+# Логи и временные файлы
+*.log
+scratch/
+tmp/
+*.tmp
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
