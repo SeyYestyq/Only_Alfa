@@ -8,6 +8,7 @@
 ## [Unreleased]
 
 ### Added
+- Плагин Figma Desktop/Web (`figma-plugin/`): автоматическая генерация актуального дизайна «Only_Alfa: Умный кредитный кабинет» — Дизайн-система (токены, цвета Альфа-Банка, 5 коридоров BRD v3.0), Экран 1 (360° дашборд, ДНК, прогноз кассы 60 дней, факторинг, транзакции, поиск), Экран 2 (заявка, паспорт заемщика, Мультибанк, контр-офферы, ПЭП), Экран 3 (рентген инспектора, P&L банка, Waterfall скоринга, гео-аналитика, Audit Trail), матрица 5 демо-профилей BRD.
 - Экспериментальная ветка `тестовая-реализация`: UI-апгрейд по аудиту GitHub-репозиториев — `recharts` (прогноз кассы 60 дней + Waterfall), `zustand` (Demo Control Bar), `react-dropzone` + `lucide-react` (PDF-зона), `react-leaflet` с офлайн SVG-фолбэком (GeoMap), `openapi-typescript` → `frontend/src/types/api.d.ts`.
 - Checkpoint 1 MVP: FastAPI (11 эндпоинтов ТЗ), дискретный RiskScore + Decision Engine, seed 5 профилей (815/610/760/495/0), Smart Search, PDF-парсер, SPA (Demo Control Bar, Экраны 1–2, задел Экрана 3).
 - `docker-compose.yml` (postgres:16-alpine + backend + frontend), `.env.example`, Dockerfiles, корневой `openapi.yaml`.
