@@ -24,6 +24,7 @@ import type {
   ViewMode,
   Xray,
 } from "../api/types";
+import { useDemoStore } from "./demoStore";
 
 export interface MultibankResult {
   previousScore: number;
@@ -89,9 +90,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [application, setApplication] = useState<Application | null>(null);
   const [xray, setXray] = useState<Xray | null>(null);
-  const [userRole, setUserRole] = useState<ActorRole>("CEO_OWNER");
-  const [viewMode, setViewModeState] = useState<ViewMode>("business");
-  const [screen, setScreen] = useState<ScreenId>(1);
+  const screen = useDemoStore((state) => state.screen);
+  const viewMode = useDemoStore((state) => state.viewMode);
+  const userRole = useDemoStore((state) => state.userRole);
+  const setScreen = useDemoStore((state) => state.setScreen);
+  const setUserRole = useDemoStore((state) => state.setUserRole);
+  const setViewModeStore = useDemoStore((state) => state.setViewMode);
   const [isReady, setIsReady] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -228,12 +232,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [handleError]);
 
   const setViewMode = useCallback((mode: ViewMode) => {
-    setViewModeState(mode);
+    setViewModeStore(mode);
     setScreen(mode === "bank" ? 3 : application ? 2 : 1);
     if (mode === "bank" && application) {
       loadXray(application.application_id).catch(handleError);
     }
-  }, [application, handleError, loadXray]);
+  }, [application, handleError, loadXray, setScreen, setViewModeStore]);
 
   const goToScreen = useCallback((next: ScreenId) => {
     setScreen(next);
