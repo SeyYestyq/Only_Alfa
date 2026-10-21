@@ -220,6 +220,10 @@
       let stroke = null;
 
       if (variant === "secondary") {
+        bg = { r: 1.0, g: 0.94, b: 0.94 };
+        textColor = C_ALFA_RED;
+        stroke = hexFill({ r: 0.98, g: 0.78, b: 0.77 });
+      } else if (variant === "dark") {
         bg = C_ANTHRACITE;
         textColor = C_WHITE;
       } else if (variant === "outline") {
@@ -229,6 +233,10 @@
       } else if (variant === "ghost") {
         bg = C_BG_ALT;
         textColor = C_INK;
+      } else if (variant === "success") {
+        bg = { r: 0.91, g: 0.97, b: 0.94 };
+        textColor = C_GREEN;
+        stroke = hexFill({ r: 0.72, g: 0.92, b: 0.83 });
       }
 
       btn.fills = hexFill(bg);
@@ -471,7 +479,7 @@
     frame1.name = "🖥️ 01 — Дашборд заемщика (360°-ДНК, Радар, Search-to-Credit)";
     frame1.x = 1540;
     frame1.y = 0;
-    frame1.resize(1440, 1680);
+    frame1.resize(1440, 1600);
     frame1.fills = hexFill(C_BG);
     figma.currentPage.appendChild(frame1);
 
@@ -486,194 +494,190 @@
     );
 
     // Company Header Banner (Client Contour)
-    const ph1 = createSolidRect(frame1, "F1_PH", 0, 100, 1440, 115, 0, hexFill(C_SURFACE), hexFill(C_BORDER), 1);
-    createBadge(frame1, "ООО", 40, 118, "pill-neutral");
-    createBadge(frame1, "ИНН 7725112233", 95, 118, "pill-outline");
-    createBadge(frame1, "ОКВЭД 56.10 (HORECA / Кафе)", 220, 118, "pill-outline");
-    createBadge(frame1, "Кластер: Общепит", 415, 118, "pill-soft-good");
-    createBadge(frame1, "Лимит FCF: 145 000 ₽/мес", 550, 118, "pill-soft-warn");
+    createSolidRect(frame1, "F1_PH", 0, 100, 1440, 110, 0, hexFill(C_SURFACE), hexFill(C_BORDER), 1);
+    createBadge(frame1, "ООО", 40, 116, "pill-neutral");
+    createBadge(frame1, "ИНН 7725112233", 95, 116, "pill-outline");
+    createBadge(frame1, "ОКВЭД 56.10 (HORECA / Кафе)", 220, 116, "pill-outline");
+    createBadge(frame1, "Кластер: Общепит", 415, 116, "pill-soft-good");
+    createBadge(frame1, "Лимит FCF: 145 000 ₽/мес", 550, 116, "pill-soft-warn");
 
-    createText(frame1, "CompTitle", 40, 146, "ООО «Ростерс Кафе»", 24, "Bold", C_INK);
-    createText(frame1, "CompSub", 40, 178, "Генеральный директор Смирнов А.В. · Москва, ул. Мясницкая 18 · Выручка 8 400 000 ₽/мес · Остаток на счете: 1 240 000 ₽", 12, "Regular", C_INK_MUTED);
+    createText(frame1, "CompTitle", 40, 144, "ООО «Ростерс Кафе»", 24, "Bold", C_INK);
+    createText(frame1, "CompSub", 40, 176, "Генеральный директор Смирнов А.В. · Москва, ул. Мясницкая 18 · Выручка 8 400 000 ₽/мес · Остаток на счете: 1 240 000 ₽", 12, "Regular", C_INK_MUTED);
 
     // Revenue Growth Badge on right
-    createSolidRect(frame1, "RevBadge", 1180, 115, 220, 85, 10, hexFill(C_BG), hexFill(C_BORDER), 1);
-    createVectorIcon(frame1, "trendingUp", 1198, 126, 20, C_GREEN);
-    createText(frame1, "RevB_L", 1226, 126, "Динамика выручки", 11, "Medium", C_INK_MUTED);
-    createText(frame1, "RevB_V", 1198, 148, "+14.2%", 22, "Bold", C_GREEN);
-    createText(frame1, "RevB_S", 1198, 174, "стабильный рост эквайринга", 10, "Regular", C_INK_FAINT);
+    createSolidRect(frame1, "RevBadge", 1180, 112, 220, 85, 10, hexFill(C_BG), hexFill(C_BORDER), 1);
+    createVectorIcon(frame1, "trendingUp", 1198, 122, 20, C_GREEN);
+    createText(frame1, "RevB_L", 1226, 122, "Динамика выручки", 11, "Medium", C_INK_MUTED);
+    createText(frame1, "RevB_V", 1198, 144, "+14.2%", 22, "Bold", C_GREEN);
+    createText(frame1, "RevB_S", 1198, 170, "стабильный рост эквайринга", 10, "Regular", C_INK_FAINT);
 
     // ==========================================
-    // LEFT COLUMN (width: 880px)
+    // HERO 1: 360° Business DNA (Full width: 1360px, 5 Balanced Blocks)
     // ==========================================
-
-    // CARD 1: 360° Business DNA (5 Blocks from plan)
-    createCard(frame1, "360°-портрет компании (Business DNA) — 5 ключевых блоков", "Автоматический профиль без ручного заполнения 40 полей анкеты", 40, 235, 880, 250, "RiskScore 610", "pill-warn", "activity", C_ALFA_RED);
+    createCard(frame1, "360°-портрет компании (Business DNA) — 5 ключевых блоков профиля", "Автоматический цифровой портрет без ручного заполнения 40 полей банковской анкеты", 40, 225, 1360, 215, "RiskScore 610", "pill-warn", "activity", C_ALFA_RED);
     const dnaBlocks = [
-      { t: "1. Жизненный цикл", v: "Зрелый (4.8 года)", s: "ОПФ: ООО · 1 владелец", i: "building", c: C_INK },
-      { t: "2. Граф контрагентов", v: "14 поставщиков", s: "Якорный: КофеОпт (24%)", i: "users", c: C_BLUE },
-      { t: "3. Финансовый ритм", v: "FCF: 420 000 ₽/мес", s: "MaxPayment: 145 000 ₽", i: "coins", c: C_GREEN },
-      { t: "4. Внешняя среда", v: "GeoScore: 8.9 / 10", s: "Трафик: 520 чел/час (Метро)", i: "mapPin", c: C_GREEN },
-      { t: "5. Вектор интереса", v: "CAPEX (Оборудование)", s: "Запрос: кофемашина", i: "zap", c: C_AMBER }
+      { t: "1. Жизненный цикл", v: "Зрелый (4.8 года)", s: "ОПФ: ООО · 1 учредитель · ЕГРЮЛ ОК", i: "building", c: C_INK },
+      { t: "2. Граф контрагентов", v: "14 поставщиков", s: "Якорный: «КофеОпт» (24% оборота)", i: "users", c: C_BLUE },
+      { t: "3. Финансовый ритм", v: "FCF: 420 000 ₽/мес", s: "Безопасный MaxPayment: 145 000 ₽", i: "coins", c: C_GREEN },
+      { t: "4. Внешняя среда", v: "GeoScore: 8.9 / 10", s: "Трафик 520 чел/час · Метро 180м", i: "mapPin", c: C_GREEN },
+      { t: "5. Вектор интереса", v: "CAPEX (Оборудование)", s: "Целевой запрос: эспрессо-машина", i: "zap", c: C_AMBER }
     ];
     dnaBlocks.forEach((db, idx) => {
-      const bx = 64 + idx * 165;
-      const by = 330;
-      createSolidRect(frame1, "DnaB_" + idx, bx, by, 155, 130, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
-      createVectorIcon(frame1, db.i, bx + 12, by + 12, 18, db.c);
-      createText(frame1, "DnaBT_" + idx, bx + 12, by + 36, db.t, 10, "Bold", C_INK_MUTED);
-      createText(frame1, "DnaBV_" + idx, bx + 12, by + 56, db.v, 13, "Bold", db.c, 135);
-      createText(frame1, "DnaBS_" + idx, bx + 12, by + 94, db.s, 10, "Regular", C_INK_FAINT, 135);
+      const bx = 64 + idx * 265;
+      const by = 305;
+      createSolidRect(frame1, "DnaB_" + idx, bx, by, 250, 118, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
+      createVectorIcon(frame1, db.i, bx + 14, by + 12, 18, db.c);
+      createText(frame1, "DnaBT_" + idx, bx + 14, by + 34, db.t, 11, "Bold", C_INK_MUTED);
+      createText(frame1, "DnaBV_" + idx, bx + 14, by + 56, db.v, 14, "Bold", db.c, 220);
+      createText(frame1, "DnaBS_" + idx, bx + 14, by + 86, db.s, 11, "Regular", C_INK_FAINT, 220);
     });
 
-    // CARD 2: Financial Radar (60 days cash forecast + Fair Price comparison + Silence mode)
-    createCard(frame1, "Финансовый радар: прогноз кассы на 60 дней и честная цена", "Ежедневный прогноз остатка по obligations_calendar (ЕНП 28-го, аренда, ФОТ) · Красная зона разрыва", 40, 505, 880, 340, "TRG_CASH_GAP", "pill-risk", "trendingDown", C_ALFA_RED);
-    // Fair Price Comparison Box (Obligatory requirement from plan)
-    const fairPriceBox = createSolidRect(frame1, "FairPrice", 64, 595, 832, 75, 10, hexFill({ r: 0.99, g: 0.94, b: 0.93 }), hexFill(C_ALFA_RED), 1);
-    createVectorIcon(frame1, "alertTriangle", 80, 608, 22, C_ALFA_RED);
-    createText(frame1, "FPT_1", 112, 606, "Обнаружен прогнозируемый кассовый разрыв 28 ноября (-380 000 ₽ на уплату налогов ЕНП)", 13, "Bold", C_ALFA_RED);
-    createText(frame1, "FPT_2", 112, 628, "Честное сравнение переплаты банка: «Умный овердрафт на 7 дней» = переплата всего 1 260 ₽ (или 449 ₽ с Подпиской под 13%) против 14 800 ₽ по ошибочному годовому кредиту!", 11, "Medium", C_INK, 760);
+    // ==========================================
+    // HERO 2: Financial Radar 60 Days (Full width: 1360px + Fair Price + Silence Mode)
+    // ==========================================
+    createCard(frame1, "Финансовый радар: прогноз кассы на 60 дней и честная цена кредита", "Ежедневный прогноз остатка по obligations_calendar (ЕНП 28-го, аренда, ФОТ) · Красная зона кассового разрыва", 40, 455, 1360, 315, "TRG_CASH_GAP", "pill-risk", "trendingDown", C_ALFA_RED);
+    
+    // Fair Price Comparison Banner (Obligatory requirement from BRD v3.0)
+    createSolidRect(frame1, "FairPrice", 64, 535, 1312, 65, 8, hexFill({ r: 0.99, g: 0.94, b: 0.93 }), hexFill(C_ALFA_RED), 1);
+    createVectorIcon(frame1, "alertTriangle", 80, 547, 22, C_ALFA_RED);
+    createText(frame1, "FPT_1", 112, 545, "Обнаружен прогнозируемый кассовый разрыв 28 ноября (-380 000 ₽ на уплату налогов ЕНП)", 13, "Bold", C_ALFA_RED);
+    createText(frame1, "FPT_2", 112, 567, "Честное сравнение переплаты банка: «Умный овердрафт на 7 дней» = переплата всего 1 260 ₽ (или 449 ₽ с Подпиской под 13%) против 14 800 ₽ по ошибочному годовому кредиту. Банк бережет деньги бизнеса: экономия 13 540 ₽!", 11, "Medium", C_INK, 1240);
 
     // Silence Mode Sub-banner
-    createSolidRect(frame1, "SilenceBanner", 64, 680, 832, 34, 6, hexFill({ r: 0.92, g: 0.97, b: 0.94 }), hexFill(C_GREEN), 1);
-    createVectorIcon(frame1, "checkCircle", 76, 688, 16, C_GREEN);
-    createText(frame1, "SilT", 100, 689, "Режим тишины (TRG_ANTI_SPAM): при отсутствии разрыва банк не спамит кредитами, а предлагает овернайт 16% годовых.", 11, "Regular", C_INK);
+    createSolidRect(frame1, "SilenceBanner", 64, 610, 1312, 32, 6, hexFill({ r: 0.92, g: 0.97, b: 0.94 }), hexFill(C_GREEN), 1);
+    createVectorIcon(frame1, "checkCircle", 76, 618, 16, C_GREEN);
+    createText(frame1, "SilT", 100, 618, "Режим тишины (TRG_ANTI_SPAM): при отсутствии разрыва банк не навязывает кредит, а предлагает овернайт 16% годовых.", 11, "Medium", C_INK);
 
-    // Visual Chart Axis & Bars
-    createSolidRect(frame1, "F1_ChartBase", 64, 795, 832, 1, 0, hexFill(C_BORDER_STRONG));
-    createText(frame1, "F1_Axis0", 64, 802, "Факт: 30 дней", 10, "Medium", C_INK_MUTED);
-    createText(frame1, "F1_AxisMid", 440, 802, "ЕНП 28-го: -380 000 ₽ (Разрыв)", 10, "Bold", C_ALFA_RED);
-    createText(frame1, "F1_Axis60", 780, 802, "Прогноз: 60 дней (+890k)", 10, "Medium", C_INK_MUTED);
+    // Visual Chart Axis & 22 Timeline Bars across 1312px
+    createSolidRect(frame1, "F1_ChartBase", 64, 715, 1312, 1, 0, hexFill(C_BORDER_STRONG));
+    createText(frame1, "F1_Axis0", 64, 722, "← Факт: 30 дней", 10, "Medium", C_INK_MUTED);
+    createText(frame1, "F1_AxisMid", 640, 722, "28 ноя (ЕНП): -380 000 ₽ (Кассовый разрыв 7 дней)", 11, "Bold", C_ALFA_RED);
+    createText(frame1, "F1_Axis60", 1260, 722, "Прогноз: +890k ₽ →", 10, "Medium", C_INK_MUTED);
 
     const f1Bars = [
-      { x: 70, h: 50, c: C_GREEN }, { x: 120, h: 45, c: C_GREEN }, { x: 170, h: 40, c: C_GREEN },
-      { x: 220, h: 36, c: C_GREEN }, { x: 270, h: 32, c: C_GREEN }, { x: 320, h: 26, c: C_GREEN },
-      { x: 370, h: 18, c: C_GREEN }, { x: 420, h: 10, c: C_AMBER }, { x: 470, h: 26, c: C_ALFA_RED, gap: true },
-      { x: 520, h: 32, c: C_ALFA_RED, gap: true }, { x: 570, h: 14, c: C_GREEN }, { x: 620, h: 28, c: C_GREEN },
-      { x: 670, h: 38, c: C_GREEN }, { x: 720, h: 44, c: C_GREEN }, { x: 770, h: 52, c: C_GREEN },
-      { x: 820, h: 60, c: C_GREEN }
+      { x: 80, h: 45, c: C_GREEN }, { x: 135, h: 42, c: C_GREEN }, { x: 190, h: 38, c: C_GREEN },
+      { x: 245, h: 35, c: C_GREEN }, { x: 300, h: 32, c: C_GREEN }, { x: 355, h: 28, c: C_GREEN },
+      { x: 410, h: 24, c: C_GREEN }, { x: 465, h: 18, c: C_AMBER }, { x: 520, h: 12, c: C_AMBER },
+      { x: 575, h: 8, c: C_AMBER }, { x: 630, h: 28, c: C_ALFA_RED, gap: true }, { x: 685, h: 34, c: C_ALFA_RED, gap: true },
+      { x: 740, h: 14, c: C_GREEN }, { x: 795, h: 22, c: C_GREEN }, { x: 850, h: 28, c: C_GREEN },
+      { x: 905, h: 34, c: C_GREEN }, { x: 960, h: 40, c: C_GREEN }, { x: 1015, h: 44, c: C_GREEN },
+      { x: 1070, h: 48, c: C_GREEN }, { x: 1125, h: 52, c: C_GREEN }, { x: 1180, h: 56, c: C_GREEN },
+      { x: 1235, h: 60, c: C_GREEN }
     ];
     f1Bars.forEach((b) => {
-      const barY = b.gap ? 796 : (795 - b.h);
-      createSolidRect(frame1, "BarF1", b.x, barY, 32, b.h, 4, hexFill(b.c));
+      const barY = b.gap ? 716 : (715 - b.h);
+      createSolidRect(frame1, "BarF1", b.x, barY, 40, b.h, 4, hexFill(b.c));
     });
 
-    // CARD 3: Invoice-to-Credit (PDF Drag-and-Drop + 3 Demo Buttons)
-    createCard(frame1, "Invoice-to-Credit — Парсинг PDF-счета поставщика", "Drag-and-Drop загрузка + 3 быстрые демо-кнопки предзаготовленных счетов", 40, 865, 880, 310, "pdfplumber OCR", "pill-good", "fileText", C_BLUE);
-    // 3 Quick Demo Buttons
-    createText(frame1, "DemoBtnLabel", 64, 950, "Быстрые демо-шаблоны для жюри:", 11, "Bold", C_INK_MUTED);
-    createButton(frame1, "1. LA_MARZOCCO (Кофемашина)", 64, 972, 230, 36, "outline", "fileText");
-    createButton(frame1, "2. ROSTERS_EQUIP (Ростер)", 304, 972, 210, 36, "outline", "fileText");
-    createButton(frame1, "3. CABLE_VVG (Кабель 15км)", 524, 972, 210, 36, "outline", "fileText");
+    // ==========================================
+    // TWO BALANCED COLUMNS (Width: 668px each, Gap: 24px)
+    // Left: 40..708 | Right: 732..1400
+    // ==========================================
 
-    // Recognized Invoice Box
-    const recBox = createSolidRect(frame1, "RecBox", 64, 1020, 832, 130, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
-    createVectorIcon(frame1, "fileText", 80, 1035, 24, C_BLUE);
-    createText(frame1, "InvTitle", 112, 1035, "Счёт № 204 от 20.10.2026 · Поставщик: ООО «КофеМастер» (ИНН 7704889911)", 13, "Bold", C_INK);
-    createText(frame1, "InvDetails", 112, 1058, "Сумма: 1 850 000 ₽ (в т.ч. НДС 308 333 ₽) · Назначение: Двухгруппная эспрессо-машина La Marzocco Linea PB", 12, "Regular", C_INK_MUTED);
-
-    createBadge(frame1, "ЕГРЮЛ: ДЕЙСТВУЕТ", 590, 1032, "pill-good");
-    createBadge(frame1, "ФССП: 0 ₽", 725, 1032, "pill-good");
-
-    // Pre-filled application button
-    createText(frame1, "InvFinT", 112, 1092, "Доступно целевое финансирование: 1 572 500 ₽ (85% счета) под 14.5% годовых", 12, "Bold", C_GREEN);
-    createButton(frame1, "Создать предзаполненную заявку в 1 клик →", 470, 1085, 410, 42, "primary", "zap");
-
-    // CARD 4: Transactions Table with Post-transaction B2B Installment Button
-    createCard(frame1, "Выписка по счету и B2B-рассрочка (POST /installment)", "Кнопка «Вернуть деньги в оборот» напротив крупных целевых покупок (>100k ₽)", 40, 1195, 880, 440, "B2B Рассрочка 3-6 мес", "pill-outline", "creditCard", C_INK);
-    const txHeaders = ["ДАТА", "КОНТРАГЕНТ / НАЗНАЧЕНИЕ", "КАТЕГОРИЯ", "СУММА (₽)", "ЦЕЛЕВОЕ ДЕЙСТВИЕ"];
-    const txX = [64, 160, 480, 600, 715];
+    // LEFT COLUMN — CARD 3: Transactions & B2B Installment
+    createCard(frame1, "Выписка по счету и B2B-рассрочка (POST /installment)", "Кнопка «Вернуть в оборот» напротив крупных целевых расходов (>100k ₽)", 40, 785, 668, 380, "Рассрочка 3-6 мес", "pill-outline", "creditCard", C_INK);
+    const txHeaders = ["ДАТА", "КОНТРАГЕНТ / НАЗНАЧЕНИЕ", "СУММА (₽)", "ЦЕЛЕВОЕ ДЕЙСТВИЕ"];
+    const txX = [64, 130, 410, 520];
     txHeaders.forEach((th, idx) => {
-      createText(frame1, "F1_TH_" + idx, txX[idx], 1280, th, 10, "Bold", C_INK_FAINT);
+      createText(frame1, "F1_TH_" + idx, txX[idx], 860, th, 10, "Bold", C_INK_FAINT);
     });
-    createSolidRect(frame1, "F1_TxDiv0", 64, 1300, 832, 1, 0, hexFill(C_BORDER));
+    createSolidRect(frame1, "F1_TxDiv0", 64, 878, 620, 1, 0, hexFill(C_BORDER));
 
     const txRows = [
-      { dt: "21.10", name: "ООО «Зернотрейд» (Зерно арабика 400кг)", cat: "Закупка сырья", sum: "-240 000 ₽", inst: true },
-      { dt: "20.10", name: "АО «МосЭнергоСбыт» (Электричество)", cat: "Коммуналка", sum: "-85 000 ₽", inst: false },
-      { dt: "19.10", name: "ИП Сидоров (Ремонт кофемолки)", cat: "Сервис", sum: "-120 000 ₽", inst: true },
-      { dt: "18.10", name: "Торговый эквайринг (Выручка кофеен)", cat: "Эквайринг", sum: "+390 000 ₽", inst: false }
+      { dt: "21.10", name: "ООО «Зернотрейд» (Арабика 400кг)", sum: "-240 000 ₽", inst: true },
+      { dt: "20.10", name: "АО «МосЭнергоСбыт» (Электричество)", sum: "-85 000 ₽", inst: false },
+      { dt: "19.10", name: "ИП Сидоров (Сервис кофемашины)", sum: "-120 000 ₽", inst: true },
+      { dt: "18.10", name: "Торговый эквайринг (Выручка кафе)", sum: "+390 000 ₽", inst: false }
     ];
     txRows.forEach((r, idx) => {
-      const ry = 1315 + idx * 60;
+      const ry = 890 + idx * 62;
       createText(frame1, "F1_TxD_" + idx, txX[0], ry, r.dt, 11, "Regular", C_INK_MUTED);
-      createText(frame1, "F1_TxN_" + idx, txX[1], ry, r.name, 12, "Bold", C_INK, 300);
-      createText(frame1, "F1_TxC_" + idx, txX[2], ry, r.cat, 11, "Medium", C_INK_MUTED);
-      createText(frame1, "F1_TxS_" + idx, txX[3], ry, r.sum, 13, "Bold", r.sum.startsWith("+") ? C_GREEN : C_INK);
+      createText(frame1, "F1_TxN_" + idx, txX[1], ry, r.name, 11, "Bold", C_INK, 260);
+      createText(frame1, "F1_TxS_" + idx, txX[2], ry, r.sum, 12, "Bold", r.sum.startsWith("+") ? C_GREEN : C_INK);
 
       if (r.inst) {
-        createButton(frame1, "Вернуть в оборот (рассрочка)", txX[4], ry - 6, 175, 34, "secondary", "creditCard");
+        createButton(frame1, "Вернуть в оборот", txX[3], ry - 6, 155, 32, "secondary", "creditCard");
       } else {
-        createBadge(frame1, "Исполнено ✓", txX[4], ry, "pill-good");
+        createBadge(frame1, "Исполнено ✓", txX[3], ry, "pill-good");
       }
-      createSolidRect(frame1, "F1_TxDiv_" + idx, 64, ry + 42, 832, 1, 0, hexFill(C_BORDER));
+      createSolidRect(frame1, "F1_TxDiv_" + idx, 64, ry + 42, 620, 1, 0, hexFill(C_BORDER));
     });
 
-    // ==========================================
-    // RIGHT COLUMN (width: 460px)
-    // ==========================================
+    // LEFT COLUMN — CARD 4: Adaptive News-to-Action Feed
+    createCard(frame1, "Адаптивная лента News-to-Action", "Гео-, сырьевые и отраслевые инсайты под ОКВЭД 56.10 с действием в 1 клик", 40, 1180, 668, 380, "HORECA Пульс", "pill-outline", "bell", C_AMBER);
+    const newsItems = [
+      {
+        t: "📍 Открытие БЦ «Аквамарин» в 200м от кофейни",
+        s: "Прогноз +350 гостей в утренние часы. Рекомендуем расширить зал.",
+        act: "Рассчитать лимит расширения"
+      },
+      {
+        t: "☕ Прогноз роста оптовых цен на зерно арабики +8%",
+        s: "Зафиксируйте оптовые цены у поставщика «КофеОпт» через факторинг Альфы.",
+        act: "Зафиксировать цены факторингом"
+      },
+      {
+        t: "🏛️ Льготная программа кредитования общепита Москвы",
+        s: "Субсидия ставки до 11.5% годовых при сохранении штата бариста.",
+        act: "Подать заявку на субсидию"
+      }
+    ];
+    newsItems.forEach((nw, idx) => {
+      const ny = 1255 + idx * 98;
+      createSolidRect(frame1, "NewsB_" + idx, 64, ny, 620, 88, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
+      createText(frame1, "NwT_" + idx, 76, ny + 8, nw.t, 12, "Bold", C_INK, 420);
+      createText(frame1, "NwS_" + idx, 76, ny + 28, nw.s, 11, "Regular", C_INK_MUTED, 420);
+      createButton(frame1, nw.act + " →", 475, ny + 24, 195, 36, "outline");
+    });
 
-    // CARD 5: Smart Search Output Panel (Search-to-Credit)
-    createCard(frame1, "Умный поиск (Search-to-Credit)", "Намерение CAPEX / Вилка цен / 3 поставщика / Ставка от КС ЦБ", 940, 235, 460, 480, "CAPEX", "pill-good", "search", C_BLUE);
-    // Search query box
-    createSolidRect(frame1, "SrchQBox", 964, 320, 412, 44, 8, hexFill(C_BG), hexFill(C_BORDER_STRONG), 1);
-    createVectorIcon(frame1, "search", 978, 332, 18, C_ALFA_RED);
-    createText(frame1, "SrchQT", 1004, 332, "Купить кофемашину La Marzocco…", 12, "Bold", C_INK);
+    // RIGHT COLUMN — CARD 5: Smart Search Output Panel (Search-to-Credit)
+    createCard(frame1, "Умный поиск (Search-to-Credit)", "Классификация CAPEX / Вилка цен / 3 поставщика / Ставка от КС ЦБ", 732, 785, 668, 380, "CAPEX Оборудование", "pill-good", "search", C_BLUE);
+    createSolidRect(frame1, "SrchQBox", 756, 855, 620, 38, 8, hexFill(C_BG), hexFill(C_BORDER_STRONG), 1);
+    createVectorIcon(frame1, "search", 768, 866, 16, C_ALFA_RED);
+    createText(frame1, "SrchQT", 794, 866, "Купить кофемашину La Marzocco Linea PB…", 12, "Bold", C_INK);
 
-    // Classified Intent badge
-    createText(frame1, "IntLbl", 964, 375, "Классифицированное намерение:", 11, "Medium", C_INK_MUTED);
-    createBadge(frame1, "CAPEX: Основные средства", 1160, 370, "pill-soft-good");
-    createText(frame1, "PriceFork", 964, 400, "Рыночная вилка цен: 1 450 000 ₽ – 1 950 000 ₽", 12, "Bold", C_INK);
+    createText(frame1, "IntLbl", 756, 902, "Классифицированное намерение: CAPEX · Рыночная вилка: 1 450 000 ₽ – 1 950 000 ₽", 11, "Medium", C_INK_MUTED);
 
-    // 3 Verified Suppliers Cards
-    createText(frame1, "SuppLbl", 964, 430, "3 проверенных поставщика (ФССП: 0 ₽):", 11, "Bold", C_INK_FAINT);
+    // 3 Verified Suppliers
     const supps = [
       { n: "1. ООО «КофеМастер»", inn: "ИНН 7704889911", p: "1 850 000 ₽" },
       { n: "2. АО «Бариста Про»", inn: "ИНН 7701445566", p: "1 790 000 ₽" },
       { n: "3. ООО «Эспрессо Хаб»", inn: "ИНН 7802112233", p: "1 820 000 ₽" }
     ];
     supps.forEach((sp, idx) => {
-      const sy = 455 + idx * 48;
-      createSolidRect(frame1, "SuppB_" + idx, 964, sy, 412, 42, 6, hexFill(C_BG), hexFill(C_BORDER), 1);
-      createText(frame1, "SpN_" + idx, 976, sy + 12, sp.n, 11, "Bold", C_INK);
-      createText(frame1, "SpInn_" + idx, 1130, sy + 12, sp.inn, 10, "Regular", C_INK_MUTED);
-      createBadge(frame1, "ФССП 0₽", 1250, sy + 8, "pill-good");
-      createText(frame1, "SpP_" + idx, 1315, sy + 12, sp.p, 11, "Bold", C_INK);
+      const sy = 925 + idx * 42;
+      createSolidRect(frame1, "SuppB_" + idx, 756, sy, 620, 36, 6, hexFill(C_BG), hexFill(C_BORDER), 1);
+      createText(frame1, "SpN_" + idx, 768, sy + 10, sp.n, 11, "Bold", C_INK);
+      createText(frame1, "SpInn_" + idx, 940, sy + 10, sp.inn, 10, "Regular", C_INK_MUTED);
+      createBadge(frame1, "ФССП 0 ₽", 1080, sy + 6, "pill-good");
+      createText(frame1, "SpP_" + idx, 1280, sy + 10, sp.p, 11, "Bold", C_INK);
     });
 
-    // Pre-validated credit banner
-    const creditBanner = createSolidRect(frame1, "CredBan", 964, 610, 412, 90, 8, hexFill({ r: 0.95, g: 0.97, b: 1.0 }), hexFill(C_BLUE), 1);
-    createVectorIcon(frame1, "zap", 976, 622, 18, C_BLUE);
-    createText(frame1, "CredBanT", 1002, 622, "Предодобрен лизинг/кредит: ставка 14.5%", 12, "Bold", C_BLUE);
-    createText(frame1, "CredBanS", 976, 646, "КС ЦБ 14.0% + спред 0.5% с опциями «Подписка» и «Защита бизнеса». Одобрение за 10 сек.", 10, "Regular", C_INK, 390);
-    createButton(frame1, "Подать заявку на кофемашину в 1 клик", 964, 670, 412, 34, "primary", "zap");
+    // Pre-validated credit banner & Primary CTA
+    createSolidRect(frame1, "CredBan", 756, 1060, 620, 85, 8, hexFill({ r: 0.95, g: 0.97, b: 1.0 }), hexFill(C_BLUE), 1);
+    createVectorIcon(frame1, "zap", 768, 1072, 18, C_BLUE);
+    createText(frame1, "CredBanT", 794, 1070, "Предодобрен лизинг/кредит: ставка от 14.5% годовых", 12, "Bold", C_BLUE);
+    createText(frame1, "CredBanS", 794, 1090, "КС ЦБ 14.0% + спред 0.5% с «Подпиской» и «Защитой бизнеса». Одобрение за 5 сек.", 11, "Regular", C_INK, 350);
+    createButton(frame1, "Подать заявку на кофемашину в 1 клик →", 1070, 1075, 290, 46, "primary", "zap");
 
-    // CARD 6: Adaptive News-to-Action Feed
-    createCard(frame1, "Адаптивная лента News-to-Action", "Гео-, сырьевые и отраслевые инсайты под ОКВЭД 56.10 с действием в 1 клик", 940, 735, 460, 440, "HORECA Пульс", "pill-outline", "bell", C_AMBER);
-    const newsItems = [
-      {
-        t: "📍 Открытие нового БЦ «Аквамарин» в 200м от кофейни",
-        s: "Прогнозируется приток +350 гостей в утренние часы. Рекомендуем расширить зал и установить вторую кофемашину.",
-        act: "Рассчитать лимит расширения"
-      },
-      {
-        t: "☕ Прогноз роста оптовых цен на зерно арабики +8%",
-        s: "Зафиксируйте оптовые цены у поставщика «КофеОпт» через факторинг Альфа-Банка с отсрочкой 90 дней.",
-        act: "Зафиксировать цены факторингом"
-      },
-      {
-        t: "🏛️ Льготная программа кредитования общепита Москвы",
-        s: "Субсидия ставки до 11.5% годовых при сохранении штата бариста. Подача документов онлайн.",
-        act: "Подать заявку на субсидию"
-      }
-    ];
-    newsItems.forEach((nw, idx) => {
-      const ny = 825 + idx * 105;
-      createSolidRect(frame1, "NewsB_" + idx, 964, ny, 412, 95, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
-      createText(frame1, "NwT_" + idx, 976, ny + 10, nw.t, 11, "Bold", C_INK, 390);
-      createText(frame1, "NwS_" + idx, 976, ny + 32, nw.s, 10, "Regular", C_INK_MUTED, 390);
-      createButton(frame1, nw.act + " →", 976, ny + 62, 388, 26, "ghost");
-    });
+    // RIGHT COLUMN — CARD 6: Invoice-to-Credit (PDF Drag-and-Drop + OCR)
+    createCard(frame1, "Invoice-to-Credit — Парсинг PDF-счета поставщика", "Drag-and-Drop загрузка + 3 быстрых демо-шаблона счетов для жюри", 732, 1180, 668, 380, "pdfplumber OCR", "pill-good", "fileText", C_BLUE);
+    createText(frame1, "DemoBtnLabel", 756, 1255, "Демо-шаблоны счетов для жюри:", 11, "Bold", C_INK_MUTED);
+    createButton(frame1, "1. LA_MARZOCCO", 756, 1275, 195, 34, "outline", "fileText");
+    createButton(frame1, "2. ROSTERS_EQUIP", 965, 1275, 195, 34, "outline", "fileText");
+    createButton(frame1, "3. CABLE_VVG", 1175, 1275, 195, 34, "outline", "fileText");
+
+    // Recognized Invoice Box
+    createSolidRect(frame1, "RecBox", 756, 1320, 620, 150, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
+    createVectorIcon(frame1, "fileText", 768, 1332, 22, C_BLUE);
+    createText(frame1, "InvTitle", 800, 1330, "Счёт № 204 от 20.10.2026 · Поставщик: ООО «КофеМастер» (ИНН 7704889911)", 12, "Bold", C_INK);
+    createText(frame1, "InvDetails", 800, 1352, "Сумма: 1 850 000 ₽ (в т.ч. НДС 308 333 ₽) · Назначение: Эспрессо-машина La Marzocco Linea PB", 11, "Regular", C_INK_MUTED, 400);
+
+    createBadge(frame1, "ЕГРЮЛ: ДЕЙСТВУЕТ", 1180, 1330, "pill-good");
+    createBadge(frame1, "ФССП: 0 ₽", 1300, 1330, "pill-good");
+
+    createText(frame1, "InvFinT", 768, 1400, "Целевое финансирование: 1 572 500 ₽ (85% счета) под 14.5% годовых", 12, "Bold", C_GREEN);
+    createButton(frame1, "Создать предзаполненную заявку в 1 клик →", 768, 1425, 596, 42, "primary", "zap");
 
     // ==========================================
     // FRAME 2: SCREEN 2 — ПАСПОРТ, МУЛЬТИБАНК, 4 КОНТР-ОФФЕРА И ПЭП
@@ -682,7 +686,7 @@
     frame2.name = "📝 02 — Экран 2: Паспорт, Мультибанк, 4 Контр-оффера, ПЭП";
     frame2.x = 3080;
     frame2.y = 0;
-    frame2.resize(1440, 1680);
+    frame2.resize(1440, 1600);
     frame2.fills = hexFill(C_BG);
     figma.currentPage.appendChild(frame2);
 
@@ -697,22 +701,22 @@
     );
 
     // Application Header
-    createSolidRect(frame2, "F2_PH", 0, 100, 1440, 115, 0, hexFill(C_SURFACE), hexFill(C_BORDER), 1);
-    createBadge(frame2, "ВСТРЕЧНЫЙ ОФФЕР (COUNTER_OFFER)", 40, 118, "pill-warn");
-    createBadge(frame2, "Оборотный кредит / Эквайринг", 290, 118, "pill-outline");
-    createBadge(frame2, "ID #ALFA-7725-ROST", 500, 118, "pill-outline");
+    createSolidRect(frame2, "F2_PH", 0, 100, 1440, 110, 0, hexFill(C_SURFACE), hexFill(C_BORDER), 1);
+    createBadge(frame2, "ВСТРЕЧНЫЙ ОФФЕР (COUNTER_OFFER)", 40, 116, "pill-warn");
+    createBadge(frame2, "Оборотный кредит / Эквайринг", 290, 116, "pill-outline");
+    createBadge(frame2, "ID #ALFA-7725-ROST", 500, 116, "pill-outline");
 
-    createText(frame2, "F2_Title", 40, 146, "Заявка на финансирование · Запрос 2 000 000 ₽", 24, "Bold", C_INK);
-    createText(frame2, "F2_Meta", 40, 178, "ООО «Ростерс Кафе» · ИНН 7725112233 · Заявка проверена Decision Engine (RiskScore 610, Желтый коридор)", 12, "Regular", C_INK_MUTED);
+    createText(frame2, "F2_Title", 40, 144, "Заявка на финансирование · Запрос 2 000 000 ₽", 24, "Bold", C_INK);
+    createText(frame2, "F2_Meta", 40, 176, "ООО «Ростерс Кафе» · ИНН 7725112233 · Заявка проверена Decision Engine (RiskScore 610, Желтый коридор)", 12, "Regular", C_INK_MUTED);
 
-    createButton(frame2, "Рентген инспектора (X-Ray) →", 1020, 135, 230, 42, "secondary", "scale");
-    createButton(frame2, "В кабинет", 1260, 135, 140, 42, "outline");
+    createButton(frame2, "Рентген инспектора (X-Ray) →", 1020, 132, 230, 42, "secondary", "scale");
+    createButton(frame2, "В кабинет", 1260, 132, 140, 42, "outline");
 
     // ==========================================
-    // WIDGET 1: Паспорт готовности заявки (4 карточки + прогресс-бар)
+    // WIDGET 1: Паспорт готовности заявки (4 карточки + геймификация)
     // ==========================================
-    createCard(frame2, "Паспорт готовности заявки — 4 карточки проверок и динамический лимит", "Авто-валидация реестров ФНС, ГИР БО, БКИ и гео-локации · Геймификация роста лимита", 40, 235, 1360, 240, "Лимит +25% готов", "pill-good", "shieldCheck", C_GREEN);
-    // 4 Check Cards
+    createCard(frame2, "Паспорт готовности заявки — 4 карточки проверок и динамический лимит", "Авто-валидация реестров ФНС, ГИР БО, БКИ и гео-локации · Геймификация роста лимита", 40, 225, 1360, 230, "Лимит +25% готов", "pill-good", "shieldCheck", C_GREEN);
+    
     const passChecks = [
       {
         t: "1. Юр. профиль ФНС и ОПФ",
@@ -724,7 +728,7 @@
       {
         t: "2. Финансы и касса",
         st: "WARN (Кассовый разрыв)",
-        d: "Оборот 8.4 млн ₽/мес. Обнаружен кассовый разрыв 28-го числа (-380k ₽). Выручка стабильна.",
+        d: "Оборот 8.4 млн ₽/мес. Обнаружен кассовый разрыв 28-го числа (-380k ₽). Выручка подтверждена.",
         c: C_AMBER,
         ic: "alertTriangle"
       },
@@ -746,34 +750,47 @@
 
     passChecks.forEach((pc, idx) => {
       const bx = 64 + idx * 328;
-      const by = 320;
-      createSolidRect(frame2, "PassB_" + idx, bx, by, 316, 95, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
+      const by = 305;
+      createSolidRect(frame2, "PassB_" + idx, bx, by, 316, 92, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
       createVectorIcon(frame2, pc.ic, bx + 12, by + 12, 16, pc.c);
       createText(frame2, "PcbT_" + idx, bx + 34, by + 12, pc.t, 12, "Bold", C_INK);
       createBadge(frame2, pc.st, bx + 12, by + 34, pc.c === C_GREEN ? "pill-soft-good" : "pill-soft-warn");
-      createText(frame2, "PcbD_" + idx, bx + 12, by + 62, pc.d, 10, "Regular", C_INK_MUTED, 292);
+      createText(frame2, "PcbD_" + idx, bx + 12, by + 60, pc.d, 10, "Regular", C_INK_MUTED, 292);
     });
 
     // Gamification limit progress bar
-    createSolidRect(frame2, "LimProgBG", 64, 430, 1312, 28, 6, hexFill({ r: 0.94, g: 0.97, b: 0.95 }), hexFill(C_GREEN), 1);
-    createVectorIcon(frame2, "trendingUp", 76, 436, 16, C_GREEN);
-    createText(frame2, "LimProgT", 98, 437, "Геймификация лимита: Паспорт подтвержден на 90% · Доступный лимит увеличен с 1 200 000 ₽ до 1 500 000 ₽ (+25%)!", 11, "Bold", C_GREEN);
+    createSolidRect(frame2, "LimProgBG", 64, 410, 1312, 30, 6, hexFill({ r: 0.94, g: 0.97, b: 0.95 }), hexFill(C_GREEN), 1);
+    createVectorIcon(frame2, "trendingUp", 76, 417, 16, C_GREEN);
+    createText(frame2, "LimProgT", 98, 418, "Геймификация лимита: Паспорт подтвержден на 90% · Доступный лимит увеличен с 1 200 000 ₽ до 1 500 000 ₽ (+25%)!", 11, "Bold", C_GREEN);
 
     // ==========================================
-    // WIDGET 2: Валидатор аномалий и Мультибанк (Open Banking API)
+    // WIDGET 2: Валидатор аномалий и Мультибанк (Open Banking API — До ↔ После)
     // ==========================================
-    createCard(frame2, "Валидатор аномалий и Мультибанк (Open Banking API)", "Раскрывается при ANOMALY_VERIFICATION (сценарий ООО «ТехноСтрой»): подтяжка выписок Сбер/Т-Банк/ВТБ", 40, 495, 1360, 150, "Мультибанк: +90 баллов", "pill-outline", "landmark", C_BLUE);
-    const anomAlert = createSolidRect(frame2, "AnomAlert", 64, 570, 850, 56, 8, hexFill({ r: 0.99, g: 0.96, b: 0.90 }), hexFill(C_AMBER), 1);
-    createVectorIcon(frame2, "alertTriangle", 78, 580, 20, C_AMBER);
-    createText(frame2, "AnomT1", 106, 580, "Аномалия: заявленная выручка (14.8 млн ₽) превышает оборот в Альфа-Банке более чем на 50%", 12, "Bold", C_AMBER);
-    createText(frame2, "AnomT2", 106, 600, "Подтвердите обороты через Open Banking API сторонних банков без сбора бумажных выписок и печатей.", 11, "Regular", C_INK_MUTED);
+    createCard(frame2, "Валидатор аномалий и Мультибанк (Open Banking API — Снятие ограничений)", "Раскрывается при ANOMALY_VERIFICATION: бесшовное подтверждение оборотов сторонних банков через Open Banking", 40, 470, 1360, 180, "Open Banking API", "pill-outline", "landmark", C_BLUE);
+    
+    // Left: Before Open Banking
+    createSolidRect(frame2, "AnomBefore", 64, 545, 380, 90, 8, hexFill({ r: 0.99, g: 0.96, b: 0.90 }), hexFill(C_AMBER), 1);
+    createVectorIcon(frame2, "alertTriangle", 76, 557, 18, C_AMBER);
+    createText(frame2, "AnomBT1", 100, 556, "1. До Open Banking (Дефицит выручки)", 11, "Bold", C_AMBER);
+    createText(frame2, "AnomBT2", 76, 580, "Выручка в ФНС (14.8M ₽) > оборота в Альфе на 50%. Лимит заморожен на 1.2M ₽ (Оранжевый коридор).", 10, "Regular", C_INK_MUTED, 350);
 
-    createButton(frame2, "Подтянуть выписки Open Banking (+4.2 млн ₽)", 930, 575, 446, 46, "secondary", "landmark");
+    // Center Action Button & Arrow
+    createSolidRect(frame2, "AnomMid", 460, 545, 440, 90, 8, hexFill({ r: 0.96, g: 0.97, b: 1.0 }), hexFill(C_BLUE), 1);
+    createVectorIcon(frame2, "landmark", 476, 558, 22, C_BLUE);
+    createText(frame2, "AnomMT1", 508, 556, "Подтянуть выписки Open Banking API", 12, "Bold", C_BLUE);
+    createText(frame2, "AnomMT2", 508, 576, "Сбербанк (+2.4M ₽) · Т-Банк (+1.8M ₽) · ВТБ", 11, "Regular", C_INK_MUTED);
+    createButton(frame2, "Стянуть выписки сторонних банков →", 476, 598, 408, 30, "secondary", "landmark");
+
+    // Right: After Open Banking
+    createSolidRect(frame2, "AnomAfter", 916, 545, 460, 90, 8, hexFill({ r: 0.93, g: 0.98, b: 0.94 }), hexFill(C_GREEN), 1);
+    createVectorIcon(frame2, "checkCircle", 928, 557, 18, C_GREEN);
+    createText(frame2, "AnomAT1", 952, 556, "2. После Open Banking (Аномалия снята)", 11, "Bold", C_GREEN);
+    createText(frame2, "AnomAT2", 928, 580, "Оборот подтвержден: +4.2 млн ₽/мес · Начислено +90 баллов скоринга · Лимит разблокирован до 2.8M ₽ (+25%)!", 10, "Regular", C_INK, 430);
 
     // ==========================================
     // WIDGET 3: Витрина кредитного решения — 4 умных контр-оффера (Желтый коридор)
     // ==========================================
-    createCard(frame2, "Витрина кредитных решений — 4 умных контр-оффера (Желтый коридор Decision Engine)", "Кейс ООО «Ростерс Кафе»: альтернативы финансирования с сохранением безопасного MaxPayment", 40, 665, 1360, 360, "Коридор COUNTER_OFFER", "pill-warn", "handshake", C_AMBER);
+    createCard(frame2, "Витрина кредитных решений — 4 умных контр-оффера (Желтый коридор Decision Engine)", "Кейс ООО «Ростерс Кафе»: альтернативы финансирования с сохранением безопасного MaxPayment", 40, 665, 1360, 370, "Коридор COUNTER_OFFER", "pill-warn", "handshake", C_AMBER);
     const fourOffers = [
       {
         t: "1. Снижение суммы под MaxPayment",
@@ -819,8 +836,8 @@
 
     fourOffers.forEach((o, idx) => {
       const ox = 64 + idx * 328;
-      const oy = 750;
-      const oCard = createSolidRect(frame2, "OffCard_" + idx, ox, oy, 316, 255, 12, hexFill(C_SURFACE), hexFill(o.sel ? C_ALFA_RED : C_BORDER_STRONG), o.sel ? 2 : 1);
+      const oy = 745;
+      createSolidRect(frame2, "OffCard_" + idx, ox, oy, 316, 265, 12, hexFill(C_SURFACE), hexFill(o.sel ? C_ALFA_RED : C_BORDER_STRONG), o.sel ? 2 : 1);
       if (o.sel) {
         createSolidRect(frame2, "OffStrip_" + idx, ox, oy, 316, 6, 0, hexFill(C_ALFA_RED));
       }
@@ -833,40 +850,40 @@
       createText(frame2, "OffPay_" + idx, ox + 14, oy + 104, o.pay, 12, "Bold", o.c, 288);
       createText(frame2, "OffD_" + idx, ox + 14, oy + 134, o.d, 10, "Regular", C_INK_FAINT, 288);
 
-      createButton(frame2, o.sel ? "Выбрано заемщиком ✓" : "Выбрать оффер", ox + 14, oy + 205, 288, 36, o.sel ? "primary" : "outline");
+      createButton(frame2, o.sel ? "Выбрано заемщиком ✓" : "Выбрать оффер", ox + 14, oy + 215, 288, 36, o.sel ? "primary" : "outline");
     });
 
     // ==========================================
     // WIDGET 4: Подписание договора ПЭП и Maker-Checker
     // ==========================================
-    createCard(frame2, "Подписание договора ПЭП и зачисление средств (AWAITING_CEO_APPROVAL → FUNDED)", "Разграничение прав ролей: Бухгалтер (403 Forbidden) vs Генеральный директор (право подписи ПЭП)", 40, 1045, 1360, 480, "Maker-Checker", "pill-neutral", "signature", C_GREEN);
-    const signBox = createSolidRect(frame2, "SignBoxF2", 64, 1130, 1312, 370, 12, hexFill(C_BG), hexFill(C_BORDER), 1);
+    createCard(frame2, "Подписание договора ПЭП и зачисление средств (AWAITING_CEO_APPROVAL → FUNDED)", "Разграничение прав ролей: Бухгалтер (403 Forbidden) vs Генеральный директор (право подписи ПЭП)", 40, 1055, 1360, 480, "Maker-Checker", "pill-neutral", "signature", C_GREEN);
+    createSolidRect(frame2, "SignBoxF2", 64, 1135, 1312, 380, 12, hexFill(C_BG), hexFill(C_BORDER), 1);
 
     // Maker-checker explanation alert
-    createSolidRect(frame2, "RoleRule", 90, 1150, 1260, 44, 8, hexFill({ r: 0.95, g: 0.97, b: 1.0 }), hexFill(C_BLUE), 1);
-    createVectorIcon(frame2, "shieldCheck", 104, 1162, 20, C_BLUE);
-    createText(frame2, "RoleRuleT", 132, 1162, "Контроль полномочий ЕИО (Maker-Checker): Бухгалтер может подготовить заявку (Maker), но кнопка подписи доступна только Генеральному директору (Checker). Для ИП доступно подписание в одно лицо.", 11, "Medium", C_INK);
+    createSolidRect(frame2, "RoleRule", 90, 1155, 1260, 44, 8, hexFill({ r: 0.95, g: 0.97, b: 1.0 }), hexFill(C_BLUE), 1);
+    createVectorIcon(frame2, "shieldCheck", 104, 1167, 20, C_BLUE);
+    createText(frame2, "RoleRuleT", 132, 1167, "Контроль полномочий ЕИО (Maker-Checker): Бухгалтер может подготовить заявку (Maker), но кнопка подписи доступна только Генеральному директору (Checker). Для ИП доступно подписание в одно лицо.", 11, "Medium", C_INK);
 
     // Contract terms
-    createVectorIcon(frame2, "fileText", 90, 1210, 22, C_BLUE);
-    createText(frame2, "SignDocT", 120, 1210, "1. Сформирован договор финансирования № ALFA-7725-ROST (PDF, 4 стр.)", 15, "Bold", C_INK);
-    createText(frame2, "SignDocS", 120, 1234, "Индивидуальные условия: 1 500 000 ₽ с погашением 9% от эквайринга · График гибких списаний · Без залога", 12, "Medium", C_INK_MUTED);
+    createVectorIcon(frame2, "fileText", 90, 1215, 22, C_BLUE);
+    createText(frame2, "SignDocT", 120, 1215, "1. Сформирован договор финансирования № ALFA-7725-ROST (PDF, 4 стр.)", 15, "Bold", C_INK);
+    createText(frame2, "SignDocS", 120, 1238, "Индивидуальные условия: 1 500 000 ₽ с погашением 9% от эквайринга · График гибких списаний · Без залога", 12, "Medium", C_INK_MUTED);
 
     // OTP Code box
-    createVectorIcon(frame2, "signature", 90, 1270, 22, C_GREEN);
-    createText(frame2, "SignOtpT", 120, 1270, "2. Подтверждение простой электронной подписью (ПЭП / SMS-код)", 15, "Bold", C_INK);
-    createText(frame2, "SignOtpS", 120, 1294, "Код отправлен на подтвержденный номер Генерального директора: +7 (999) 772-51-12", 12, "Regular", C_INK_MUTED);
+    createVectorIcon(frame2, "signature", 90, 1275, 22, C_GREEN);
+    createText(frame2, "SignOtpT", 120, 1275, "2. Подтверждение простой электронной подписью (ПЭП / SMS-код)", 15, "Bold", C_INK);
+    createText(frame2, "SignOtpS", 120, 1298, "Код отправлен на подтвержденный номер Генерального директора: +7 (999) 772-51-12", 12, "Regular", C_INK_MUTED);
 
     [0, 1, 2, 3].forEach((pos) => {
       const digit = ["4", "8", "2", "9"][pos];
-      createSolidRect(frame2, "F2_Otp_" + pos, 120 + pos * 65, 1325, 52, 56, 8, hexFill(C_SURFACE), hexFill(C_ALFA_RED), 2);
-      createText(frame2, "F2_OtpD_" + pos, 138 + pos * 65, 1338, digit, 24, "Bold", C_INK);
+      createSolidRect(frame2, "F2_Otp_" + pos, 120 + pos * 65, 1330, 52, 56, 8, hexFill(C_SURFACE), hexFill(C_ALFA_RED), 2);
+      createText(frame2, "F2_OtpD_" + pos, 138 + pos * 65, 1342, digit, 24, "Bold", C_INK);
     });
 
-    createText(frame2, "F2_SignAgree", 120, 1400, "☑️ С индивидуальными условиями договора ознакомлен и согласен. Подтверждаю целевой характер использования средств.", 12, "Medium", C_INK);
+    createText(frame2, "F2_SignAgree", 120, 1405, "☑️ С индивидуальными условиями договора ознакомлен и согласен. Подтверждаю целевой характер использования средств.", 12, "Medium", C_INK);
 
-    createButton(frame2, "Подписать договор ПЭП и получить средства на расчетный счет →", 120, 1435, 540, 48, "primary", "checkCircle");
-    createBadge(frame2, "МГНОВЕННОЕ ЗАЧИСЛЕНИЕ FUNDED", 680, 1446, "pill-good");
+    createButton(frame2, "Подписать договор ПЭП и получить средства на расчетный счет →", 120, 1440, 540, 48, "primary", "checkCircle");
+    createBadge(frame2, "МГНОВЕННОЕ ЗАЧИСЛЕНИЕ FUNDED", 680, 1450, "pill-good");
 
     // ==========================================
     // FRAME 3: SCREEN 3 — РЕНТГЕН ИНСПЕКТОРА (КОНТУР БАНКА)
@@ -875,7 +892,7 @@
     frame3.name = "🔬 03 — Экран 3: Рентген инспектора (X-Ray, Waterfall, P&L, Audit)";
     frame3.x = 4620;
     frame3.y = 0;
-    frame3.resize(1440, 1680);
+    frame3.resize(1440, 1620);
     frame3.fills = hexFill(C_BG);
     figma.currentPage.appendChild(frame3);
 
@@ -890,49 +907,49 @@
     );
 
     // Bank X-Ray Header Banner
-    createSolidRect(frame3, "F3_PH", 0, 100, 1440, 115, 0, hexFill(C_SURFACE), hexFill(C_BORDER), 1);
-    createBadge(frame3, "ЭКРАН 3 · КОНТУР БАНКА", 40, 118, "pill-risk");
-    createBadge(frame3, "Decision Engine: Желтый коридор", 220, 118, "pill-warn");
-    createBadge(frame3, "ID #ALFA-7725-ROST", 475, 118, "pill-outline");
+    createSolidRect(frame3, "F3_PH", 0, 100, 1440, 110, 0, hexFill(C_SURFACE), hexFill(C_BORDER), 1);
+    createBadge(frame3, "ЭКРАН 3 · КОНТУР БАНКА", 40, 116, "pill-risk");
+    createBadge(frame3, "Decision Engine: Желтый коридор", 220, 116, "pill-warn");
+    createBadge(frame3, "ID #ALFA-7725-ROST", 475, 116, "pill-outline");
 
-    createText(frame3, "F3_Title", 40, 146, "Рабочее место инспектора: Рентген заявки ООО «Ростерс Кафе»", 24, "Bold", C_INK);
-    createText(frame3, "F3_Meta", 40, 178, "RiskScore 610 · Статус: COUNTER_OFFER · Ставка 18.0% (КС ЦБ 14.0% + спред 4.0%) · Время обработки: 4.8 сек", 12, "Regular", C_INK_MUTED);
+    createText(frame3, "F3_Title", 40, 144, "Рабочее место инспектора: Рентген заявки ООО «Ростерс Кафе»", 24, "Bold", C_INK);
+    createText(frame3, "F3_Meta", 40, 176, "RiskScore 610 · Статус: COUNTER_OFFER · Ставка 18.0% (КС ЦБ 14.0% + спред 4.0%) · Время обработки: 4.8 сек", 12, "Regular", C_INK_MUTED);
 
-    createButton(frame3, "Перейти в контур клиента", 1210, 135, 190, 42, "outline");
+    createButton(frame3, "Перейти в контур клиента", 1210, 132, 190, 42, "outline");
 
     // ==========================================
     // TOP PANEL: P&L Эффект для Альфа-Банка (4 карточки бизнес-показателей)
     // ==========================================
     const pnlCards = [
       { t: "Time-to-Yes (Решение)", v: "5 сек", s: "вместо 3 рабочих дней", c: C_GREEN, i: "zap" },
-      { t: "Снижение оттока (Drop-off)", v: "-38%", s: "за счет отсутствия анкеты из 40 полей", c: C_GREEN, i: "trendingDown" },
+      { t: "Снижение оттока (Drop-off)", v: "-38%", s: "за счет отказа от 40 полей анкеты", c: C_GREEN, i: "trendingDown" },
       { t: "Доля спасенных заявок", v: "+24%", s: "конверсия через 4 умных контр-оффера", c: C_GREEN, i: "handshake" },
       { t: "Снижение дефолта (NPL)", v: "-42%", s: "защита от First Payment Default", c: C_BLUE, i: "shieldCheck" }
     ];
     pnlCards.forEach((pc, idx) => {
       const px = 40 + idx * 345;
-      createSolidRect(frame3, "PnlTopB_" + idx, px, 230, 325, 95, 10, hexFill(C_SURFACE), hexFill(C_BORDER), 1);
-      createVectorIcon(frame3, pc.i, px + 16, 245, 20, pc.c);
-      createText(frame3, "PnlTopT_" + idx, px + 44, 245, pc.t, 11, "Medium", C_INK_MUTED);
-      createText(frame3, "PnlTopV_" + idx, px + 16, 270, pc.v, 24, "Bold", pc.c);
-      createText(frame3, "PnlTopS_" + idx, px + 16, 302, pc.s, 10, "Regular", C_INK_FAINT);
+      createSolidRect(frame3, "PnlTopB_" + idx, px, 225, 325, 92, 10, hexFill(C_SURFACE), hexFill(C_BORDER), 1);
+      createVectorIcon(frame3, pc.i, px + 16, 240, 20, pc.c);
+      createText(frame3, "PnlTopT_" + idx, px + 44, 240, pc.t, 11, "Medium", C_INK_MUTED);
+      createText(frame3, "PnlTopV_" + idx, px + 16, 265, pc.v, 24, "Bold", pc.c);
+      createText(frame3, "PnlTopS_" + idx, px + 16, 295, pc.s, 10, "Regular", C_INK_FAINT);
     });
 
     // Special Legal OPF Badge Banner (IP vs OOO distinction from plan)
-    createSolidRect(frame3, "OpfBanner", 40, 340, 1360, 44, 8, hexFill({ r: 0.95, g: 0.97, b: 1.0 }), hexFill(C_BLUE), 1);
-    createVectorIcon(frame3, "building", 56, 352, 18, C_BLUE);
-    createText(frame3, "OpfBannerT", 84, 353, "Специальный юридический бейдж ОПФ: ООО • Корпоративный контроль полномочий ЕИО (Maker-Checker) • Баланс верифицирован по ГИР БО ФНС РФ (Активы: 14.2M ₽, Обязательства: 3.1M ₽). Для ИП применяется полная имущественная ответственность физлица.", 11, "Bold", C_INK);
+    createSolidRect(frame3, "OpfBanner", 40, 332, 1360, 44, 8, hexFill({ r: 0.95, g: 0.97, b: 1.0 }), hexFill(C_BLUE), 1);
+    createVectorIcon(frame3, "building", 56, 344, 18, C_BLUE);
+    createText(frame3, "OpfBannerT", 84, 345, "Специальный юридический бейдж ОПФ: ООО • Корпоративный контроль полномочий ЕИО (Maker-Checker) • Баланс верифицирован по ГИР БО ФНС РФ (Активы: 14.2M ₽, Обязательства: 3.1M ₽). Для ИП применяется полная имущественная ответственность физлица.", 11, "Bold", C_INK);
 
     // ==========================================
     // SECTION 1: Waterfall скоринга (5 факторов) & Калькуляция лимита
     // ==========================================
-    createCard(frame3, "Рентген скоринга (Waterfall-диаграмма) и калькуляция ставки от КС ЦБ РФ", "Base = 500 + точный дискретный вклад 5 факторов (БКИ, Поток, ПДН, ФНС, GeoScore) = ровно 610 баллов", 40, 400, 880, 370, "Waterfall 5 факторов", "pill-warn", "barChart", C_BLUE);
+    createCard(frame3, "Рентген скоринга (Waterfall-диаграмма) и калькуляция ставки от КС ЦБ РФ", "Base = 500 + точный дискретный вклад 5 факторов (БКИ, Поток, ПДН, ФНС, GeoScore) = ровно 610 баллов", 40, 390, 850, 360, "Waterfall 5 факторов", "pill-warn", "barChart", C_BLUE);
 
     // Formula & Rate Breakdown
-    const rateFormulaBox = createSolidRect(frame3, "RateFormBox", 64, 490, 832, 60, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
-    createVectorIcon(frame3, "coins", 76, 502, 18, C_BLUE);
-    createText(frame3, "RateFormT", 102, 500, "Формула кредитной ставки: КС ЦБ РФ (14.0%) + ProductSpread (2.5%) + RiskAdjustment (1.5%) = 18.0% годовых", 12, "Bold", C_INK);
-    createText(frame3, "RateFormS", 102, 524, "Рассчитанные лимиты бизнеса: Чистый поток FCF = 420 000 ₽/мес · Безопасный аннуитет MaxPayment = 145 000 ₽/мес.", 11, "Medium", C_GREEN);
+    createSolidRect(frame3, "RateFormBox", 64, 475, 802, 58, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
+    createVectorIcon(frame3, "coins", 76, 486, 18, C_BLUE);
+    createText(frame3, "RateFormT", 102, 484, "Формула кредитной ставки: КС ЦБ РФ (14.0%) + ProductSpread (2.5%) + RiskAdjustment (1.5%) = 18.0% годовых", 12, "Bold", C_INK);
+    createText(frame3, "RateFormS", 102, 508, "Рассчитанные лимиты бизнеса: Чистый поток FCF = 420 000 ₽/мес · Безопасный аннуитет MaxPayment = 145 000 ₽/мес.", 11, "Medium", C_GREEN);
 
     // Waterfall Bars
     const wfFactors = [
@@ -945,82 +962,116 @@
       { name: "Итог", val: "610", h: 110, c: C_AMBER, sub: "Желтый коридор" }
     ];
     wfFactors.forEach((wf, idx) => {
-      const wx = 64 + idx * 118;
-      const barY = 700 - wf.h;
-      createSolidRect(frame3, "WfBar_" + idx, wx, barY, 86, wf.h, 6, hexFill(wf.c));
+      const wx = 64 + idx * 114;
+      const barY = 680 - wf.h;
+      createSolidRect(frame3, "WfBar_" + idx, wx, barY, 82, wf.h, 6, hexFill(wf.c));
       createVectorIcon(frame3, wf.gap ? "trendingDown" : "trendingUp", wx + 8, barY - 22, 14, wf.c);
       createText(frame3, "WfVal_" + idx, wx + 26, barY - 20, wf.val, 13, "Bold", wf.c);
-      createText(frame3, "WfName_" + idx, wx, 710, wf.name, 11, "Bold", C_INK);
-      createText(frame3, "WfSub_" + idx, wx, 726, wf.sub, 9, "Regular", C_INK_MUTED);
+      createText(frame3, "WfName_" + idx, wx, 690, wf.name, 11, "Bold", C_INK);
+      createText(frame3, "WfSub_" + idx, wx, 706, wf.sub, 9, "Regular", C_INK_MUTED);
     });
 
     // ==========================================
     // SECTION 2: Банковская ценность парсинга PDF и кассы (Ответ для Ольги Урсул)
     // ==========================================
-    createCard(frame3, "Банковская ценность парсинга PDF и прогноза кассы (Ответ для Ольги Урсул)", "Обоснование защиты банка от вывода средств и снижения раннего дефолта NPL", 940, 400, 460, 370, "Защита от NPL", "pill-good", "shieldCheck", C_GREEN);
-    const ursulBox1 = createSolidRect(frame3, "UrsulB1", 964, 490, 412, 115, 8, hexFill({ r: 0.94, g: 0.98, b: 0.95 }), hexFill(C_GREEN), 1);
-    createVectorIcon(frame3, "shieldCheck", 978, 502, 20, C_GREEN);
-    createText(frame3, "UrsulT1", 1004, 502, "1. Защита от вывода средств на однодневки", 12, "Bold", C_GREEN);
-    createText(frame3, "UrsulS1", 978, 526, "Парсинг ИНН поставщика из PDF-счета гарантирует целевое расходование: деньги перечисляются напрямую проверенному поставщику оборудования (ООО «КофеМастер»), исключая обналичивание кредитных средств.", 10, "Regular", C_INK, 385);
+    createCard(frame3, "Банковская ценность парсинга PDF и прогноза кассы (Ответ для Ольги Урсул)", "Обоснование защиты банка от вывода средств и снижения раннего дефолта NPL", 905, 390, 495, 360, "Защита от NPL", "pill-good", "shieldCheck", C_GREEN);
+    
+    createSolidRect(frame3, "UrsulB1", 929, 475, 447, 110, 8, hexFill({ r: 0.94, g: 0.98, b: 0.95 }), hexFill(C_GREEN), 1);
+    createVectorIcon(frame3, "shieldCheck", 943, 487, 20, C_GREEN);
+    createText(frame3, "UrsulT1", 969, 487, "1. Защита от вывода средств на однодневки", 12, "Bold", C_GREEN);
+    createText(frame3, "UrsulS1", 943, 511, "Парсинг ИНН поставщика из PDF-счета гарантирует целевое расходование: деньги перечисляются напрямую проверенному поставщику оборудования (ООО «КофеМастер»), исключая обналичивание кредитных средств.", 10, "Regular", C_INK, 420);
 
-    const ursulBox2 = createSolidRect(frame3, "UrsulB2", 964, 620, 412, 125, 8, hexFill({ r: 0.95, g: 0.97, b: 1.0 }), hexFill(C_BLUE), 1);
-    createVectorIcon(frame3, "trendingUp", 978, 632, 20, C_BLUE);
-    createText(frame3, "UrsulT2", 1004, 632, "2. Снижение раннего дефолта (First Payment Default)", 12, "Bold", C_BLUE);
-    createText(frame3, "UrsulS2", 978, 656, "60-дневный прогноз кассы спасает рентабельный бизнес от панического дорогого годового кредита. Овердрафт на 7 дней полностью закрывает разрыв под ЕНП без перегрузки долговой нагрузки (DTI < 25%).", 10, "Regular", C_INK, 385);
+    createSolidRect(frame3, "UrsulB2", 929, 600, 447, 125, 8, hexFill({ r: 0.95, g: 0.97, b: 1.0 }), hexFill(C_BLUE), 1);
+    createVectorIcon(frame3, "trendingUp", 943, 612, 20, C_BLUE);
+    createText(frame3, "UrsulT2", 969, 612, "2. Снижение раннего дефолта (First Payment Default)", 12, "Bold", C_BLUE);
+    createText(frame3, "UrsulS2", 943, 636, "60-дневный прогноз кассы спасает рентабельный бизнес от панического дорогого годового кредита. Овердрафт на 7 дней полностью закрывает разрыв под ЕНП без перегрузки долговой нагрузки (DTI < 25%).", 10, "Regular", C_INK, 420);
 
     // ==========================================
-    // SECTION 3: OpenStreetMap GeoScore / BuyerScore
+    // SECTION 3: OpenStreetMap GeoScore (Реалистичная карта центра Москвы)
     // ==========================================
-    createCard(frame3, "Гео-аналитика OpenStreetMap (GeoScore) / Оценка заказчика (BuyerScore)", "Радиус 300–500 м: точки притяжения трафика (метро, БЦ, вузы) и маркеры конкурентов (amenity=cafe)", 40, 790, 660, 360, "GeoScore: 8.9 / 10", "pill-good", "mapPin", C_BLUE);
-    // Simulated Map Card Container
-    const mapContainer = createSolidRect(frame3, "MapContainer", 64, 875, 612, 160, 8, hexFill({ r: 0.91, g: 0.94, b: 0.97 }), hexFill(C_BORDER_STRONG), 1);
-    createText(frame3, "MapTitle", 80, 888, "🗺️ Карта локации: Москва, ул. Мясницкая 18 (Радиус анализа: 400 м)", 12, "Bold", C_INK);
+    createCard(frame3, "Гео-аналитика OpenStreetMap (GeoScore) — Локация точки общепита", "Радиус 400 м: точки притяжения трафика (метро, БЦ, вузы) и маркеры конкурентов (amenity=cafe)", 40, 765, 668, 395, "GeoScore: 8.9 / 10", "pill-good", "mapPin", C_BLUE);
 
-    // Map Legend Elements
-    createVectorIcon(frame3, "mapPin", 80, 915, 18, C_ALFA_RED);
-    createText(frame3, "Pin1", 104, 917, "Точка клиента: ООО «Ростерс Кафе» (Первая линия, пешеходная зона)", 11, "Bold", C_INK);
+    // Realistic Vector Map Container (w: 620, h: 220)
+    const mapBox = createSolidRect(frame3, "RealMapBox", 64, 850, 620, 215, 8, hexFill({ r: 0.92, g: 0.94, b: 0.96 }), hexFill(C_BORDER_STRONG), 1);
 
-    createVectorIcon(frame3, "users", 80, 945, 18, C_GREEN);
-    createText(frame3, "Pin2", 104, 947, "Точки притяжения: Станции метро «Чистые пруды» и «Тургеневская» (180 м)", 11, "Medium", C_GREEN);
+    // Street Grid Vector Lines
+    createSolidRect(frame3, "St_Myasn", 110, 865, 520, 16, 2, hexFill(C_WHITE)); // Мясницкая
+    createText(frame3, "StLbl1", 140, 867, "ул. Мясницкая (пешеходная)", 10, "Bold", C_INK_MUTED);
 
-    createVectorIcon(frame3, "building", 80, 975, 18, C_BLUE);
-    createText(frame3, "Pin3", 104, 977, "Деловое окружение: 4 бизнес-центра класса А/В, НИУ ВШЭ (3 400 студентов)", 11, "Medium", C_BLUE);
+    createSolidRect(frame3, "St_Maros", 90, 940, 550, 14, 2, hexFill(C_WHITE)); // Маросейка
+    createText(frame3, "StLbl2", 400, 942, "ул. Маросейка", 9, "Bold", C_INK_MUTED);
 
-    createVectorIcon(frame3, "alertTriangle", 80, 1005, 18, C_AMBER);
-    createText(frame3, "Pin4", 104, 1007, "Конкуренция (amenity=cafe): 3 кофейни в радиусе 300м (спрос не перенасыщен)", 11, "Medium", C_INK_MUTED);
+    createSolidRect(frame3, "St_Luby", 220, 855, 14, 200, 2, hexFill(C_WHITE)); // Лубянский проезд
+    createText(frame3, "StLbl3", 225, 990, "Лубянский пр.", 8, "Bold", C_INK_MUTED);
 
-    // GeoScore metric footer
-    const geoFooter = createSolidRect(frame3, "GeoFooter", 64, 1050, 612, 75, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
-    createText(frame3, "GeoF_L1", 80, 1060, "Пешеходный трафик:", 11, "Medium", C_INK_MUTED);
-    createText(frame3, "GeoF_V1", 80, 1078, "520 чел / час", 16, "Bold", C_GREEN);
-    createText(frame3, "GeoF_L2", 280, 1060, "Индекс надежности локации:", 11, "Medium", C_INK_MUTED);
-    createText(frame3, "GeoF_V2", 280, 1078, "Класс A+ (Высокий трафик)", 16, "Bold", C_BLUE);
+    // Building Blocks
+    createSolidRect(frame3, "Bld1", 130, 890, 75, 42, 4, hexFill({ r: 0.82, g: 0.86, b: 0.90 }));
+    createSolidRect(frame3, "Bld2", 245, 890, 90, 42, 4, hexFill({ r: 0.82, g: 0.86, b: 0.90 }));
+    createSolidRect(frame3, "Bld3", 350, 890, 110, 42, 4, hexFill({ r: 0.82, g: 0.86, b: 0.90 }));
+    createSolidRect(frame3, "Bld4", 475, 890, 80, 42, 4, hexFill({ r: 0.82, g: 0.86, b: 0.90 }));
+
+    // Isochrone 400m Radius Circle Overlay
+    const radiusCircle = figma.createEllipse();
+    radiusCircle.name = "Isochrone_400m";
+    radiusCircle.x = 230;
+    radiusCircle.y = 860;
+    radiusCircle.resize(190, 190);
+    radiusCircle.fills = hexFill({ r: 0.15, g: 0.39, b: 0.92, a: 0.10 });
+    radiusCircle.strokes = hexFill(C_BLUE);
+    radiusCircle.strokeWeight = 1.5;
+    radiusCircle.dashPattern = [4, 4];
+    frame3.appendChild(radiusCircle);
+
+    // Target Client Pin (Alfa Red)
+    createVectorIcon(frame3, "mapPin", 315, 900, 24, C_ALFA_RED);
+    createBadge(frame3, "ООО «Ростерс Кафе»", 345, 902, "pill-risk");
+
+    // Metro Pins (Green)
+    createVectorIcon(frame3, "users", 135, 960, 18, C_GREEN);
+    createBadge(frame3, "М. Лубянка (220м)", 160, 958, "pill-soft-good");
+
+    createVectorIcon(frame3, "users", 520, 860, 18, C_GREEN);
+    createBadge(frame3, "М. Чистые пруды (180м)", 470, 882, "pill-soft-good");
+
+    // Competitor Pins (Amber)
+    createVectorIcon(frame3, "alertTriangle", 270, 965, 14, C_AMBER);
+    createVectorIcon(frame3, "alertTriangle", 450, 920, 14, C_AMBER);
+
+    // Map Metrics Footer
+    createSolidRect(frame3, "GeoFootBox", 64, 1075, 620, 70, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
+    createText(frame3, "GfL1", 76, 1085, "Пешеходный трафик:", 11, "Medium", C_INK_MUTED);
+    createText(frame3, "GfV1", 76, 1103, "520 чел / час (Высокий)", 15, "Bold", C_GREEN);
+
+    createText(frame3, "GfL2", 340, 1085, "Индекс локации & Конкуренция:", 11, "Medium", C_INK_MUTED);
+    createText(frame3, "GfV2", 340, 1103, "Класс А+ · 3 кафе в 400м (Сбалансировано)", 14, "Bold", C_BLUE);
 
     // ==========================================
     // SECTION 4: Панель действий инспектора (POST /underwriter-action)
     // ==========================================
-    createCard(frame3, "Панель действий кредитного инспектора (POST /underwriter-action)", "4 кнопки управления заявкой в ручном разборе: Одобрить / Контр-оффер / Дозапрос / Отказ", 720, 790, 680, 360, "Ручной разбор", "pill-neutral", "scale", C_ANTHRACITE);
-    createButton(frame3, "1. Одобрить (APPROVE)", 744, 875, 305, 46, "primary", "checkCircle");
-    createButton(frame3, "2. Контр-оффер (Лестница лимитов)", 1065, 875, 310, 46, "secondary", "handshake");
-    createButton(frame3, "3. Запросить документ в 1 клик (NEED_MORE_INFO)", 744, 935, 305, 46, "outline", "fileText");
-    createButton(frame3, "4. Отказать (REJECT)", 1065, 935, 310, 46, "ghost", "alertTriangle");
+    createCard(frame3, "Панель действий кредитного инспектора (POST /underwriter-action)", "4 кнопки управления заявкой: Одобрить / Контр-оффер / Дозапрос / Отказ", 732, 765, 668, 395, "Ручной разбор", "pill-neutral", "scale", C_ANTHRACITE);
+    
+    // 4 Action Buttons with clear CTA hierarchy
+    createButton(frame3, "1. Одобрить (APPROVE)", 756, 850, 298, 44, "primary", "checkCircle");
+    createButton(frame3, "2. Контр-оффер (Лестница лимитов)", 1078, 850, 298, 44, "secondary", "handshake");
+    createButton(frame3, "3. Запросить документ (NEED_MORE_INFO)", 756, 905, 298, 44, "outline", "fileText");
+    createButton(frame3, "4. Отказать (REJECT)", 1078, 905, 298, 44, "ghost", "alertTriangle");
 
-    // Underwriter comment box
-    createSolidRect(frame3, "UndCommBox", 744, 1000, 632, 125, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
-    createText(frame3, "UndCommL", 760, 1012, "Служебный комментарий андеррайтера (запись в ACID-аудит лог):", 11, "Bold", C_INK_FAINT);
-    createText(frame3, "UndCommT", 760, 1035, "«Клиент рентабелен, выручка подтверждена эквайрингом Альфы. Одобрено встречное предложение №2 (9% с эквайринга) для исключения кассового разрыва 28-го числа. Дополнительный залог не требуется.»", 12, "Regular", C_INK, 600);
-    createBadge(frame3, "СТАТУС: СОГЛАСОВАНО ИНСПЕКТОРОМ", 760, 1090, "pill-good");
+    // Underwriter comment box (ACID logging)
+    createSolidRect(frame3, "UndCommBox", 756, 965, 620, 180, 8, hexFill(C_BG), hexFill(C_BORDER), 1);
+    createText(frame3, "UndCommL", 772, 978, "Служебный комментарий андеррайтера (запись в ACID-аудит лог):", 11, "Bold", C_INK_FAINT);
+    createText(frame3, "UndCommT", 772, 1002, "«Клиент рентабелен, выручка подтверждена эквайрингом Альфы. Одобрено встречное предложение №2 (9% с эквайринга) для исключения кассового разрыва 28-го числа. Дополнительный залог не требуется. Документы поставщика верифицированы по ЕГРЮЛ.»", 12, "Regular", C_INK, 580);
+    createBadge(frame3, "СТАТУС: СОГЛАСОВАНО ИНСПЕКТОРОМ ✓", 772, 1095, "pill-good");
 
     // ==========================================
     // SECTION 5: Таблица неизменяемого журнала аудита (Audit Trail / application_events)
     // ==========================================
-    createCard(frame3, "Неизменяемый журнал аудита (Audit Trail / application_events)", "Посекундный лог смены статусов State Machine (from_status → to_status, actor_role, timestamp) в одной ACID-транзакции", 40, 1170, 1360, 460, "ACID Audit Trail", "pill-outline", "clock", C_INK_MUTED);
+    createCard(frame3, "Неизменяемый журнал аудита (Audit Trail / application_events)", "Посекундный лог смены статусов State Machine (from_status → to_status, actor_role, timestamp) в одной ACID-транзакции", 40, 1180, 1360, 420, "ACID Audit Trail", "pill-outline", "clock", C_INK_MUTED);
     const auditHeaders = ["ВРЕМЯ", "СОБЫТИЕ", "FROM STATUS → TO STATUS", "РОЛЬ / АКТОР", "ПРАВИЛО / RULE_CODE", "ЗАДЕРЖКА"];
     const aX = [64, 170, 520, 840, 1080, 1290];
     auditHeaders.forEach((ah, idx) => {
-      createText(frame3, "AH_" + idx, aX[idx], 1255, ah, 10, "Bold", C_INK_FAINT);
+      createText(frame3, "AH_" + idx, aX[idx], 1260, ah, 10, "Bold", C_INK_FAINT);
     });
-    createSolidRect(frame3, "ADiv0", 64, 1275, 1312, 1, 0, hexFill(C_BORDER));
+    createSolidRect(frame3, "ADiv0", 64, 1280, 1312, 1, 0, hexFill(C_BORDER));
 
     const auditRows = [
       { t: "14:32:01.102", ev: "Создание заявки из Умного поиска", st: "DRAFT → SCORING_QUEUED", role: "EMPLOYEE_BUYER", rule: "RULE_START_APP", ms: "0.00s", ic: "search" },
@@ -1031,7 +1082,7 @@
       { t: "14:32:18.420", ev: "Подписание договора ПЭП", st: "CONTRACT_SIGNING → FUNDED", role: "CEO_OWNER", rule: "RULE_PEP_SIGN_OK", ms: "0.08s", ic: "signature" }
     ];
     auditRows.forEach((ar, idx) => {
-      const ary = 1295 + idx * 52;
+      const ary = 1298 + idx * 46;
       createText(frame3, "AT_" + idx, aX[0], ary, ar.t, 11, "Medium", C_INK_MUTED);
       createVectorIcon(frame3, ar.ic, aX[1], ary, 14, C_INK);
       createText(frame3, "AE_" + idx, aX[1] + 20, ary, ar.ev, 11, "Bold", C_INK);
@@ -1039,7 +1090,7 @@
       createText(frame3, "AR_" + idx, aX[3], ary, ar.role, 11, "Bold", ar.role.startsWith("CEO") ? C_ALFA_RED : C_INK_MUTED);
       createText(frame3, "ARC_" + idx, aX[4], ary, ar.rule, 10, "Medium", C_INK_FAINT);
       createBadge(frame3, ar.ms, aX[5], ary - 4, "pill-outline");
-      createSolidRect(frame3, "ADiv_" + idx, 64, ary + 36, 1312, 1, 0, hexFill(C_BORDER));
+      createSolidRect(frame3, "ADiv_" + idx, 64, ary + 32, 1312, 1, 0, hexFill(C_BORDER));
     });
 
     // ==========================================
