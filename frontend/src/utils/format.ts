@@ -75,6 +75,15 @@ export function statusTone(status: string): "GOOD" | "WARN" | "RISK" | "NEUTRAL"
   return "NEUTRAL";
 }
 
+/** «Фамилия Имя Отчество» → имя, иначе первое слово. */
+export function givenName(fullName: string | undefined): string {
+  const parts = fullName?.trim().split(/\s+/) ?? [];
+  if (parts.length >= 3) {
+    return parts[1] ?? fullName ?? "коллега";
+  }
+  return parts[0] ?? "коллега";
+}
+
 export function roleLabel(role: string): string {
   return {
     CEO_OWNER: "Генеральный директор",

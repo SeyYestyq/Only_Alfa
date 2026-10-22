@@ -5,7 +5,9 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
-ProductTypeLiteral = Literal["INVEST_LEASING", "VKL", "OVERDRAFT"]
+ProductTypeLiteral = Literal["INVEST_LEASING", "VKL", "VKL_SEC", "OVERDRAFT"]
+CollateralTypeLiteral = Literal["NONE", "REAL_ESTATE", "VEHICLE", "EQUIPMENT"]
+CollateralStatusLiteral = Literal["NONE", "DRAFT", "UNDER_REVIEW", "APPROVED", "REJECTED"]
 ActorRoleLiteral = Literal["CEO_OWNER", "IP_OWNER", "ACCOUNTANT", "UNDERWRITER"]
 UnderwriterActionLiteral = Literal["APPROVE", "COUNTER_OFFER", "NEED_MORE_INFO", "REJECT"]
 
@@ -207,6 +209,8 @@ class ApplicationCreateRequest(BaseModel):
     declared_monthly_revenue: float = Field(..., gt=0)
     actor_role: ActorRoleLiteral = "ACCOUNTANT"
     draft_application_id: Optional[str] = None
+    collateral_type: CollateralTypeLiteral = "NONE"
+    collateral_value_rub: float = Field(0.0, ge=0)
 
 
 class FactorSchema(BaseModel):
@@ -277,6 +281,9 @@ class ApplicationSchema(BaseModel):
     max_payment_rub: float
     limit_rub: float
     k_sector: float
+    collateral_type: str = "NONE"
+    collateral_value_rub: float = 0.0
+    collateral_status: str = "NONE"
     factors_breakdown: list[FactorSchema]
     counter_offers: list[CounterOfferSchema]
     rejection_checklist: list[str]
@@ -319,8 +326,12 @@ class UnderwriterActionRequest(BaseModel):
 class DraftSummarySchema(BaseModel):
     application_id: str
     status: str
+    status_label: str = ""
+    product_type: str = ""
+    product_label: str = ""
     risk_score: int
     requested_amount_rub: float
+    term_months: int = 0
     created_at: Optional[str] = None
 
 

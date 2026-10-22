@@ -11,7 +11,11 @@ DEFAULT_CBR_KEY_RATE: float = 14.0
 
 SPREAD_INVEST_LEASING: float = 1.5
 SPREAD_VKL: float = 2.5
+SPREAD_VKL_SEC: float = 4.5  # ВКЛ с залогом: ~18,5% при КС 14% и защите бизнеса
 SPREAD_OVERDRAFT: float = 3.5
+
+# Минимальное покрытие залогом для полной суммы (доля от requested)
+COLLATERAL_COVERAGE_RATIO: float = 0.5
 
 # ── Корректировка ставки по RiskScore ────────────────────────────────────────
 RATE_ADJUSTMENT_HIGH: float = -1.0   # RiskScore >= 750

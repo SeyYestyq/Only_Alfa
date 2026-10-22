@@ -48,7 +48,7 @@ from app.infra.models import Application
 from app.repositories.application_repository import ApplicationRepository
 from app.repositories.company_repository import CompanyRepository
 from app.repositories.transaction_repository import TransactionRepository
-from app.services.presenters import application_detail, money
+from app.services.presenters import PRODUCT_LABELS, STATUS_LABELS, application_detail, money
 
 _UNDERWRITER_ACTIONS = {"APPROVE", "COUNTER_OFFER", "NEED_MORE_INFO", "REJECT"}
 
@@ -90,8 +90,12 @@ class ApplicationService:
             {
                 "application_id": row.id,
                 "status": row.status,
+                "status_label": STATUS_LABELS.get(row.status, row.status),
+                "product_type": row.product_type,
+                "product_label": PRODUCT_LABELS.get(row.product_type, row.product_type),
                 "risk_score": row.risk_score,
                 "requested_amount_rub": money(row.requested_amount_rub),
+                "term_months": row.term_months,
                 "created_at": row.created_at.isoformat() if row.created_at else None,
             }
             for row in rows
@@ -103,6 +107,8 @@ class ApplicationService:
             raise EntityNotFound(f"Компания {body.company_id} не найдена")
         profile.declared_monthly_revenue = body.declared_monthly_revenue
         product = ProductType(body.product_type)
+        collateral_type = getattr(body, "collateral_type", None) or "NONE"
+        collateral_value = float(getattr(body, "collateral_value_rub", 0) or 0)
 
         draft = None
         if body.draft_application_id:
@@ -113,7 +119,12 @@ class ApplicationService:
                 raise InvalidTransition("Черновик уже отправлен в скоринг")
 
         pipeline = self._run_pipeline(
-            profile, product, body.requested_amount_rub, body.term_months
+            profile,
+            product,
+            body.requested_amount_rub,
+            body.term_months,
+            collateral_type=collateral_type,
+            collateral_value_rub=collateral_value,
         )
 
         application = draft or self.applications.create(
@@ -123,6 +134,9 @@ class ApplicationService:
             requested_amount_rub=body.requested_amount_rub,
             term_months=body.term_months,
             declared_monthly_revenue=body.declared_monthly_revenue,
+            collateral_type=collateral_type,
+            collateral_value_rub=collateral_value,
+            collateral_status="NONE",
             initiator_role=body.actor_role,
             risk_score=0,
             raw_score=0,
@@ -610,9 +624,21 @@ class ApplicationService:
         product: ProductType,
         requested_amount: float,
         term_months: int,
+        *,
+        collateral_type: str = "NONE",
+        collateral_value_rub: float = 0.0,
     ) -> PipelineResult:
         score = calculate_risk_score(profile)
-        decision = make_decision(profile, score, requested_amount, product, term_months, key_rate_pct=settings.cbr_key_rate)
+        decision = make_decision(
+            profile,
+            score,
+            requested_amount,
+            product,
+            term_months,
+            key_rate_pct=settings.cbr_key_rate,
+            collateral_type=collateral_type,
+            collateral_value_rub=collateral_value_rub,
+        )
         anomaly = check_revenue_anomaly(profile)
         if score.is_hard_stop:
             status = ApplicationStatus.REJECTED
@@ -622,17 +648,40 @@ class ApplicationService:
             status = _status_from_decision(decision.outcome)
         return PipelineResult(score=score, decision=decision, anomaly=anomaly, status=status)
 
+    @staticmethod
+    def _resolve_collateral(body, decision_outcome: str) -> tuple[str, float, str]:
+        from app.domain.decision.decision_engine import collateral_covers
+
+        collateral_type = getattr(body, "collateral_type", None) or "NONE"
+        collateral_value = float(getattr(body, "collateral_value_rub", 0) or 0)
+        if collateral_type == "NONE" or collateral_value <= 0:
+            return "NONE", 0.0, "NONE"
+        requested = float(getattr(body, "requested_amount_rub", 0) or 0)
+        if collateral_covers(requested, collateral_value):
+            status = "APPROVED" if decision_outcome == DecisionOutcome.APPROVED.value else "UNDER_REVIEW"
+            return collateral_type, collateral_value, status
+        return collateral_type, collateral_value, "REJECTED"
+
     def _persist_pipeline(self, application: Application, profile: CompanyProfile,
                           pipeline: PipelineResult, body) -> None:
         score = pipeline.score
         decision = pipeline.decision
+        collateral_type, collateral_value, collateral_status = self._resolve_collateral(
+            body, decision.outcome.value
+        )
+        product_type = body.product_type
+        if collateral_status == "APPROVED":
+            product_type = ProductType.VKL_SEC.value
         self.applications.update(
             application,
             status=pipeline.status.value,
-            product_type=body.product_type,
+            product_type=product_type,
             requested_amount_rub=body.requested_amount_rub,
             term_months=body.term_months,
             declared_monthly_revenue=body.declared_monthly_revenue,
+            collateral_type=collateral_type,
+            collateral_value_rub=collateral_value,
+            collateral_status=collateral_status,
             initiator_role=body.actor_role,
             risk_score=score.final_score,
             raw_score=score.raw_score,
@@ -676,6 +725,28 @@ class ApplicationService:
             ),
             {"score": score.final_score, "raw_score": score.raw_score},
         )
+        collateral_status = getattr(application, "collateral_status", "NONE") or "NONE"
+        if collateral_status != "NONE":
+            check_status = {
+                "APPROVED": "PASS",
+                "UNDER_REVIEW": "WARN",
+                "REJECTED": "WARN",
+                "DRAFT": "WARN",
+            }.get(collateral_status, "WARN")
+            self.applications.add_check(
+                application.id,
+                "COLLATERAL",
+                check_status,
+                (
+                    f"Залог {application.collateral_type}: "
+                    f"{application.collateral_value_rub:,.0f} ₽ · {collateral_status}"
+                ),
+                {
+                    "collateral_type": application.collateral_type,
+                    "collateral_value_rub": application.collateral_value_rub,
+                    "collateral_status": collateral_status,
+                },
+            )
         if score.is_hard_stop:
             self.applications.add_check(
                 application.id,

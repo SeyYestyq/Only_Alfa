@@ -1,8 +1,28 @@
 export type LegalForm = "IP" | "OOO";
 export type ActorRole = "CEO_OWNER" | "IP_OWNER" | "ACCOUNTANT" | "UNDERWRITER";
-export type ProductType = "INVEST_LEASING" | "VKL" | "OVERDRAFT";
+export type ProductType = "INVEST_LEASING" | "VKL" | "VKL_SEC" | "OVERDRAFT";
+export type CollateralType = "NONE" | "REAL_ESTATE" | "VEHICLE" | "EQUIPMENT";
+export type CollateralStatus = "NONE" | "DRAFT" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
 export type ViewMode = "business" | "bank";
-export type ScreenId = 1 | 2 | 3;
+export type ScreenId =
+  | "home"
+  | "apply"
+  | "passport"
+  | "decision"
+  | "signing"
+  | "search"
+  | "invoice"
+  | "payments"
+  | "messages"
+  | "documents"
+  | "applications"
+  | "bank-queue"
+  | "bank-signal"
+  | "bank-xray"
+  | "bank-messages"
+  | "bank-effect"
+  | "bank-clients"
+  | "bank-profile";
 
 export interface CompanyUser {
   id: string;
@@ -195,6 +215,9 @@ export interface Application {
   outcome_label: string;
   product_type: ProductType;
   product_label: string;
+  collateral_type: CollateralType;
+  collateral_value_rub: number;
+  collateral_status: CollateralStatus;
   risk_score: number;
   raw_score: number;
   is_hard_stop: boolean;
@@ -332,6 +355,18 @@ export interface InstallmentResult {
   account_balance: number;
 }
 
+export interface ApplicationSummary {
+  application_id: string;
+  status: string;
+  status_label: string;
+  product_type: string;
+  product_label: string;
+  risk_score: number;
+  requested_amount_rub: number;
+  term_months: number;
+  created_at: string | null;
+}
+
 export interface ApplicationCreateInput {
   company_id: string;
   product_type: ProductType;
@@ -340,6 +375,8 @@ export interface ApplicationCreateInput {
   declared_monthly_revenue: number;
   actor_role: ActorRole;
   draft_application_id?: string;
+  collateral_type?: CollateralType;
+  collateral_value_rub?: number;
 }
 
 export interface HealthInfo {

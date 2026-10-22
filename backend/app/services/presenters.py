@@ -31,7 +31,23 @@ OUTCOME_LABELS = {
 PRODUCT_LABELS = {
     "INVEST_LEASING": "Инвест-кредит / лизинг",
     "VKL": "Возобновляемая кредитная линия",
+    "VKL_SEC": "ВКЛ с залогом",
     "OVERDRAFT": "Овердрафт",
+}
+
+COLLATERAL_TYPE_LABELS = {
+    "NONE": "Без залога",
+    "REAL_ESTATE": "Коммерческая недвижимость",
+    "VEHICLE": "Транспорт / спецтехника",
+    "EQUIPMENT": "Оборудование",
+}
+
+COLLATERAL_STATUS_LABELS = {
+    "NONE": "Нет",
+    "DRAFT": "Черновик",
+    "UNDER_REVIEW": "На оценке",
+    "APPROVED": "Одобрен",
+    "REJECTED": "Отказ по залогу",
 }
 
 
@@ -232,6 +248,9 @@ def application_detail(
         "outcome_label": OUTCOME_LABELS.get(application.outcome, application.outcome),
         "product_type": application.product_type,
         "product_label": PRODUCT_LABELS.get(application.product_type, application.product_type),
+        "collateral_type": getattr(application, "collateral_type", None) or "NONE",
+        "collateral_value_rub": money(getattr(application, "collateral_value_rub", 0) or 0),
+        "collateral_status": getattr(application, "collateral_status", None) or "NONE",
         "risk_score": application.risk_score,
         "raw_score": application.raw_score,
         "is_hard_stop": application.is_hard_stop,

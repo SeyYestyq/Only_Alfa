@@ -39,7 +39,23 @@ class UserRole(str, Enum):
 class ProductType(str, Enum):
     INVEST_LEASING = "INVEST_LEASING"
     VKL = "VKL"
+    VKL_SEC = "VKL_SEC"
     OVERDRAFT = "OVERDRAFT"
+
+
+class CollateralType(str, Enum):
+    NONE = "NONE"
+    REAL_ESTATE = "REAL_ESTATE"
+    VEHICLE = "VEHICLE"
+    EQUIPMENT = "EQUIPMENT"
+
+
+class CollateralStatus(str, Enum):
+    NONE = "NONE"
+    DRAFT = "DRAFT"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
 
 
 class DecisionOutcome(str, Enum):

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useApp } from "../state/AppState";
+import { useDemoStore } from "../state/demoStore";
 import { formatMoney, formatPercent } from "../utils/format";
 
 export function SmartSearchPanel() {
@@ -8,9 +9,10 @@ export function SmartSearchPanel() {
     searchResult,
     runSearch,
     isBusy,
-    createApplication,
     viewMode,
+    goToScreen,
   } = useApp();
+  const setApplyIntent = useDemoStore((state) => state.setApplyIntent);
   const [query, setQuery] = useState("");
 
   if (!dashboard) {
@@ -117,17 +119,13 @@ export function SmartSearchPanel() {
                     <button
                       type="button"
                       className="btn btn-primary btn-sm btn-block"
-                      disabled={viewMode === "bank"}
-                      onClick={() =>
-                        void createApplication({
-                          product_type: badge.product_type,
-                          requested_amount_rub: badge.amount_rub,
-                          term_months: badge.term_months,
-                          declared_monthly_revenue: dashboard.company.declared_monthly_revenue,
-                        })
-                      }
+                      disabled={viewMode === "bank" || !badge}
+                      onClick={() => {
+                        setApplyIntent("standard");
+                        goToScreen("apply");
+                      }}
                     >
-                      Оформить заявку по этой плашке
+                      Перенести условия в заявку
                     </button>
                     <div className="badge-disclaimer">{badge.disclaimer}</div>
                   </div>

@@ -2,6 +2,7 @@ import type {
   ActorRole,
   Application,
   ApplicationCreateInput,
+  ApplicationSummary,
   CompanyBrief,
   CompanyDetail,
   Dashboard,
@@ -29,10 +30,11 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, init);
+  const raw = await response.text();
   if (!response.ok) {
-    let detail = `Ошибка ${response.status}`;
+    let detail = raw || `Ошибка ${response.status}`;
     try {
-      const body = (await response.json()) as { detail?: unknown };
+      const body = JSON.parse(raw) as { detail?: unknown };
       if (typeof body.detail === "string") {
         detail = body.detail;
       } else if (Array.isArray(body.detail)) {
@@ -41,11 +43,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
           .join("; ");
       }
     } catch {
-      detail = `${detail}: ${await response.text()}`;
+      detail = raw || detail;
     }
     throw new ApiError(response.status, detail);
   }
-  return (await response.json()) as T;
+  return JSON.parse(raw) as T;
 }
 
 function jsonInit(body: unknown): RequestInit {
@@ -107,6 +109,10 @@ export const api = {
     return request(`/applications/${applicationId}`);
   },
 
+  listApplications(companyId: string): Promise<{ applications: ApplicationSummary[] }> {
+    return request(`/companies/${companyId}/applications`);
+  },
+
   verifyMultibank(applicationId: string): Promise<{
     application: Application;
     previous_score: number;
@@ -153,6 +159,22 @@ export const api = {
 
 export const PRODUCT_LABELS: Record<ProductType, string> = {
   INVEST_LEASING: "Инвест-кредит / лизинг",
-  VKL: "Возвратная кредитная линия",
+  VKL: "Возобновляемая кредитная линия",
+  VKL_SEC: "ВКЛ с залогом",
   OVERDRAFT: "Овердрафт",
+};
+
+export const COLLATERAL_LABELS: Record<string, string> = {
+  NONE: "Без залога",
+  REAL_ESTATE: "Коммерческая недвижимость",
+  VEHICLE: "Транспорт / спецтехника",
+  EQUIPMENT: "Оборудование",
+};
+
+export const COLLATERAL_STATUS_LABELS: Record<string, string> = {
+  NONE: "не указан",
+  DRAFT: "черновик",
+  UNDER_REVIEW: "на проверке",
+  APPROVED: "принят",
+  REJECTED: "покрытия недостаточно",
 };

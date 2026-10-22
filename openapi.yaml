@@ -569,6 +569,7 @@ components:
           enum:
           - INVEST_LEASING
           - VKL
+          - VKL_SEC
           - OVERDRAFT
           title: Product Type
         requested_amount_rub:
@@ -599,6 +600,20 @@ components:
           title: Draft Application Id
           type: string
           nullable: true
+        collateral_type:
+          type: string
+          enum:
+          - NONE
+          - REAL_ESTATE
+          - VEHICLE
+          - EQUIPMENT
+          title: Collateral Type
+          default: NONE
+        collateral_value_rub:
+          type: number
+          minimum: 0.0
+          title: Collateral Value Rub
+          default: 0
       type: object
       required:
       - company_id
@@ -643,6 +658,15 @@ components:
         product_label:
           type: string
           title: Product Label
+        collateral_type:
+          type: string
+          title: Collateral Type
+        collateral_value_rub:
+          type: number
+          title: Collateral Value Rub
+        collateral_status:
+          type: string
+          title: Collateral Status
         risk_score:
           type: integer
           title: Risk Score
@@ -1342,12 +1366,28 @@ components:
         status:
           type: string
           title: Status
+        status_label:
+          type: string
+          title: Status Label
+          default: ''
+        product_type:
+          type: string
+          title: Product Type
+          default: ''
+        product_label:
+          type: string
+          title: Product Label
+          default: ''
         risk_score:
           type: integer
           title: Risk Score
         requested_amount_rub:
           type: number
           title: Requested Amount Rub
+        term_months:
+          type: integer
+          title: Term Months
+          default: 0
         created_at:
           title: Created At
           type: string

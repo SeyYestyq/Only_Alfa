@@ -3,8 +3,9 @@ import type { ProductType } from "../api/types";
 import { PRODUCT_LABELS } from "../api/client";
 import { useApp } from "../state/AppState";
 
+/** Компактная форма заявки (legacy). Основной флоу — ApplyScreen. */
 export function ApplicationForm() {
-  const { dashboard, searchResult, createApplication, isBusy, viewMode } = useApp();
+  const { dashboard, searchResult, createApplication, isBusy, viewMode, goToScreen } = useApp();
   const [amount, setAmount] = useState(0);
   const [term, setTerm] = useState(24);
   const [product, setProduct] = useState<ProductType>("INVEST_LEASING");
@@ -44,7 +45,12 @@ export function ApplicationForm() {
       <div className="card-header">
         <div>
           <h2 className="card-title">Заявка на финансирование</h2>
-          <p className="card-subtitle">Параметры уйдут в скоринг и Decision Engine</p>
+          <p className="card-subtitle">
+            Полный сценарий с залогом — на экране{" "}
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => goToScreen("apply")}>
+              Заявки и офферы
+            </button>
+          </p>
         </div>
       </div>
       <div className="card-body">

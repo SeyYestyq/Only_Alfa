@@ -13,6 +13,7 @@ import type {
   ActorRole,
   Application,
   ApplicationCreateInput,
+  ApplicationSummary,
   CompanyBrief,
   Dashboard,
   InstallmentResult,
@@ -40,6 +41,7 @@ interface AppContextValue {
   companyId: string | null;
   dashboard: Dashboard | null;
   application: Application | null;
+  applications: ApplicationSummary[];
   xray: Xray | null;
   userRole: ActorRole;
   effectiveRole: ActorRole;
@@ -62,7 +64,12 @@ interface AppContextValue {
   parseTemplate: (code: string) => Promise<void>;
   parseFile: (file: File) => Promise<void>;
   submitDraft: (productType: ProductType, termMonths: number) => Promise<void>;
-  createApplication: (input: Omit<ApplicationCreateInput, "company_id" | "actor_role">) => Promise<void>;
+  createApplication: (
+    input: Omit<ApplicationCreateInput, "company_id" | "actor_role">,
+    next?: ScreenId,
+  ) => Promise<void>;
+  loadApplications: () => Promise<void>;
+  openApplication: (applicationId: string) => Promise<void>;
   verifyMultibank: () => Promise<void>;
   acceptOffer: (index: number) => Promise<void>;
   signApplication: () => Promise<void>;
@@ -89,6 +96,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [application, setApplication] = useState<Application | null>(null);
+  const [applications, setApplications] = useState<ApplicationSummary[]>([]);
   const [xray, setXray] = useState<Xray | null>(null);
   const screen = useDemoStore((state) => state.screen);
   const viewMode = useDemoStore((state) => state.viewMode);
@@ -145,9 +153,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSearchResult(null);
     setInvoiceResult(null);
     setApplication(null);
+    setApplications([]);
     setXray(null);
     setMultibankResult(null);
-    setScreen(1);
+    setScreen("home");
     setError(null);
     setIsBusy(true);
     try {
@@ -218,9 +227,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSearchResult(null);
       setInvoiceResult(null);
       setApplication(null);
+      setApplications([]);
       setXray(null);
       setMultibankResult(null);
-      setScreen(1);
+      setScreen("home");
       const payload = await api.getDashboard(company.id);
       setDashboard(payload);
       setUserRole(ownerRole(payload.company));
@@ -231,20 +241,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [handleError]);
 
+  const screenForApplication = useCallback((app: Application): ScreenId => {
+    if (app.status === "FUNDED" || app.status === "AWAITING_CEO_APPROVAL") {
+      return "signing";
+    }
+    if (
+      ["COUNTER_OFFER", "APPROVED", "REJECTED", "NEED_MORE_INFO", "MANUAL_REVIEW"].includes(app.status)
+    ) {
+      return "decision";
+    }
+    return "passport";
+  }, []);
+
   const setViewMode = useCallback((mode: ViewMode) => {
     setViewModeStore(mode);
-    setScreen(mode === "bank" ? 3 : application ? 2 : 1);
+    setScreen(mode === "bank" ? "bank-queue" : application ? screenForApplication(application) : "home");
     if (mode === "bank" && application) {
       loadXray(application.application_id).catch(handleError);
     }
-  }, [application, handleError, loadXray, setScreen, setViewModeStore]);
+  }, [application, handleError, loadXray, screenForApplication, setScreen, setViewModeStore]);
 
   const goToScreen = useCallback((next: ScreenId) => {
     setScreen(next);
-    if (next === 3 && application) {
+    if ((next === "bank-xray" || next === "bank-queue") && application) {
       loadXray(application.application_id).catch(handleError);
     }
-  }, [application, handleError, loadXray]);
+  }, [application, handleError, loadXray, setScreen]);
 
   const refresh = useCallback(async () => {
     if (!companyId) {
@@ -358,16 +380,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       await afterApplicationChange(created);
-      setScreen(2);
+      setScreen(screenForApplication(created));
     } catch (cause) {
       handleError(cause);
     } finally {
       setIsBusy(false);
     }
-  }, [afterApplicationChange, companyId, dashboard?.company.declared_monthly_revenue, effectiveRole, handleError, invoiceResult]);
+  }, [afterApplicationChange, companyId, dashboard?.company.declared_monthly_revenue, effectiveRole, handleError, invoiceResult, screenForApplication]);
+
+  const loadApplications = useCallback(async () => {
+    if (!companyId) {
+      setApplications([]);
+      return;
+    }
+    try {
+      const payload = await api.listApplications(companyId);
+      if (companyRef.current !== companyId) {
+        return;
+      }
+      setApplications(payload.applications);
+    } catch (cause) {
+      handleError(cause);
+    }
+  }, [companyId, handleError]);
 
   const createApplication = useCallback(async (
     input: Omit<ApplicationCreateInput, "company_id" | "actor_role">,
+    next?: ScreenId,
   ) => {
     if (!companyId) {
       return;
@@ -384,13 +423,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       await afterApplicationChange(created);
-      setScreen(2);
+      if (next === "applications") {
+        const payload = await api.listApplications(companyId);
+        if (companyRef.current === companyId) {
+          setApplications(payload.applications);
+        }
+      }
+      setScreen(next ?? screenForApplication(created));
     } catch (cause) {
       handleError(cause);
     } finally {
       setIsBusy(false);
     }
-  }, [afterApplicationChange, companyId, effectiveRole, handleError]);
+  }, [afterApplicationChange, companyId, effectiveRole, handleError, screenForApplication, setScreen]);
+
+  const openApplication = useCallback(async (applicationId: string) => {
+    setIsBusy(true);
+    setError(null);
+    try {
+      const opened = await api.getApplication(applicationId);
+      if (companyRef.current && opened.company.id !== companyRef.current) {
+        return;
+      }
+      await afterApplicationChange(opened);
+      setScreen(screenForApplication(opened));
+    } catch (cause) {
+      handleError(cause);
+    } finally {
+      setIsBusy(false);
+    }
+  }, [afterApplicationChange, handleError, screenForApplication, setScreen]);
 
   const verifyMultibank = useCallback(async () => {
     if (!application) {
@@ -432,12 +494,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       setApplication(updated);
       await loadXray(updated.application_id);
+      setScreen("signing");
     } catch (cause) {
       handleError(cause);
     } finally {
       setIsBusy(false);
     }
-  }, [application, effectiveRole, handleError, loadXray]);
+  }, [application, effectiveRole, handleError, loadXray, setScreen]);
 
   const signApplication = useCallback(async () => {
     if (!application) {
@@ -451,12 +514,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       await afterApplicationChange(updated);
+      setScreen("signing");
     } catch (cause) {
       handleError(cause);
     } finally {
       setIsBusy(false);
     }
-  }, [afterApplicationChange, application, effectiveRole, handleError]);
+  }, [afterApplicationChange, application, effectiveRole, handleError, setScreen]);
 
   const underwriterAction = useCallback(async (
     action: "APPROVE" | "COUNTER_OFFER" | "NEED_MORE_INFO" | "REJECT",
@@ -508,6 +572,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     companyId,
     dashboard,
     application,
+    applications,
     xray,
     userRole,
     effectiveRole,
@@ -531,6 +596,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     parseFile,
     submitDraft,
     createApplication,
+    loadApplications,
+    openApplication,
     verifyMultibank,
     acceptOffer,
     signApplication,
@@ -539,9 +606,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     refresh,
     clearError: () => setError(null),
   }), [
-    acceptOffer, application, cbrRate, companies, companyId, createApplication, dashboard,
-    effectiveRole, error, goToScreen, invoiceResult, isBusy, isReady, lookupInn, multibankResult,
-    parseFile, parseTemplate, refresh, runInstallment, runSearch, screen, searchResult, selectCompany,
+    acceptOffer, application, applications, cbrRate, companies, companyId, createApplication, dashboard,
+    effectiveRole, error, goToScreen, invoiceResult, isBusy, isReady, loadApplications, lookupInn, multibankResult,
+    openApplication, parseFile, parseTemplate, refresh, runInstallment, runSearch, screen, searchResult, selectCompany,
     setViewMode, signApplication, submitDraft, templates, underwriterAction, userRole,
     verifyMultibank, viewMode, xray,
   ]);

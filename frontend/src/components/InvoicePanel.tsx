@@ -1,8 +1,5 @@
-import { useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { CheckCircle2, FileUp, TriangleAlert } from "lucide-react";
-import type { ProductType } from "../api/types";
-import { PRODUCT_LABELS } from "../api/client";
 import { useApp } from "../state/AppState";
 import { formatMoney, formatMoneyExact } from "../utils/format";
 
@@ -12,19 +9,11 @@ export function InvoicePanel() {
     invoiceResult,
     parseTemplate,
     parseFile,
-    submitDraft,
     isBusy,
-    viewMode,
+    error,
+    clearError,
+    goToScreen,
   } = useApp();
-  const [product, setProduct] = useState<ProductType>("INVEST_LEASING");
-  const [term, setTerm] = useState(24);
-
-  useEffect(() => {
-    if (invoiceResult) {
-      setProduct("INVEST_LEASING");
-      setTerm(24);
-    }
-  }, [invoiceResult]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { "application/pdf": [".pdf"] },
@@ -81,6 +70,33 @@ export function InvoicePanel() {
           ))}
         </div>
 
+        {isBusy && (
+          <div className="recognize" style={{ marginTop: 16 }}>
+            <strong>Распознаём счёт</strong>
+            <div className="recognize-bar" />
+            <ul className="check-list">
+              <li>Текст счёта</li>
+              <li>Реквизиты и сумма</li>
+              <li>Проверка поставщика</li>
+            </ul>
+          </div>
+        )}
+
+        {error && !isBusy && (
+          <div className="alert alert-risk" style={{ marginTop: 16 }}>
+            <strong>Не удалось распознать счёт</strong>
+            <p style={{ marginTop: 4 }}>{error}</p>
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={clearError}>
+                Загрузить снова
+              </button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("apply")}>
+                Ввести вручную
+              </button>
+            </div>
+          </div>
+        )}
+
         {invoiceResult && (
           <div className={`invoice-result ${invoiceResult.antifraud.is_verified ? "" : "warn"}`}>
             <div className="result-head">
@@ -113,44 +129,6 @@ export function InvoicePanel() {
             <p className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>
               {invoiceResult.antifraud.message}
             </p>
-
-            <div className="form-grid" style={{ marginTop: 10 }}>
-              <label className="field">
-                <span className="field-label">Продукт</span>
-                <select
-                  className="field-select"
-                  value={product}
-                  onChange={(event) => setProduct(event.target.value as ProductType)}
-                >
-                  {Object.entries(PRODUCT_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="field">
-                <span className="field-label">Срок, мес.</span>
-                <input
-                  className="field-input"
-                  type="number"
-                  min={3}
-                  max={60}
-                  value={term}
-                  onChange={(event) => setTerm(Number(event.target.value))}
-                />
-              </label>
-              <div className="field-full">
-                <button
-                  type="button"
-                  className="btn btn-primary btn-block"
-                  disabled={isBusy || viewMode === "bank" || term < 3}
-                  onClick={() => void submitDraft(product, term)}
-                >
-                  Отправить черновик в скоринг
-                </button>
-              </div>
-            </div>
           </div>
         )}
       </div>

@@ -78,10 +78,16 @@ def calculate_credit_limit(
 
 
 def product_spread(product: ProductType) -> float:
-    from app.core.constants import SPREAD_INVEST_LEASING, SPREAD_OVERDRAFT, SPREAD_VKL
+    from app.core.constants import (
+        SPREAD_INVEST_LEASING,
+        SPREAD_OVERDRAFT,
+        SPREAD_VKL,
+        SPREAD_VKL_SEC,
+    )
 
     return {
         ProductType.INVEST_LEASING: SPREAD_INVEST_LEASING,
         ProductType.VKL: SPREAD_VKL,
+        ProductType.VKL_SEC: SPREAD_VKL_SEC,
         ProductType.OVERDRAFT: SPREAD_OVERDRAFT,
     }[product]

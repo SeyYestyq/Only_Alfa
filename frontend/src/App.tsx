@@ -1,7 +1,17 @@
+import { AppNav } from "./components/AppNav";
 import { DemoControlBar } from "./components/DemoControlBar";
-import { ApplicationScreen } from "./screens/ApplicationScreen";
+import { ApplicationsScreen } from "./screens/ApplicationsScreen";
+import { ApplyScreen } from "./screens/ApplyScreen";
+import { BankHubScreen } from "./screens/BankHubScreen";
 import { DashboardScreen } from "./screens/DashboardScreen";
-import { InspectorScreen } from "./screens/InspectorScreen";
+import { DecisionScreen } from "./screens/DecisionScreen";
+import { DocumentsScreen } from "./screens/DocumentsScreen";
+import { InvoiceScreen } from "./screens/InvoiceScreen";
+import { MessagesScreen } from "./screens/MessagesScreen";
+import { PassportScreen } from "./screens/PassportScreen";
+import { PaymentsScreen } from "./screens/PaymentsScreen";
+import { SearchScreen } from "./screens/SearchScreen";
+import { SigningScreen } from "./screens/SigningScreen";
 import { useApp } from "./state/AppState";
 
 export default function App() {
@@ -16,9 +26,12 @@ export default function App() {
     );
   }
 
+  const isBank = viewMode === "bank" || screen.startsWith("bank-");
+
   return (
-    <>
+    <div className="app-shell">
       <DemoControlBar />
+      <AppNav />
       {error && (
         <div className="banner banner-error" role="alert">
           <span>{error}</span>
@@ -33,9 +46,23 @@ export default function App() {
         </div>
       )}
       <main className="page">
-        {screen === 1 && <DashboardScreen />}
-        {screen === 2 && <ApplicationScreen />}
-        {screen === 3 && <InspectorScreen />}
+        {isBank ? (
+          <BankHubScreen />
+        ) : (
+          <>
+            {screen === "home" && <DashboardScreen />}
+            {screen === "applications" && <ApplicationsScreen />}
+            {screen === "apply" && <ApplyScreen />}
+            {screen === "passport" && <PassportScreen />}
+            {screen === "decision" && <DecisionScreen />}
+            {screen === "signing" && <SigningScreen />}
+            {screen === "search" && <SearchScreen />}
+            {screen === "payments" && <PaymentsScreen />}
+            {screen === "invoice" && <InvoiceScreen />}
+            {screen === "messages" && <MessagesScreen />}
+            {screen === "documents" && <DocumentsScreen />}
+          </>
+        )}
       </main>
       <footer className="footer">
         <span>
@@ -44,6 +71,6 @@ export default function App() {
         <span>Демо-данные. Расчёты выполняет бэкенд, фронтенд только отображает ответы API.</span>
         <span>Режим: {viewMode === "bank" ? "глазами банка" : "глазами бизнеса"}</span>
       </footer>
-    </>
+    </div>
   );
 }

@@ -68,6 +68,8 @@ tmp/
 *.tmp
 
 # Исходные документы ТЗ/BRD — хранятся локально, в репозиторий не попадают
+*.docx
+*.pdf
 /Alfa_Hack_Smart_Credit_Cabinet_BRD_SRS_v3.2_Final.docx
 /TZ_Only_Alfa_Master_Package_v3.2_Approved (1).docx
 
