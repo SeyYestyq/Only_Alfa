@@ -55,8 +55,8 @@ interface AppContextValue {
   invoiceResult: InvoiceParseResult | null;
   templates: InvoiceTemplate[];
   multibankResult: MultibankResult | null;
-  selectCompany: (companyId: string) => Promise<void>;
-  lookupInn: (inn: string) => Promise<void>;
+  selectCompany: (companyId: string, options?: { nextScreen?: ScreenId }) => Promise<void>;
+  lookupInn: (inn: string) => Promise<{ ok: true; name: string } | { ok: false; message: string }>;
   setUserRole: (role: ActorRole) => void;
   setViewMode: (mode: ViewMode) => void;
   goToScreen: (screen: ScreenId) => void;
@@ -67,6 +67,10 @@ interface AppContextValue {
   createApplication: (
     input: Omit<ApplicationCreateInput, "company_id" | "actor_role">,
     next?: ScreenId,
+  ) => Promise<void>;
+  openBankCase: (
+    companyId: string,
+    input: Omit<ApplicationCreateInput, "company_id" | "actor_role">,
   ) => Promise<void>;
   loadApplications: () => Promise<void>;
   openApplication: (applicationId: string) => Promise<void>;
@@ -147,7 +151,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return payload;
   }, []);
 
-  const selectCompany = useCallback(async (id: string) => {
+  const selectCompany = useCallback(async (id: string, options?: { nextScreen?: ScreenId }) => {
     companyRef.current = id;
     setCompanyId(id);
     setSearchResult(null);
@@ -156,7 +160,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setApplications([]);
     setXray(null);
     setMultibankResult(null);
-    setScreen("home");
+    const stayInBank = viewMode === "bank" || (options?.nextScreen?.startsWith("bank-") ?? false);
+    setScreen(options?.nextScreen ?? (stayInBank ? "bank-queue" : "home"));
     setError(null);
     setIsBusy(true);
     try {
@@ -170,7 +175,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsBusy(false);
     }
-  }, [handleError, loadDashboard]);
+  }, [handleError, loadDashboard, setScreen, setUserRole, viewMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -230,16 +235,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setApplications([]);
       setXray(null);
       setMultibankResult(null);
-      setScreen("home");
+      const stayInBank = viewMode === "bank";
+      setScreen(stayInBank ? "bank-queue" : "home");
       const payload = await api.getDashboard(company.id);
       setDashboard(payload);
       setUserRole(ownerRole(payload.company));
+      return { ok: true as const, name: company.name };
     } catch (cause) {
-      handleError(cause);
+      const message =
+        cause instanceof Error ? cause.message : "Проверьте корректность номера";
+      return { ok: false as const, message };
     } finally {
       setIsBusy(false);
     }
-  }, [handleError]);
+  }, [setScreen, setUserRole, viewMode]);
 
   const screenForApplication = useCallback((app: Application): ScreenId => {
     if (app.status === "FUNDED" || app.status === "AWAITING_CEO_APPROVAL") {
@@ -408,7 +417,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     input: Omit<ApplicationCreateInput, "company_id" | "actor_role">,
     next?: ScreenId,
   ) => {
-    if (!companyId) {
+    const targetCompanyId = companyRef.current ?? companyId;
+    if (!targetCompanyId) {
       return;
     }
     setIsBusy(true);
@@ -416,16 +426,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const created = await api.createApplication({
         ...input,
-        company_id: companyId,
+        company_id: targetCompanyId,
         actor_role: effectiveRole === "UNDERWRITER" ? "ACCOUNTANT" : effectiveRole,
       });
-      if (companyRef.current !== companyId) {
+      if (companyRef.current !== targetCompanyId) {
         return;
       }
       await afterApplicationChange(created);
       if (next === "applications") {
-        const payload = await api.listApplications(companyId);
-        if (companyRef.current === companyId) {
+        const payload = await api.listApplications(targetCompanyId);
+        if (companyRef.current === targetCompanyId) {
           setApplications(payload.applications);
         }
       }
@@ -436,6 +446,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setIsBusy(false);
     }
   }, [afterApplicationChange, companyId, effectiveRole, handleError, screenForApplication, setScreen]);
+
+  const openBankCase = useCallback(async (
+    id: string,
+    input: Omit<ApplicationCreateInput, "company_id" | "actor_role">,
+  ) => {
+    setIsBusy(true);
+    setError(null);
+    try {
+      companyRef.current = id;
+      setCompanyId(id);
+      setSearchResult(null);
+      setInvoiceResult(null);
+      setMultibankResult(null);
+      setApplications([]);
+      setApplication(null);
+      setXray(null);
+      setScreen("bank-xray");
+      const payload = await loadDashboard(id);
+      if (!payload || companyRef.current !== id) {
+        return;
+      }
+      setUserRole(ownerRole(payload.company));
+      const created = await api.createApplication({
+        ...input,
+        company_id: id,
+        actor_role: "ACCOUNTANT",
+      });
+      if (companyRef.current !== id) {
+        return;
+      }
+      await afterApplicationChange(created);
+      await loadXray(created.application_id);
+      setScreen("bank-xray");
+    } catch (cause) {
+      handleError(cause);
+    } finally {
+      setIsBusy(false);
+    }
+  }, [afterApplicationChange, handleError, loadDashboard, loadXray, setScreen, setUserRole]);
 
   const openApplication = useCallback(async (applicationId: string) => {
     setIsBusy(true);
@@ -596,6 +645,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     parseFile,
     submitDraft,
     createApplication,
+    openBankCase,
     loadApplications,
     openApplication,
     verifyMultibank,
@@ -608,8 +658,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }), [
     acceptOffer, application, applications, cbrRate, companies, companyId, createApplication, dashboard,
     effectiveRole, error, goToScreen, invoiceResult, isBusy, isReady, loadApplications, lookupInn, multibankResult,
-    openApplication, parseFile, parseTemplate, refresh, runInstallment, runSearch, screen, searchResult, selectCompany,
-    setViewMode, signApplication, submitDraft, templates, underwriterAction, userRole,
+    openApplication, openBankCase, parseFile, parseTemplate, refresh, runInstallment, runSearch, screen, searchResult,
+    selectCompany, setViewMode, signApplication, submitDraft, templates, underwriterAction, userRole,
     verifyMultibank, viewMode, xray,
   ]);
 

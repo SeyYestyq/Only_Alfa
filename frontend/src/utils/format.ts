@@ -7,6 +7,15 @@ const moneyExactFormatter = new Intl.NumberFormat("ru-RU", {
   maximumFractionDigits: 2,
 });
 
+/** Ориентир аннуитета на UI до ответа API. Решение и платёж считает бэкенд. */
+export function roughAnnuity(amount: number, months: number, ratePct = 0.18): number {
+  if (amount <= 0 || months <= 0) {
+    return 0;
+  }
+  const monthlyRate = ratePct / 12;
+  return Math.round((amount * monthlyRate) / (1 - (1 + monthlyRate) ** -months));
+}
+
 export function formatMoney(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) {
     return "—";

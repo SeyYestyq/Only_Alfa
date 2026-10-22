@@ -1,19 +1,11 @@
 import { useDropzone } from "react-dropzone";
-import { CheckCircle2, FileUp, TriangleAlert } from "lucide-react";
+import { FileUp } from "lucide-react";
 import { useApp } from "../state/AppState";
 import { formatMoney, formatMoneyExact } from "../utils/format";
 
+/** Зона PDF и демо-счета. Результат распознавания рисует InvoiceScreen. */
 export function InvoicePanel() {
-  const {
-    templates,
-    invoiceResult,
-    parseTemplate,
-    parseFile,
-    isBusy,
-    error,
-    clearError,
-    goToScreen,
-  } = useApp();
+  const { templates, parseTemplate, parseFile, isBusy, error, clearError, goToScreen } = useApp();
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { "application/pdf": [".pdf"] },
@@ -28,110 +20,147 @@ export function InvoicePanel() {
   });
 
   return (
-    <section className="card">
-      <div className="card-header">
-        <div>
-          <h2 className="card-title">Счёт в кредит</h2>
-          <p className="card-subtitle">PDF → ИНН поставщика → ЕГРЮЛ/ФССП → черновик заявки</p>
+    <div className="invoice-upload">
+      <div
+        {...getRootProps({
+          className: `invoice-drop ${isDragActive ? "dragging" : ""}`,
+          role: "button",
+          tabIndex: 0,
+        })}
+      >
+        <input {...getInputProps()} />
+        <span className="invoice-pdf-badge">PDF</span>
+        <div className="dropzone-title">
+          {isDragActive ? "Отпустите PDF-счёт" : "Перетащите PDF-счёт сюда"}
         </div>
-        <span className="pill pill-outline">pdfplumber · react-dropzone</span>
+        <div className="dropzone-sub">или выберите файл · PDF до 10 МБ</div>
+        <FileUp size={20} strokeWidth={1.75} aria-hidden style={{ marginTop: 8, opacity: 0.5 }} />
       </div>
-      <div className="card-body">
-        <div
-          {...getRootProps({
-            className: `dropzone ${isDragActive ? "dragging" : ""}`,
-            role: "button",
-            tabIndex: 0,
-          })}
-        >
-          <input {...getInputProps()} />
-          <FileUp className="dropzone-icon" size={28} strokeWidth={1.75} aria-hidden />
-          <div className="dropzone-title">
-            {isDragActive ? "Отпустите PDF-счёт" : "Перетащите PDF-счёт сюда"}
-          </div>
-          <div className="dropzone-sub">или нажмите, чтобы выбрать файл · до 5 секунд на разбор</div>
-        </div>
 
-        <div className="template-buttons">
-          {templates.map((template) => (
-            <button
-              key={template.code}
-              type="button"
-              className="template-button"
-              disabled={isBusy}
-              onClick={() => void parseTemplate(template.code)}
-            >
-              <div>
-                <strong>{template.supplier_name}</strong>
-                <span className="faint">{template.purpose}</span>
-              </div>
-              <span className="mono nowrap">{formatMoney(template.amount_rub)}</span>
+      <div className="figma-panel-title" style={{ marginTop: 20 }}>
+        Или возьмите демо-счёт
+      </div>
+      <div className="demo-invoices">
+        {templates.map((template) => (
+          <button
+            key={template.code}
+            type="button"
+            className="demo-invoice"
+            disabled={isBusy}
+            onClick={() => void parseTemplate(template.code)}
+          >
+            <strong>
+              {template.supplier_name}
+            </strong>
+            <span>
+              {template.purpose} · {formatMoney(template.amount_rub)}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {isBusy && (
+        <div className="recognize" style={{ marginTop: 16 }}>
+          <strong>Распознаём счёт</strong>
+          <div className="recognize-bar" />
+          <ul className="check-list">
+            <li>Текст счёта</li>
+            <li>Реквизиты и сумма</li>
+            <li>Проверка поставщика</li>
+          </ul>
+        </div>
+      )}
+
+      {error && !isBusy && (
+        <div className="alert alert-risk" style={{ marginTop: 16 }}>
+          <strong>Не удалось распознать счёт</strong>
+          <p style={{ marginTop: 4 }}>{error}</p>
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={clearError}>
+              Загрузить снова
             </button>
-          ))}
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("apply")}>
+              Ввести вручную
+            </button>
+          </div>
         </div>
+      )}
+    </div>
+  );
+}
 
-        {isBusy && (
-          <div className="recognize" style={{ marginTop: 16 }}>
-            <strong>Распознаём счёт</strong>
-            <div className="recognize-bar" />
-            <ul className="check-list">
-              <li>Текст счёта</li>
-              <li>Реквизиты и сумма</li>
-              <li>Проверка поставщика</li>
-            </ul>
-          </div>
-        )}
+export function InvoiceRecognizedSummary() {
+  const { invoiceResult } = useApp();
+  if (!invoiceResult) {
+    return null;
+  }
+  const { invoice, antifraud, parsing_ms } = invoiceResult;
+  const ok = antifraud.is_verified;
 
-        {error && !isBusy && (
-          <div className="alert alert-risk" style={{ marginTop: 16 }}>
-            <strong>Не удалось распознать счёт</strong>
-            <p style={{ marginTop: 4 }}>{error}</p>
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={clearError}>
-                Загрузить снова
-              </button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("apply")}>
-                Ввести вручную
-              </button>
-            </div>
-          </div>
-        )}
-
-        {invoiceResult && (
-          <div className={`invoice-result ${invoiceResult.antifraud.is_verified ? "" : "warn"}`}>
-            <div className="result-head">
-              <strong className="result-head-title">
-                {invoiceResult.antifraud.is_verified ? (
-                  <CheckCircle2 size={16} className="icon-good" aria-hidden />
-                ) : (
-                  <TriangleAlert size={16} className="icon-warn" aria-hidden />
-                )}
-                Счёт распознан за {invoiceResult.parsing_ms.toFixed(0)} мс
-              </strong>
-              <span className={`pill ${invoiceResult.antifraud.is_verified ? "pill-good" : "pill-warn"}`}>
-                {invoiceResult.antifraud.egrul_status}
-              </span>
-            </div>
-            <dl className="kv-list">
-              <dt>Поставщик</dt>
-              <dd>{invoiceResult.invoice.supplier_name}</dd>
-              <dt>ИНН</dt>
-              <dd className="mono">{invoiceResult.invoice.supplier_inn}</dd>
-              <dt>Сумма</dt>
-              <dd>{formatMoneyExact(invoiceResult.invoice.amount_rub)}</dd>
-              <dt>НДС</dt>
-              <dd>{formatMoneyExact(invoiceResult.invoice.vat_rub)}</dd>
-              <dt>Назначение</dt>
-              <dd>{invoiceResult.invoice.purpose}</dd>
-              <dt>ФССП</dt>
-              <dd>{formatMoney(invoiceResult.antifraud.fssp_amount_rub)}</dd>
-            </dl>
-            <p className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>
-              {invoiceResult.antifraud.message}
-            </p>
-          </div>
-        )}
+  return (
+    <section className="figma-panel figma-panel-sm">
+      <div className="invoice-result-head">
+        <span className={`pill ${ok ? "pill-good" : "pill-warn"}`}>
+          Распознано за {(parsing_ms / 1000).toFixed(1).replace(".", ",")} с
+        </span>
       </div>
+      <div className="apply-invoice" style={{ marginTop: 12 }}>
+        <span className="pdf">PDF</span>
+        <div>
+          <strong>{invoice.supplier_name}</strong>
+          <div className="muted" style={{ fontSize: 13 }}>
+            {invoice.purpose}
+          </div>
+        </div>
+      </div>
+
+      <div className="invoice-fields">
+        <div>
+          <span>Поставщик</span>
+          <strong>{invoice.supplier_name} ✓</strong>
+        </div>
+        <div>
+          <span>ИНН поставщика</span>
+          <strong className="mono">{invoice.supplier_inn} ✓</strong>
+        </div>
+        <div>
+          <span>Сумма к оплате</span>
+          <strong>{formatMoneyExact(invoice.amount_rub)} ✓</strong>
+        </div>
+        <div>
+          <span>НДС</span>
+          <strong>{formatMoneyExact(invoice.vat_rub)} ✓</strong>
+        </div>
+        <div className="full">
+          <span>Назначение платежа</span>
+          <strong>{invoice.purpose} ✓</strong>
+        </div>
+      </div>
+
+      <div className="figma-panel-title" style={{ marginTop: 20 }}>
+        Проверка поставщика
+      </div>
+      <div className="supplier-checks">
+        <div>
+          <span>ЕГРЮЛ</span>
+          <strong>{antifraud.egrul_status}</strong>
+        </div>
+        <div>
+          <span>ФССП</span>
+          <strong>
+            {antifraud.fssp_amount_rub > 0
+              ? formatMoney(antifraud.fssp_amount_rub)
+              : "Долгов нет"}
+          </strong>
+        </div>
+        <div>
+          <span>Статус</span>
+          <strong>{ok ? "Проверен" : "Есть замечания"}</strong>
+        </div>
+      </div>
+      <p className="muted" style={{ marginTop: 12, fontSize: 13 }}>
+        {antifraud.message}
+      </p>
     </section>
   );
 }

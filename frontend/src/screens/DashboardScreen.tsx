@@ -86,7 +86,8 @@ export function DashboardScreen() {
             {greeting()}, {givenName(user?.full_name)}
           </h1>
           <p className="figma-lead">
-            Сводка по счёту, выручке и обязательствам. Данные расчётного счёта в Альфа-Банке.
+            Сводка по счёту, выручке и обязательствам. Данные обновлены{" "}
+            {new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}.
           </p>
         </div>
         <button type="button" className="btn btn-secondary" onClick={() => goToScreen("messages")}>
