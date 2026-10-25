@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import { Kbd } from "../../components/v2/Kbd";
+import { isTextField } from "../../components/v2/keys";
 import { EQUIPMENT_LINES, EQUIPMENT_TOTAL, signalFor } from "../../domain-ui/caseScript";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
@@ -7,11 +10,33 @@ export function BankSignal() {
   const { dashboard, companyId, goToScreen } = useApp();
   const markOfferSent = useDemoStore((state) => state.markOfferSent);
   const sent = useDemoStore((state) => (companyId ? Boolean(state.offerSent[companyId]) : false));
+  const signal = signalFor(dashboard?.company.demo_key);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (!companyId || isTextField(event.target)) {
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        event.preventDefault();
+        if (signal.quiet || sent || !signal.offerAmount) {
+          return;
+        }
+        markOfferSent(companyId);
+        goToScreen("bank-queue");
+      }
+      if ((event.key === "x" || event.key === "X") && !event.metaKey && !event.ctrlKey) {
+        goToScreen("bank-queue");
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   if (!dashboard || !companyId) {
     return null;
   }
   const company = dashboard.company;
-  const signal = signalFor(company.demo_key);
   const payment = signal.offerAmount && signal.offerTerm
     ? roughAnnuity(signal.offerAmount, signal.offerTerm, company.demo_key === "rosters" ? 0.18 : 0.16)
     : null;
@@ -19,23 +44,29 @@ export function BankSignal() {
     ? dashboard.transactions.filter((row) => row.category === "Оборудование")
     : [];
 
+  function sendOffer() {
+    if (!companyId || signal.quiet || sent || !signal.offerAmount) {
+      return;
+    }
+    markOfferSent(companyId);
+    goToScreen("bank-queue");
+  }
+
   return (
     <>
       <div className="v2-crumb">Рабочий стол / Сигнал {signal.code}</div>
       <div className="v2-row">
         <h1 className="v2-h1">{company.name} {signal.title}</h1>
         <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" className="v2-btn" onClick={() => goToScreen("bank-queue")}>Не предлагать</button>
+          <button type="button" className="v2-btn ghost" onClick={() => goToScreen("bank-queue")}>Не предлагать <Kbd>X</Kbd></button>
           <button
             type="button"
             className="v2-btn primary"
             disabled={signal.quiet || sent || !signal.offerAmount}
-            onClick={() => {
-              markOfferSent(companyId);
-              goToScreen("bank-queue");
-            }}
+            onClick={sendOffer}
           >
             {sent ? "Предложение отправлено" : "Отправить предложение"}
+            {sent ? null : <Kbd>⌘↵</Kbd>}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { Chrome } from "./components/v2/Chrome";
+import { Toasts } from "./components/v2/Toasts";
 import { ApplicationsScreen } from "./screens/ApplicationsScreen";
 import { DocumentsScreen } from "./screens/DocumentsScreen";
 import { InvoiceScreen } from "./screens/InvoiceScreen";
@@ -68,6 +69,7 @@ export default function App() {
           </>
         )}
       </main>
+      <Toasts />
     </div>
   );
 }

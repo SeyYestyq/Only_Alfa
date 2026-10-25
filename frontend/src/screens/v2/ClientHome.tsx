@@ -1,5 +1,6 @@
 import type { NewsItem } from "../../api/types";
 import { ForecastLine } from "../../components/v2/ForecastLine";
+import { SkeletonLines } from "../../components/v2/ScreenState";
 import { signalFor } from "../../domain-ui/caseScript";
 import {
   EQUIPMENT_TOTAL,
@@ -34,7 +35,7 @@ export function ClientHome() {
   const setRestructureOn = useDemoStore((state) => state.setRestructureOn);
 
   if (!dashboard || !companyId) {
-    return <div className="loading"><span className="spinner" /> Загружаем кабинет…</div>;
+    return <SkeletonLines lines={5} />;
   }
 
   const company = dashboard.company;
@@ -150,7 +151,12 @@ export function ClientHome() {
           <strong>{nextTitle}</strong>
           <p>{nextText}</p>
         </div>
-        <button type="button" className="v2-btn primary" onClick={nextGo} disabled={restructureOn && phase === "restructure"}>
+        <button
+          type="button"
+          className={`v2-btn ${offerVisible && isRosters && !application && nextCta === "Посмотреть условия" ? "ghost" : "primary"}`}
+          onClick={nextGo}
+          disabled={restructureOn && phase === "restructure"}
+        >
           {nextCta}
         </button>
       </section>

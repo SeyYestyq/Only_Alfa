@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ScreenId } from "../../api/types";
 import { INSPECTOR_NAME } from "../../domain-ui/caseScript";
+import { Kbd } from "./Kbd";
+import { isTextField } from "./keys";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
+import { useUiStore } from "../../state/uiStore";
 import { givenInitial, roleLabel, shortPerson } from "../../utils/format";
 
 const STORY_CLOCK = "21.10.2026, 22:40";
@@ -47,6 +50,30 @@ export function Chrome() {
   const [roleOpen, setRoleOpen] = useState(false);
   const [inn, setInn] = useState("");
   const [innNote, setInnNote] = useState<string | null>(null);
+  const searchQuery = useUiStore((state) => state.searchQuery);
+  const setSearchQuery = useUiStore((state) => state.setSearchQuery);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setCompanyOpen(false);
+        setRoleOpen(false);
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+        return;
+      }
+      if (event.key === "/" && !isTextField(event.target) && !event.metaKey && !event.ctrlKey) {
+        const field = document.getElementById("v2-search");
+        if (field) {
+          event.preventDefault();
+          field.focus();
+        }
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const company = dashboard?.company ?? companies.find((row) => row.id === companyId);
   const users = company?.users ?? [];
@@ -186,6 +213,18 @@ export function Chrome() {
           ))}
         </nav>
         <div className="v2-nav-tools">
+          {viewMode === "bank" ? (
+            <label className="v2-search">
+              <input
+                id="v2-search"
+                type="search"
+                placeholder="Поиск: ИНН, компания, № заявки"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+              <Kbd>/</Kbd>
+            </label>
+          ) : null}
           <div className="v2-chip">
             <button type="button" onClick={() => setCompanyOpen((open) => !open)}>
               {company?.name ?? "Компания"} ▾
@@ -240,6 +279,7 @@ export function Chrome() {
         <div className="v2-main" style={{ paddingBottom: 0 }}>
           <div className="v2-error">
             <span>{error}</span>
+            <button type="button" className="v2-btn dense" onClick={() => window.location.reload()}>Повторить</button>
             <button type="button" className="v2-text-btn" onClick={clearError}>Закрыть</button>
           </div>
         </div>

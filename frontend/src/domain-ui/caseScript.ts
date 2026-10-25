@@ -23,6 +23,14 @@ export const RESTRUCTURE_PAYMENT = 39_000;
 export const LIMIT_UP_AMOUNT = 2_000_000;
 export const INSPECTOR_NAME = "Елена Орлова";
 export const PEP_CODE = "4817";
+/** Подпись кейса на экране ПЭП. Считает бэкенд в договоре, здесь только показ. */
+export const ROSTERS_PSK_LABEL = "19,562%";
+
+export const REFUSE_REASONS = [
+  { code: "R-03", label: "Платёжная нагрузка выше безопасной" },
+  { code: "R-01", label: "Стоп-фактор в проверках" },
+  { code: "R-02", label: "Недостаточно оборотов за 12 месяцев" },
+];
 
 export const ROSTERS_OBLIGATIONS = [
   { date: "25.10", title: "Зарплата", amount: 410_000 },

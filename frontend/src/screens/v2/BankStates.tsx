@@ -1,11 +1,18 @@
 import { useState } from "react";
+import { HotkeyCard } from "../../components/v2/HotkeyCard";
+import { RefuseDialog } from "../../components/v2/RefuseDialog";
+import { SkeletonLines } from "../../components/v2/ScreenState";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
+import { useUiStore } from "../../state/uiStore";
 
 export function BankStates() {
   const { goToScreen, application } = useApp();
   const setLock = useDemoStore((state) => state.setInspectorLock);
+  const pushToast = useUiStore((state) => state.pushToast);
   const [note, setNote] = useState<string | null>(null);
+  const [refuseOpen, setRefuseOpen] = useState(false);
+  const [offerSent, setOfferSent] = useState(false);
 
   const cards = [
     { tag: "409", title: "Заявку уже решает Е. Орлова", text: "Второй инспектор открыл ту же заявку: кнопки решения заблокированы.", action: "Только просмотр", run: () => { setLock(true); goToScreen("bank-xray"); } },
@@ -31,10 +38,52 @@ export function BankStates() {
             <span className="v2-pill warn">{card.tag}</span>
             <h2 style={{ marginTop: 10 }}>{card.title}</h2>
             <p className="v2-muted">{card.text}</p>
-            <button type="button" className="v2-btn" style={{ marginTop: 12 }} onClick={card.run}>{card.action}</button>
+            {card.tag === "загрузка" ? <SkeletonLines /> : null}
+            <button type="button" className="v2-btn ghost" style={{ marginTop: 12 }} onClick={card.run}>{card.action}</button>
           </article>
         ))}
       </div>
+      <div className="v2-edge-grid" style={{ marginTop: 12 }}>
+        <article className="v2-card">
+          <span className="v2-pill bad">подтверждение · отказ</span>
+          <h2 style={{ marginTop: 10 }}>Отказ только через диалог</h2>
+          <p className="v2-muted">Фокус попадает на «Отмена». «Отказать» молчит, пока не выбран код. Esc закрывает, клик по фону — нет.</p>
+          <button type="button" className="v2-btn primary" style={{ marginTop: 12 }} onClick={() => setRefuseOpen(true)}>Отказать ООО «Ростерс Кафе»</button>
+        </article>
+        <article className="v2-card">
+          <span className="v2-pill good">toast · отмена</span>
+          <h2 style={{ marginTop: 10 }}>Отправлено — 10 секунд на отмену</h2>
+          <p className="v2-muted">Встречное уходит клиенту. До конца таймера «Отменить» и ⌘Z прячут его обратно.</p>
+          <button
+            type="button"
+            className="v2-btn ghost"
+            style={{ marginTop: 12 }}
+            onClick={() => {
+              setOfferSent(true);
+              pushToast({
+                tone: "success",
+                title: "Отправлено клиенту",
+                subtitle: "ООО «Ростерс Кафе» · 3 варианта",
+                actionLabel: "Отменить",
+                until: Date.now() + 10_000,
+                undo: () => setOfferSent(false),
+              });
+            }}
+          >
+            {offerSent ? "Отправлено" : "Отправить встречное"}
+          </button>
+        </article>
+        <HotkeyCard />
+      </div>
+      <RefuseDialog
+        open={refuseOpen}
+        companyName="ООО «Ростерс Кафе»"
+        onClose={() => setRefuseOpen(false)}
+        onConfirm={(reason) => {
+          setRefuseOpen(false);
+          setNote(`Отказ не отправлен в API с этой витрины. Выбрано: ${reason}. На заявке в работе диалог вызывает решение банка.`);
+        }}
+      />
     </>
   );
 }

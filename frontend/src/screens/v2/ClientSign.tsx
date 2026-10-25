@@ -1,17 +1,36 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { CodeCells } from "../../components/v2/CodeCells";
 import { ForecastLine } from "../../components/v2/ForecastLine";
+import { Kbd } from "../../components/v2/Kbd";
 import { Stepper } from "../../components/v2/Stepper";
-import { INSPECTOR_NAME, PEP_CODE } from "../../domain-ui/caseScript";
+import { INSPECTOR_NAME, PEP_CODE, ROSTERS_PSK_LABEL } from "../../domain-ui/caseScript";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
+import { useUiStore } from "../../state/uiStore";
 import { formatMoney, formatPercent, shortPerson } from "../../utils/format";
 
 export function ClientSign() {
   const { application, dashboard, signApplication, isBusy, goToScreen, userRole, setUserRole, companyId } = useApp();
   const pushChat = useDemoStore((state) => state.pushChat);
+  const pushToast = useUiStore((state) => state.pushToast);
   const [digits, setDigits] = useState(PEP_CODE.split(""));
+  const [activeCell, setActiveCell] = useState(PEP_CODE.length - 1);
+  const [attemptsLeft, setAttemptsLeft] = useState(3);
+  const [codeWrong, setCodeWrong] = useState(false);
   const [docNote, setDocNote] = useState<string | null>(null);
   const [score, setScore] = useState<number | null>(null);
+  const signRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        event.preventDefault();
+        signRef.current();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   if (!application || !companyId) {
     return (
@@ -27,8 +46,31 @@ export function ClientSign() {
   const funded = application.status === "FUNDED";
   const director = application.company.users.find((user) => user.role === "CEO_OWNER" || user.role === "IP_OWNER");
   const amount = application.approved_amount_rub || application.requested_amount_rub;
-  const codeOk = digits.join("") === PEP_CODE;
   const was = Math.max(0, application.account_balance - (funded ? amount : 0));
+  signRef.current = () => {
+    if (!canSign || funded || isBusy || attemptsLeft === 0) {
+      return;
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      pushToast({
+        tone: "warning",
+        title: "Нет соединения",
+        subtitle: "Черновик сохранён. Поля на месте, ничего не отправлено.",
+        actionLabel: "Повторить",
+        undo: () => signRef.current(),
+      });
+      return;
+    }
+    if (digits.join("") !== PEP_CODE) {
+      setCodeWrong(true);
+      setAttemptsLeft((value) => Math.max(0, value - 1));
+      return;
+    }
+    if (!["APPROVED", "AWAITING_CEO_APPROVAL"].includes(application.status)) {
+      return;
+    }
+    void signApplication();
+  };
 
   if (funded) {
     return (
@@ -65,11 +107,11 @@ export function ClientSign() {
             <p className="v2-muted">Первые 5 из {application.term_months}. Сумма платежа — из решения банка.</p>
             <table className="v2-table">
               <thead>
-                <tr><th>Дата</th><th>Платёж</th></tr>
+                <tr><th>Дата</th><th className="num">Платёж</th></tr>
               </thead>
               <tbody>
                 {schedule(application.term_months, application.monthly_payment_rub).slice(0, 5).map((row) => (
-                  <tr key={row.date}><td>{row.date}</td><td>{formatMoney(row.amount)}</td></tr>
+                  <tr key={row.date}><td>{row.date}</td><td className="num">{formatMoney(row.amount)}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -82,7 +124,7 @@ export function ClientSign() {
               <span>Как вам процесс?</span>
               <span>
                 {[1, 2, 3, 4, 5].map((value) => (
-                  <button key={value} type="button" className={`v2-btn ${score === value ? "primary" : ""}`} onClick={() => setScore(value)}>
+                  <button key={value} type="button" className={`v2-btn v2-choice ${score === value ? "on" : ""}`} onClick={() => setScore(value)}>
                     {value}
                   </button>
                 ))}
@@ -147,30 +189,42 @@ export function ClientSign() {
               <div className="v2-kicker">Простая электронная подпись</div>
               <h2>Подпись ПЭП</h2>
               <p className="v2-muted">Код показан здесь: в рабочей версии его присылает удостоверяющий центр. Эмуляция.</p>
-              <div className="v2-otp">
-                {digits.map((digit, index) => (
-                  <input
-                    key={index}
-                    className={index === digits.length - 1 ? "on" : ""}
-                    value={digit}
-                    maxLength={1}
-                    onChange={(event) => {
-                      const next = [...digits];
-                      next[index] = event.target.value.replace(/\D/g, "").slice(-1);
-                      setDigits(next);
-                    }}
-                  />
-                ))}
+              <CodeCells
+                digits={digits}
+                active={activeCell}
+                invalid={codeWrong}
+                onFocusIndex={setActiveCell}
+                onChange={(index, value) => {
+                  const next = [...digits];
+                  next[index] = value;
+                  setDigits(next);
+                  setCodeWrong(false);
+                  if (value && index < digits.length - 1) {
+                    setActiveCell(index + 1);
+                  }
+                }}
+              />
+              {codeWrong ? (
+                <p className="v2-note" style={{ color: "var(--red-text)" }}>
+                  Код не подошёл — осталось {attemptsLeft} {attemptsLeft === 1 ? "попытка" : "попытки"}. Цифры не стираем.
+                </p>
+              ) : null}
+              <div className="v2-amber">
+                <strong>Подпись необратима</strong>
+                Вы подписываете {formatMoney(amount)} на {application.term_months} мес. · {formatMoney(application.monthly_payment_rub)} / мес · ПСК {ROSTERS_PSK_LABEL}. Деньги зачислят сразу после подписи. Если что-то не так — верните Ирине, ничего не подписывая.
               </div>
               <button
                 type="button"
                 className="v2-btn primary wide"
-                disabled={isBusy || !codeOk || !["APPROVED", "AWAITING_CEO_APPROVAL"].includes(application.status)}
-                onClick={() => void signApplication()}
+                disabled={isBusy || attemptsLeft === 0 || !["APPROVED", "AWAITING_CEO_APPROVAL"].includes(application.status)}
+                onClick={() => signRef.current()}
               >
                 {isBusy ? "Подписываем…" : "Подписать и получить деньги"}
+                <Kbd>⌘↵</Kbd>
               </button>
-              {!codeOk ? <p className="v2-note">Код демо: {PEP_CODE}</p> : null}
+              <button type="button" className="v2-btn ghost wide" style={{ marginTop: 8 }} onClick={() => setUserRole("ACCOUNTANT")}>
+                Вернуть Ирине с комментарием
+              </button>
               <p className="v2-note">Повторное нажатие после выдачи не создаст второй перевод.</p>
             </section>
           ) : (

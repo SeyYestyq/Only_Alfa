@@ -102,9 +102,11 @@ interface DemoStore {
   setNoticesOpen: (open: boolean) => void;
   markOfferSent: (companyId: string) => void;
   releaseDecision: (applicationId: string) => void;
+  unreleaseDecision: (applicationId: string) => void;
   setMonitoring: (companyId: string, phase: MonitoringPhase) => void;
   setRestructureOn: (companyId: string, on: boolean) => void;
   pushChat: (companyId: string, line: Omit<ChatLine, "id" | "at">) => void;
+  popChat: (companyId: string) => void;
   setInspectorLock: (locked: boolean) => void;
   resetStory: () => void;
 }
@@ -244,6 +246,12 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
     set({ released });
     persist(get());
   },
+  unreleaseDecision: (applicationId) => {
+    const released = { ...get().released };
+    delete released[applicationId];
+    set({ released });
+    persist(get());
+  },
   setMonitoring: (companyId, phase) => {
     const monitoring = { ...get().monitoring, [companyId]: phase };
     set({ monitoring });
@@ -268,6 +276,14 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
       ],
     };
     set({ chat });
+    persist(get());
+  },
+  popChat: (companyId) => {
+    const prev = get().chat[companyId] ?? [];
+    if (prev.length === 0) {
+      return;
+    }
+    set({ chat: { ...get().chat, [companyId]: prev.slice(0, -1) } });
     persist(get());
   },
   setInspectorLock: (inspectorLock) => {

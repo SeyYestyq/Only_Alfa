@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ScreenId } from "../../api/types";
+import { HotkeyCard } from "../../components/v2/HotkeyCard";
+import { Kbd } from "../../components/v2/Kbd";
+import { isTextField } from "../../components/v2/keys";
+import { EmptyState, SkeletonLines } from "../../components/v2/ScreenState";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
+import { useUiStore } from "../../state/uiStore";
 import { formatMoney } from "../../utils/format";
 
 type Kind = "Заявка" | "Сообщение" | "Ранний сигнал" | "Документы" | "Сигнал" | "Предложение";
@@ -39,6 +44,8 @@ export function BankQueue() {
   const chat = useDemoStore((state) => state.chat);
   const [filter, setFilter] = useState("all");
   const [cursor, setCursor] = useState(0);
+  const searchQuery = useUiStore((state) => state.searchQuery);
+  const setSearchQuery = useUiStore((state) => state.setSearchQuery);
 
   const tasks = useMemo(() => {
     const rows: Task[] = [];
@@ -142,25 +149,41 @@ export function BankQueue() {
     return rows.sort((a, b) => a.slaMin - b.slaMin);
   }, [application, chat, companies, companyId, monitoring, offerSent, released]);
 
+  const query = searchQuery.trim().toLowerCase();
   const visible = tasks.filter((task) => {
     const rule = FILTERS.find((item) => item.id === filter);
-    return !rule?.kinds || rule.kinds.includes(task.kind);
+    const byKind = !rule?.kinds || rule.kinds.includes(task.kind);
+    const haystack = `${task.client} ${task.inn} ${task.what} ${task.id}`.toLowerCase();
+    return byKind && (!query || haystack.includes(query));
   });
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
-      if (target && ["INPUT", "TEXTAREA"].includes(target.tagName)) {
+      if (isTextField(target) || event.metaKey || event.ctrlKey || event.altKey) {
         return;
       }
-      if (event.key === "j" || event.key === "J") {
+      if (event.key === "j" || event.key === "J" || event.key === "ArrowDown") {
+        event.preventDefault();
         setCursor((value) => Math.min(visible.length - 1, value + 1));
       }
-      if (event.key === "k" || event.key === "K") {
+      if (event.key === "k" || event.key === "K" || event.key === "ArrowUp") {
+        event.preventDefault();
         setCursor((value) => Math.max(0, value - 1));
       }
       if (event.key === "Enter" && visible[cursor]) {
+        event.preventDefault();
         void open(visible[cursor]);
+      }
+      if ((event.key === "r" || event.key === "R") && visible[cursor]) {
+        event.preventDefault();
+        goToScreen("messages");
+      }
+      if (event.key === "n" || event.key === "N") {
+        event.preventDefault();
+        if (visible[0]) {
+          void open(visible[0]);
+        }
       }
     }
     window.addEventListener("keydown", onKey);
@@ -183,7 +206,7 @@ export function BankQueue() {
           <p className="v2-lead">Всё, что ждёт вашего действия, — в одном списке, срочное сверху.</p>
         </div>
         <button type="button" className="v2-btn primary" onClick={() => visible[0] && void open(visible[0])}>
-          Взять следующую
+          Взять следующую <Kbd>N</Kbd>
         </button>
       </div>
       <div className="v2-filters">
@@ -197,11 +220,24 @@ export function BankQueue() {
         <table className="v2-table">
           <thead>
             <tr>
-              <th>Тип</th><th>Клиент</th><th>Что нужно сделать</th><th>Сумма</th><th>Оценка</th><th>SLA</th><th></th>
+              <th>Тип</th><th>Клиент</th><th>Что нужно сделать</th><th className="num">Сумма</th><th className="num">Оценка</th><th>SLA</th><th></th>
             </tr>
           </thead>
           <tbody>
-            {visible.map((task, index) => (
+            {companies.length === 0 ? (
+              <tr><td colSpan={7}><SkeletonLines lines={4} /></td></tr>
+            ) : visible.length === 0 ? (
+              <tr>
+                <td colSpan={7}>
+                  <EmptyState
+                    title="В этом списке пусто"
+                    text="Фильтр или поиск ничего не нашли. Покажите всю очередь — срочное снова будет сверху."
+                    action="Показать все"
+                    onAction={() => { setFilter("all"); setSearchQuery(""); }}
+                  />
+                </td>
+              </tr>
+            ) : visible.map((task, index) => (
               <tr key={task.id} className={index === cursor ? "active" : ""}>
                 <td><span className={`v2-pill ${task.tone === "bad" ? "bad" : task.tone === "warn" ? "warn" : task.tone === "pause" ? "info" : "good"}`}>{task.kind}</span></td>
                 <td>
@@ -209,16 +245,16 @@ export function BankQueue() {
                   <div className="v2-muted">ИНН {task.inn}{task.demo ? " · демо-данные" : ""}</div>
                 </td>
                 <td>{task.what}</td>
-                <td>{task.amount}</td>
-                <td>{task.score}</td>
+                <td className="num">{task.amount}</td>
+                <td className="num">{task.score}</td>
                 <td className={task.tone === "bad" ? "red" : task.tone === "ok" ? "green" : undefined}>{task.sla}</td>
-                <td><button type="button" className="v2-btn" onClick={() => void open(task)}>{task.action}</button></td>
+                <td><button type="button" className="v2-btn dense" onClick={() => void open(task)}>{task.action}</button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </section>
-      <p className="v2-hotkeys">J / K — по списку · Enter — открыть. Сортировка по SLA. Пока ждём клиента, таймер на паузе.</p>
+      <HotkeyCard />
     </>
   );
 }

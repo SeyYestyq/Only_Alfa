@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useDemoStore, type ChatLine } from "../../state/demoStore";
+import { Kbd } from "./Kbd";
 
 const EMPTY_CHAT: ChatLine[] = [];
 
@@ -47,14 +48,14 @@ export function ChatThread({
           placeholder={placeholder}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter") {
+            if (event.key === "Enter" && (event.metaKey || event.ctrlKey || !event.shiftKey)) {
+              event.preventDefault();
               send();
             }
           }}
         />
-        <button type="button" className="v2-btn primary" onClick={send}>
-          Отправить
-        </button>
+        <button type="button" className="v2-btn icon" aria-label="Отправить сообщение" title="⌘↵" onClick={send}>↑</button>
+        <Kbd>⌘↵</Kbd>
       </div>
     </div>
   );

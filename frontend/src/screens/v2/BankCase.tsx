@@ -1,8 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChatThread } from "../../components/v2/ChatThread";
+import { Kbd } from "../../components/v2/Kbd";
+import { isTextField } from "../../components/v2/keys";
+import { RefuseDialog } from "../../components/v2/RefuseDialog";
 import { INSPECTOR_NAME } from "../../domain-ui/caseScript";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
+import { useUiStore } from "../../state/uiStore";
 import { formatAge, formatMoney, formatPercent } from "../../utils/format";
 
 type Action = "APPROVE" | "COUNTER_OFFER" | "NEED_MORE_INFO" | "REJECT";
@@ -26,6 +30,27 @@ export function BankCase() {
   const docs = useDemoStore((state) => state.creditDocs);
   const [action, setAction] = useState<Action>("COUNTER_OFFER");
   const [comment, setComment] = useState("Платёж 2,5 млн не проходит в низкий сезон. Предлагаем три варианта.");
+  const [refuseOpen, setRefuseOpen] = useState(false);
+  const pushToast = useUiStore((state) => state.pushToast);
+  const sendRef = useRef<(reason?: string) => void>(() => {});
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (isTextField(event.target)) {
+        return;
+      }
+      const index = Number(event.key) - 1;
+      if (!event.metaKey && !event.ctrlKey && index >= 0 && index < ACTIONS.length) {
+        setAction(ACTIONS[index].id);
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        event.preventDefault();
+        sendRef.current();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   if (!application || !dashboard || !companyId) {
     return (
@@ -44,46 +69,54 @@ export function BankCase() {
   const maxPay = app.max_payment_rub || 1;
   const asked = app.monthly_payment_rub;
 
-  async function send() {
+  function publishCounter() {
+    releaseDecision(app.application_id);
+    useDemoStore.getState().pushChat(caseCompanyId, {
+      author: INSPECTOR_NAME,
+      side: "bank",
+      text: "Ирина, добрый вечер. Полную сумму в низкий сезон не тянет касса. Выберите один из вариантов — подписать сможет только гендиректор.",
+    });
+    pushToast({
+      tone: "success",
+      title: "Отправлено клиенту",
+      subtitle: `${company.name} · 3 варианта. Отмена спрячет решение.`,
+      actionLabel: "Отменить",
+      until: Date.now() + 10_000,
+      undo: () => {
+        useDemoStore.getState().unreleaseDecision(app.application_id);
+        useDemoStore.getState().popChat(caseCompanyId);
+      },
+    });
+  }
+
+  async function send(reason?: string) {
     if (lock) {
       return;
     }
+    if (action === "REJECT" && !reason) {
+      setRefuseOpen(true);
+      return;
+    }
     if (alreadyCounter && action === "COUNTER_OFFER") {
-      releaseDecision(app.application_id);
-      useDemoStore.getState().pushChat(caseCompanyId, {
-        author: INSPECTOR_NAME,
-        side: "bank",
-        text: "Ирина, добрый вечер. Полную сумму в низкий сезон не тянет касса. Выберите один из вариантов — подписать сможет только гендиректор.",
-      });
+      if (!released) {
+        publishCounter();
+      }
       return;
     }
     if (!manual) {
       return;
     }
-    await underwriterAction(action, comment, docs[0]);
+    await underwriterAction(action, reason ?? comment, docs[0]);
     if (action === "COUNTER_OFFER") {
-      releaseDecision(app.application_id);
+      publishCounter();
     }
   }
-
-  useEffect(() => {
-    function onKey(event: KeyboardEvent) {
-      const target = event.target as HTMLElement | null;
-      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
-        return;
-      }
-      const index = Number(event.key) - 1;
-      if (index >= 0 && index < ACTIONS.length) {
-        setAction(ACTIONS[index].id);
-      }
-      if (event.key === "Enter") {
-        event.preventDefault();
-        void send();
-      }
+  sendRef.current = (reason) => {
+    if (refuseOpen) {
+      return;
     }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  });
+    void send(reason);
+  };
 
   return (
     <>
@@ -188,6 +221,7 @@ export function BankCase() {
             ) : null}
             <button type="button" className="v2-btn primary wide" disabled={isBusy || lock || (alreadyCounter && action !== "COUNTER_OFFER") || (!manual && !alreadyCounter)} onClick={() => void send()}>
               {released && alreadyCounter ? "Уже отправлено клиенту" : "Отправить клиенту"}
+              <Kbd>⌘↵</Kbd>
             </button>
             <button type="button" className="v2-link" onClick={() => setLock(true)}>Показать 409 второго инспектора</button>
           </section>
@@ -207,7 +241,16 @@ export function BankCase() {
           </section>
         </div>
       </div>
-      <p className="v2-hotkeys">1–4 — выбрать решение · Enter — отправить клиенту. Клиент увидит его после отправки.</p>
+      <p className="v2-hotkeys">1–4 — выбрать решение · ⌘↵ — отправить · ⌘Z — отменить отправку 10 секунд.</p>
+      <RefuseDialog
+        open={refuseOpen}
+        companyName={company.name}
+        onClose={() => setRefuseOpen(false)}
+        onConfirm={(reason) => {
+          setRefuseOpen(false);
+          void send(reason);
+        }}
+      />
     </>
   );
 }

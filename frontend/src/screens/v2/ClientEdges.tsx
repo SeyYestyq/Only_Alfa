@@ -1,6 +1,10 @@
 import { useState } from "react";
+import { CodeCells } from "../../components/v2/CodeCells";
+import { SkeletonLines } from "../../components/v2/ScreenState";
+import { ToastView } from "../../components/v2/Toasts";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
+import { useUiStore } from "../../state/uiStore";
 
 const EDGES: Array<{
   tag: string;
@@ -23,8 +27,10 @@ const EDGES: Array<{
 export function ClientEdges() {
   const { goToScreen, selectCompany, companies } = useApp();
   const addCreditDoc = useDemoStore((state) => state.addCreditDoc);
+  const pushToast = useUiStore((state) => state.pushToast);
   const [note, setNote] = useState<string | null>(null);
   const [text, setText] = useState("");
+  const [sentDemo, setSentDemo] = useState(false);
 
   function act(title: string) {
     if (title.startsWith("Прогноз")) {
@@ -74,14 +80,59 @@ export function ClientEdges() {
             <span className={`v2-pill ${edge.tone === "bad" ? "bad" : edge.tone === "good" ? "good" : edge.tone === "warn" ? "warn" : "info"}`}>{edge.tag}</span>
             <h2 style={{ marginTop: 10 }}>{edge.title}</h2>
             <p className="v2-muted">{edge.text}</p>
+            {edge.tag === "загрузка" ? <SkeletonLines /> : null}
             {edge.tag === "оспорить" ? (
-              <input className="v2-composer" style={{ marginTop: 8 }} value={text} placeholder="Что банк не учёл" onChange={(event) => setText(event.target.value)} />
+              <input style={{ marginTop: 8, width: "100%", height: 40, borderRadius: 10, border: "1px solid #6C6C75", background: "#121215", color: "inherit", padding: "0 12px" }} value={text} placeholder="Что банк не учёл" onChange={(event) => setText(event.target.value)} />
             ) : null}
-            <button type="button" className={`v2-btn ${edge.tone === "bad" ? "primary" : ""}`} style={{ marginTop: 12 }} onClick={() => act(edge.title)}>
+            <button type="button" className={`v2-btn ${edge.tone === "bad" ? "primary" : "ghost"}`} style={{ marginTop: 12 }} onClick={() => act(edge.title)}>
               {edge.action}
             </button>
           </article>
         ))}
+      </div>
+      <div className="v2-edge-grid" style={{ marginTop: 12 }}>
+        <article className="v2-card">
+          <span className="v2-pill good">toast · отмена</span>
+          <h2 style={{ marginTop: 10 }}>Передумали — 10 секунд на отмену</h2>
+          <p className="v2-muted">После «Отправить в банк» внизу экрана — уведомление с кнопкой «Отменить». ⌘Z делает то же самое.</p>
+          <button
+            type="button"
+            className="v2-btn primary"
+            style={{ marginTop: 12 }}
+            onClick={() => {
+              setSentDemo(true);
+              pushToast({
+                tone: "success",
+                title: "Заявка отправлена в банк",
+                subtitle: "Решение — до 00:44, статус на главной.",
+                actionLabel: "Отменить",
+                until: Date.now() + 10_000,
+                undo: () => setSentDemo(false),
+              });
+            }}
+          >
+            Отправить в банк
+          </button>
+          {sentDemo ? <p className="v2-note">Отправлено. Отмена вернёт черновик в этом демо.</p> : null}
+        </article>
+        <article className="v2-card">
+          <span className="v2-pill bad">ошибка кода ПЭП</span>
+          <h2 style={{ marginTop: 10 }}>Код не подошёл — осталось 2 попытки</h2>
+          <p className="v2-muted">Введённые цифры не стираем, неверная подсвечена. После 3 попыток код сбрасывается.</p>
+          <CodeCells digits={["4", "8", "1", "9"]} active={3} invalid onChange={() => undefined} onFocusIndex={() => undefined} />
+        </article>
+        <article className="v2-card">
+          <span className="v2-pill warn">нет сети</span>
+          <h2 style={{ marginTop: 10 }}>Связь пропала — черновик сохранён</h2>
+          <p className="v2-muted">Все поля на месте, ничего не отправлено. Повторим сами, как только сеть вернётся.</p>
+          <ToastView
+            inline
+            now={Date.now()}
+            item={{ id: "offline", tone: "warning", title: "Нет соединения", subtitle: "Черновик сохранён в 22:43", actionLabel: "Повторить" }}
+            onUndo={() => pushToast({ tone: "loading", title: "Повторяем отправку", subtitle: "Черновик на месте." })}
+            onClose={() => undefined}
+          />
+        </article>
       </div>
     </>
   );
