@@ -329,3 +329,125 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Модальное окно B2B-рассрочки для пилота банка ─────────────────────── */
+.bank-modal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(239, 49, 36, 0.15);
+  border: 1px solid rgba(239, 49, 36, 0.35);
+  color: #ff7568;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.bank-rate-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.bank-rate-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bank-rate-chip {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #2a2a34);
+  background: var(--control-bg, #1a1a22);
+  color: var(--text-secondary, #a3a3ad);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bank-rate-chip:hover {
+  background: var(--surface-2, #252530);
+  color: #fff;
+}
+
+.bank-rate-chip.active {
+  background: rgba(239, 49, 36, 0.18);
+  border-color: var(--accent, #ef3124);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(239, 49, 36, 0.2);
+}
+
+.bank-rate-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.bank-rate-slider-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent, #ef3124);
+  cursor: pointer;
+  height: 6px;
+}
+
+.bank-rate-val {
+  font-family: var(--mono, monospace);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  min-width: 54px;
+  text-align: right;
+}
+
+.bank-installment-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.bank-calc-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border, #26262c);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bank-calc-label {
+  font-size: 11px;
+  color: var(--text-secondary, #a3a3ad);
+  font-weight: 500;
+}
+
+.bank-calc-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  font-family: var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.bank-calc-val.good {
+  color: #34d399;
+}
+
+.bank-calc-val.accent {
+  color: #ff7568;
+}
+
+.bank-calc-sub {
+  font-size: 10px;
+  color: var(--text-faint, #6e6e7c);
+}
+
