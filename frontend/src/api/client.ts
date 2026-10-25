@@ -12,6 +12,7 @@ import type {
   InvoiceTemplate,
   ProductType,
   SearchResult,
+  SupplierDealRisk,
   Xray,
 } from "./types";
 
@@ -85,6 +86,28 @@ export const api = {
 
   getInvoiceTemplates(): Promise<InvoiceTemplate[]> {
     return request("/applications/invoice-templates");
+  },
+
+  getSupplierDealRisk(
+    supplierInn: string,
+    params?: {
+      buyerCompanyId?: string;
+      invoiceAmountRub?: number;
+      displayName?: string;
+    },
+  ): Promise<SupplierDealRisk> {
+    const query = new URLSearchParams();
+    if (params?.buyerCompanyId) {
+      query.set("buyer_company_id", params.buyerCompanyId);
+    }
+    if (params?.invoiceAmountRub != null) {
+      query.set("invoice_amount_rub", String(params.invoiceAmountRub));
+    }
+    if (params?.displayName) {
+      query.set("display_name", params.displayName);
+    }
+    const suffix = query.size > 0 ? `?${query.toString()}` : "";
+    return request(`/suppliers/${encodeURIComponent(supplierInn)}/deal-risk${suffix}`);
   },
 
   parseInvoiceTemplate(companyId: string, templateCode: string): Promise<InvoiceParseResult> {

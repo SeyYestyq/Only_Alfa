@@ -321,6 +321,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/suppliers/{supplier_inn}/deal-risk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Supplier Deal Risk
+         * @description Аналитика контрагента для Invoice-to-Credit: плюсы/минусы и
+         *     вероятность успешной сделки (симулятор, seed=hash(INN)).
+         */
+        get: operations["supplier_deal_risk_api_v1_suppliers__supplier_inn__deal_risk_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -377,7 +398,7 @@ export interface components {
              * Product Type
              * @enum {string}
              */
-            product_type: "INVEST_LEASING" | "VKL" | "OVERDRAFT";
+            product_type: "INVEST_LEASING" | "VKL" | "VKL_SEC" | "OVERDRAFT";
             /** Requested Amount Rub */
             requested_amount_rub: number;
             /** Term Months */
@@ -392,6 +413,17 @@ export interface components {
             actor_role: "CEO_OWNER" | "IP_OWNER" | "ACCOUNTANT" | "UNDERWRITER";
             /** Draft Application Id */
             draft_application_id?: string | null;
+            /**
+             * Collateral Type
+             * @default NONE
+             * @enum {string}
+             */
+            collateral_type: "NONE" | "REAL_ESTATE" | "VEHICLE" | "EQUIPMENT";
+            /**
+             * Collateral Value Rub
+             * @default 0
+             */
+            collateral_value_rub: number;
         };
         /** ApplicationListResponse */
         ApplicationListResponse: {
@@ -415,6 +447,12 @@ export interface components {
             product_type: string;
             /** Product Label */
             product_label: string;
+            /** Collateral Type */
+            collateral_type?: string;
+            /** Collateral Value Rub */
+            collateral_value_rub?: number;
+            /** Collateral Status */
+            collateral_status?: string;
             /** Risk Score */
             risk_score: number;
             /** Raw Score */
@@ -753,10 +791,30 @@ export interface components {
             application_id: string;
             /** Status */
             status: string;
+            /**
+             * Status Label
+             * @default
+             */
+            status_label: string;
+            /**
+             * Product Type
+             * @default
+             */
+            product_type: string;
+            /**
+             * Product Label
+             * @default
+             */
+            product_label: string;
             /** Risk Score */
             risk_score: number;
             /** Requested Amount Rub */
             requested_amount_rub: number;
+            /**
+             * Term Months
+             * @default 0
+             */
+            term_months: number;
             /** Created At */
             created_at?: string | null;
         };
@@ -956,6 +1014,7 @@ export interface components {
             draft: components["schemas"]["ApplicationSchema"];
             /** Parsing Ms */
             parsing_ms: number;
+            supplier_deal_risk?: components["schemas"]["SupplierDealRiskResponse"] | null;
         };
         /** RadarTriggerSchema */
         RadarTriggerSchema: {
@@ -1091,6 +1150,44 @@ export interface components {
             /** Checks */
             checks: components["schemas"]["CheckSchema"][];
             cash_forecast_summary: components["schemas"]["CashGapSummarySchema"];
+        };
+        /** SupplierRiskSignalSchema */
+        SupplierRiskSignalSchema: {
+            /** Code */
+            code: string;
+            /** Label */
+            label: string;
+            /** Polarity */
+            polarity: string;
+            /** Value Label */
+            value_label: string;
+            /** Is Flagged */
+            is_flagged: boolean;
+            /** Score Delta Pct */
+            score_delta_pct: number;
+        };
+        /** SupplierDealRiskResponse */
+        SupplierDealRiskResponse: {
+            /** Supplier Inn */
+            supplier_inn: string;
+            /** Supplier Name */
+            supplier_name: string;
+            /** Okved Cluster */
+            okved_cluster: string;
+            /** Deal Success Probability Pct */
+            deal_success_probability_pct: number;
+            /** Risk Band */
+            risk_band: string;
+            /** Risk Score */
+            risk_score: number;
+            /** Pros */
+            pros: components["schemas"]["SupplierRiskSignalSchema"][];
+            /** Cons */
+            cons: components["schemas"]["SupplierRiskSignalSchema"][];
+            /** Summary */
+            summary: string;
+            /** Source */
+            source: string;
         };
     };
     responses: never;
@@ -1586,6 +1683,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+        };
+    };
+    supplier_deal_risk_api_v1_suppliers__supplier_inn__deal_risk_get: {
+        parameters: {
+            query?: {
+                buyer_company_id?: string | null;
+                invoice_amount_rub?: number | null;
+                display_name?: string | null;
+            };
+            header?: never;
+            path: {
+                supplier_inn: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierDealRiskResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

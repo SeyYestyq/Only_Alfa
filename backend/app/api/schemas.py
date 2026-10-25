@@ -357,11 +357,34 @@ class AntifraudSchema(BaseModel):
     message: str
 
 
+class SupplierRiskSignalSchema(BaseModel):
+    code: str
+    label: str
+    polarity: str
+    value_label: str
+    is_flagged: bool
+    score_delta_pct: float
+
+
+class SupplierDealRiskResponse(BaseModel):
+    supplier_inn: str
+    supplier_name: str
+    okved_cluster: str
+    deal_success_probability_pct: float
+    risk_band: str
+    risk_score: int
+    pros: list[SupplierRiskSignalSchema]
+    cons: list[SupplierRiskSignalSchema]
+    summary: str
+    source: str
+
+
 class ParseInvoiceResponse(BaseModel):
     invoice: InvoiceSchema
     antifraud: AntifraudSchema
     draft: ApplicationSchema
     parsing_ms: float
+    supplier_deal_risk: Optional[SupplierDealRiskResponse] = None
 
 
 class InvoiceTemplateSchema(BaseModel):

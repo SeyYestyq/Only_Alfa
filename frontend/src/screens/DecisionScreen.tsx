@@ -1,21 +1,30 @@
+import { useRef, useState } from "react";
 import { COLLATERAL_LABELS } from "../api/client";
+import { CreditChatModal } from "../components/CreditChatModal";
 import { FlowStepper, stepFromStatus } from "../components/FlowStepper";
 import { MultibankPanel } from "../components/MultibankPanel";
+import { ProductOfferCards } from "../components/offers/ProductOfferCards";
+import { RiskScoreGauge } from "../components/RiskScoreGauge";
 import { StatusTrack } from "../components/StatusTrack";
 import { useApp } from "../state/AppState";
 import { useDemoStore } from "../state/demoStore";
-import { formatMoney, formatPercent, statusTone } from "../utils/format";
+import { formatMoney, formatPercent } from "../utils/format";
 
-/** К4 — Решение / контр-оффер (Figma 50:663). */
+/** К4 — Решение: что банк посмотрел, жёлтые флаги, подтверждение / загрузка документов. */
 export function DecisionScreen() {
   const { application, goToScreen, effectiveRole, isBusy, acceptOffer } = useApp();
   const setApplyIntent = useDemoStore((state) => state.setApplyIntent);
+  const creditDocs = useDemoStore((state) => state.creditDocs);
+  const addCreditDoc = useDemoStore((state) => state.addCreditDoc);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [confirmedFacts, setConfirmedFacts] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   if (!application) {
     return (
       <div className="empty-state">
         <h3>Решения ещё нет</h3>
-        <p>Отправьте заявку на экране «Заявки и предложения».</p>
+        <p>Отправьте заявку на экране «Кредит».</p>
         <button type="button" className="btn btn-primary" onClick={() => goToScreen("apply")}>
           Оформить заявку
         </button>
@@ -28,9 +37,23 @@ export function DecisionScreen() {
     application.company.users.find((user) => user.role === "CEO_OWNER" || user.role === "IP_OWNER")
       ?.full_name ?? "подписанту";
 
+  const docRequests =
+    application.rejection_checklist.length > 0
+      ? application.rejection_checklist
+      : application.checks
+          .filter((check) => check.code === "DOCUMENT_REQUEST")
+          .map((check) => check.message);
+
   function openCollateralForm() {
     setApplyIntent("collateral", true);
     goToScreen("apply");
+  }
+
+  function onUpload(file: File | undefined) {
+    if (!file) {
+      return;
+    }
+    addCreditDoc(file.name);
   }
 
   return (
@@ -55,10 +78,29 @@ export function DecisionScreen() {
       </h1>
       <p className="figma-lead" style={{ marginBottom: 28 }}>
         {application.status === "COUNTER_OFFER"
-          ? `${formatMoney(application.requested_amount_rub)} на ${application.term_months} мес. дали платёж выше безопасного в низкий сезон. Выберите вариант — его отправим на подпись.`
-          : `${application.product_label} · RiskScore ${application.risk_score}`}
+          ? `${formatMoney(application.requested_amount_rub)} на ${application.term_months} мес. — платёж выше комфортного в низкий сезон. Выберите вариант ниже.`
+          : `${application.product_label} · ${formatMoney(application.requested_amount_rub)} на ${application.term_months} мес.`}
       </p>
       <FlowStepper active={stepFromStatus(application.status, "decision")} />
+
+      {/* Проверки — только на Паспорте; здесь лишь итог скоринга и ссылка назад. */}
+      <div className="decision-score-bar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, padding: "16px 24px", background: "var(--surface-1)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+          <RiskScoreGauge score={application.risk_score} size="sm" showCorridors={false} />
+          <div>
+            <div className="figma-panel-title">Итог кредитной оценки</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", marginTop: 4 }}>
+              Лимит: {formatMoney(application.limit_rub)}
+            </div>
+            <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
+              Статус: {application.status_label} · {application.outcome_label}
+            </div>
+          </div>
+        </div>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("passport")}>
+          Что проверяли →
+        </button>
+      </div>
 
       {application.status === "ANOMALY_VERIFICATION" && (
         <div style={{ marginBottom: 24 }}>
@@ -66,31 +108,93 @@ export function DecisionScreen() {
         </div>
       )}
 
-      {application.status === "NEED_MORE_INFO" && (
-        <section className="figma-panel figma-panel-sm" style={{ marginBottom: 24 }}>
-          <div className="figma-panel-heading">Инспектор запросил документы</div>
-          <ul className="check-list" style={{ marginTop: 12 }}>
-            {(application.rejection_checklist.length > 0
-              ? application.rejection_checklist
-              : application.checks
-                  .filter((check) => check.code === "DOCUMENT_REQUEST")
-                  .map((check) => check.message)
-            ).map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-            {application.rejection_checklist.length === 0 &&
-              !application.checks.some((check) => check.code === "DOCUMENT_REQUEST") && (
-                <li>Нужен документ, который запросил банк. Ответьте в сообщениях.</li>
-              )}
-          </ul>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            style={{ marginTop: 16 }}
-            onClick={() => goToScreen("messages")}
-          >
-            Ответить в чате
-          </button>
+      {(application.status === "NEED_MORE_INFO" ||
+        application.status === "APPROVED" ||
+        application.status === "COUNTER_OFFER") && (
+        <section className="figma-panel figma-panel-sm decision-flags" style={{ marginBottom: 24 }}>
+          <div className="figma-panel-title">Требует вашего внимания</div>
+          <div className="decision-flag-list">
+            {application.status === "NEED_MORE_INFO" && (
+              <div className="decision-flag">
+                <span className="decision-flag-mark">!</span>
+                <div>
+                  <strong>Подтвердите или приложите документы</strong>
+                  <p>
+                    {(docRequests.length > 0
+                      ? docRequests
+                      : ["Выписка по счёту в другом банке за 6 месяцев"]
+                    ).join(" · ")}
+                  </p>
+                  {creditDocs.length > 0 && (
+                    <p className="muted" style={{ marginTop: 6 }}>
+                      Уже приложено: {creditDocs.join(", ")}
+                    </p>
+                  )}
+                  <div className="decision-flag-actions">
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      hidden
+                      onChange={(event) => {
+                        onUpload(event.target.files?.[0]);
+                        event.target.value = "";
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => fileRef.current?.click()}
+                    >
+                      Подгрузить документ
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setChatOpen(true)}
+                    >
+                      Написать в банк
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {application.status === "APPROVED" && (
+              <div className="decision-flag">
+                <span className="decision-flag-mark">!</span>
+                <div>
+                  <strong>Подтвердите условия кредита</strong>
+                  <p>
+                    {formatMoney(application.approved_amount_rub)} ·{" "}
+                    {formatPercent(application.final_rate_pct)} · платёж{" "}
+                    {formatMoney(application.monthly_payment_rub)} / мес.
+                  </p>
+                  <div className="decision-flag-actions">
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      disabled={!canSign || confirmedFacts}
+                      onClick={() => {
+                        setConfirmedFacts(true);
+                        goToScreen("signing");
+                      }}
+                    >
+                      {confirmedFacts ? "Условия подтверждены" : "Подтвердить и перейти к подписи"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {application.status === "COUNTER_OFFER" && (
+              <div className="decision-flag">
+                <span className="decision-flag-mark">!</span>
+                <div>
+                  <strong>Выберите один из вариантов ниже</strong>
+                  <p>Банк не одобрил исходную сумму — условия пересчитаны под ваш сезон.</p>
+                </div>
+              </div>
+            )}
+          </div>
         </section>
       )}
 
@@ -98,13 +202,13 @@ export function DecisionScreen() {
         <section className="figma-panel figma-panel-sm" style={{ marginBottom: 24 }}>
           <div className="figma-panel-heading">Ожидает {director}</div>
           <p className="muted" style={{ marginTop: 8 }}>
-            Условия отправлены подписанту. Напомнить можно из сообщений.
+            Условия отправлены подписанту. Напомнить можно в чате по этой заявке.
           </p>
           <button
             type="button"
             className="btn btn-secondary"
             style={{ marginTop: 16 }}
-            onClick={() => goToScreen("messages")}
+            onClick={() => setChatOpen(true)}
           >
             Напомнить сейчас
           </button>
@@ -183,59 +287,16 @@ export function DecisionScreen() {
 
       {application.status === "COUNTER_OFFER" && application.counter_offers.length > 0 && (
         <>
-          <div className="figma-offers">
-            {application.counter_offers.map((offer) => {
-              const selected = application.selected_offer_index === offer.index;
-              const foot =
-                offer.features.find((feature) => !feature.startsWith("Вариант")) ??
-                offer.features[0];
-              return (
-                <button
-                  key={offer.index}
-                  type="button"
-                  className={`figma-offer ${selected ? "selected" : ""}`}
-                  disabled={isBusy || selected}
-                  onClick={() => void acceptOffer(offer.index)}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                    {selected ? (
-                      <span className="pill pill-risk">Выбрано</span>
-                    ) : (
-                      <span />
-                    )}
-                  </div>
-                  <div className="figma-offer-title">{offer.label}</div>
-                  <div className="figma-offer-amount">{formatMoney(offer.amount_rub)}</div>
-                  <div className="figma-offer-meta">
-                    <span>
-                      <span>Срок</span>
-                      <strong>{offer.term_months} мес.</strong>
-                    </span>
-                    <span>
-                      <span>Ставка</span>
-                      <strong>
-                        {offer.monthly_payment_rub > 0
-                          ? formatPercent(offer.rate_pct)
-                          : offer.features.includes("9% эквайринга")
-                            ? "9% эквайринга"
-                            : formatPercent(offer.rate_pct)}
-                      </strong>
-                    </span>
-                    <span>
-                      <span>Платёж</span>
-                      <strong>
-                        {offer.monthly_payment_rub > 0
-                          ? `≈ ${formatMoney(offer.monthly_payment_rub)}`
-                          : offer.features.find((f) => f.includes("%") || f.includes("Аванс")) ??
-                            offer.product_label}
-                      </strong>
-                    </span>
-                  </div>
-                  <div className="figma-offer-foot">{foot}</div>
-                </button>
-              );
-            })}
-          </div>
+          <ProductOfferCards
+            offers={application.counter_offers}
+            preferredProduct={application.product_type}
+            requestedAmountRub={application.requested_amount_rub}
+            fallbackRatePct={application.final_rate_pct || 18}
+            selectedOfferIndex={application.selected_offer_index}
+            isBusy={isBusy}
+            canChoose
+            onAccept={(index) => void acceptOffer(index)}
+          />
 
           <div className="figma-why">
             <div className="figma-why-card">
@@ -289,49 +350,55 @@ export function DecisionScreen() {
           <div>
             {canSign ? (
               <>
-                <strong>Можно подписывать</strong>
+                <strong>Дальше — подпись договора</strong>
                 <div className="muted" style={{ fontSize: 13 }}>
-                  Статус {application.status_label} ·{" "}
-                  <span className={statusTone(application.status) === "GOOD" ? "green" : "amber"}>
-                    RiskScore {application.risk_score}
-                  </span>
+                  {application.status_label}
+                  {application.status === "COUNTER_OFFER" && !application.selected_offer_index
+                    ? " · сначала выберите вариант выше"
+                    : ""}
                 </div>
               </>
             ) : (
               <>
-                <strong>Подписать договор может только гендиректор</strong>
+                <strong>Подписать может только гендиректор</strong>
                 <div className="muted" style={{ fontSize: 13 }}>
-                  Вы вошли как бухгалтер. Вариант отправим {director}.
+                  Напишите {director} в чате по этой заявке.
                 </div>
               </>
             )}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            disabled={
-              !canSign ||
-              (application.status === "COUNTER_OFFER" && !application.selected_offer_index)
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={
+            canSign &&
+            application.status === "COUNTER_OFFER" &&
+            !application.selected_offer_index
+          }
+          onClick={() => {
+            if (canSign) {
+              goToScreen("signing");
+            } else {
+              setChatOpen(true);
             }
-            onClick={() => goToScreen("signing")}
-          >
-            Подписать ПЭП
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => {
-              if (canSign) {
-                goToScreen("signing");
-              }
-            }}
-          >
-            {canSign ? "Перейти к выдаче" : "Отправить гендиректору"}
-          </button>
-        </div>
+          }}
+        >
+          {canSign ? "Подписать договор" : "Написать гендиректору"}
+        </button>
       </div>
+
+      {chatOpen && (
+        <CreditChatModal
+          application={application}
+          onClose={() => setChatOpen(false)}
+          initialDraft={
+            application.status === "AWAITING_CEO_APPROVAL"
+              ? `Напоминание: условия кредита готовы к подписи для ${director}.`
+              : ""
+          }
+        />
+      )}
     </>
   );
 }

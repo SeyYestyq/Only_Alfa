@@ -6,11 +6,11 @@ export function SearchScreen() {
     <>
       <div className="page-header">
         <div>
-          <div className="figma-eyebrow">Сервис · не заявка</div>
-          <h1 className="figma-h1">Поиск</h1>
+          <div className="figma-eyebrow">Сервис · умный поиск</div>
+          <h1 className="figma-h1">Что ищете?</h1>
           <p className="figma-lead">
-            Найдите покупку или сервис. Если подойдёт кредит, условия переносятся в заявку — решение
-            банка считается уже там.
+            Покупка или сервис — если подойдёт кредит, условия перенесутся в заявку. Решение банка
+            считается уже там.
           </p>
         </div>
       </div>

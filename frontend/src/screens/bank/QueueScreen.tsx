@@ -4,8 +4,6 @@ import { BankEmptyState, QueueSkeleton } from "../../components/Skeleton";
 import { useApp } from "../../state/AppState";
 import { formatMoney } from "../../utils/format";
 
-type QueueFilter = "all" | "manual" | "anomaly" | "docs" | "counter";
-
 type DemoCase = {
   product: string;
   productType: ProductType;
@@ -82,15 +80,66 @@ const DEMO_CASES: Record<string, DemoCase> = {
   },
 };
 
-/** Б1 — Очередь заявок (index copy 4.html + состояния copy 11). */
+const TONE_PRIORITY: Record<string, number> = {
+  risk: 0,
+  warn: 1,
+  info: 2,
+  good: 3,
+};
+
+function slaMinutes(sla: string): number {
+  if (sla.includes("выполнен")) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const hours = /(\d+)\s*ч/.exec(sla);
+  const mins = /(\d+)\s*мин/.exec(sla);
+  return (hours ? Number(hours[1]) * 60 : 0) + (mins ? Number(mins[1]) : 0);
+}
+
+function nextAction(status: string, tone: string, score: number): string {
+  const lower = status.toLowerCase();
+  if (lower.includes("стоп") || lower.includes("отказ")) {
+    return "Закрыть кейс";
+  }
+  if (lower.includes("аномал")) {
+    return "Проверить выписку";
+  }
+  if (lower.includes("документ")) {
+    return "Запросить документы";
+  }
+  if (lower.includes("встреч")) {
+    return "Подтвердить условия";
+  }
+  if (lower.includes("одобр")) {
+    return "Контроль выдачи";
+  }
+  if (tone === "risk" || (score > 0 && score < 520)) {
+    return "Разобрать риск";
+  }
+  return "Открыть и решить";
+}
+
+function priorityLabel(tone: string, sla: string): { label: string; className: string } {
+  if (sla.includes("выполнен")) {
+    return { label: "Готово", className: "good" };
+  }
+  if (tone === "risk" || slaMinutes(sla) < 30) {
+    return { label: "Срочно", className: "risk" };
+  }
+  if (tone === "warn" || tone === "info") {
+    return { label: "Внимание", className: "warn" };
+  }
+  return { label: "В работе", className: "info" };
+}
+
+/** Б1 — Очередь: один список, статус-теги в строке, одна кнопка «Открыть». */
 export function QueueScreen() {
-  const { companies, application, openBankCase, isBusy, isReady } = useApp();
-  const [filter, setFilter] = useState<QueueFilter>("all");
+  const { companies, application, openBankCase, isBusy, isReady, goToScreen } = useApp();
   const [query, setQuery] = useState("");
   const showSkeleton = !isReady || (isBusy && companies.length === 0);
 
   const queueRows = useMemo(() => {
-    return companies.map((company) => {
+    const rows = companies.map((company) => {
       const demo = company.demo_key ?? "";
       const meta = DEMO_CASES[demo] ?? {
         product: "Кредит",
@@ -126,36 +175,28 @@ export function QueueScreen() {
       }
       return { ...company, ...meta };
     });
+
+    return [...rows].sort((a, b) => {
+      const toneDiff = (TONE_PRIORITY[a.tone] ?? 9) - (TONE_PRIORITY[b.tone] ?? 9);
+      if (toneDiff !== 0) {
+        return toneDiff;
+      }
+      return slaMinutes(a.sla) - slaMinutes(b.sla);
+    });
   }, [companies, application]);
 
-  const filtered = queueRows.filter((row) => {
-    const hay = `${row.name} ${row.inn}`.toLowerCase();
-    if (query.trim() && !hay.includes(query.trim().toLowerCase())) {
-      return false;
+  const visibleRows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) {
+      return queueRows;
     }
-    if (filter === "manual") {
-      return row.status.toLowerCase().includes("документ") || (row.score < 520 && row.score > 0);
-    }
-    if (filter === "anomaly") {
-      return row.status.toLowerCase().includes("аномал");
-    }
-    if (filter === "docs") {
-      return row.status.toLowerCase().includes("документ");
-    }
-    if (filter === "counter") {
-      return row.status.toLowerCase().includes("встреч");
-    }
-    return true;
-  });
+    return queueRows.filter((row) => `${row.name} ${row.inn}`.toLowerCase().includes(q));
+  }, [queueRows, query]);
 
-  const counts = {
-    all: queueRows.length,
-    manual: queueRows.filter((r) => r.status.toLowerCase().includes("документ") || (r.score < 520 && r.score > 0))
-      .length,
-    anomaly: queueRows.filter((r) => r.status.toLowerCase().includes("аномал")).length,
-    docs: queueRows.filter((r) => r.status.toLowerCase().includes("документ")).length,
-    counter: queueRows.filter((r) => r.status.toLowerCase().includes("встреч")).length,
-  };
+  const openCount = queueRows.filter((r) => !r.sla.includes("выполнен")).length;
+  const urgentCount = queueRows.filter(
+    (r) => !r.sla.includes("выполнен") && (r.tone === "risk" || slaMinutes(r.sla) < 30),
+  ).length;
 
   function openCase(row: (typeof queueRows)[number]) {
     void openBankCase(row.id, {
@@ -166,28 +207,35 @@ export function QueueScreen() {
     });
   }
 
+  const nextRow =
+    visibleRows.find((row) => !row.sla.includes("выполнен")) ??
+    queueRows.find((row) => row.demo_key === "rosters") ??
+    queueRows[0];
+
   return (
     <>
-      <div className="page-header">
+      <div className="bank-page-head">
         <div>
-          <div className="figma-eyebrow">Малый бизнес · Москва</div>
-          <h1 className="figma-h1" style={{ fontSize: 32, lineHeight: "40px" }}>
-            Очередь заявок
-          </h1>
+          <div className="figma-eyebrow">Кредитный конвейер · заявки МСП</div>
+          <h1 className="figma-h1">Заявки на разборе</h1>
           <p className="figma-lead">
-            {queueRows.length} заявок в работе. SLA по малому бизнесу — 4 часа с момента отправки.
+            {openCount} в работе · откройте строку → один стол заявки (решение, аналитика, чат). Сводка
+            банка — в «Эффект».
           </p>
+          {urgentCount > 0 ? (
+            <div className="bank-next-hint">
+              Сначала: <span>{urgentCount} срочных</span>
+              <span className="muted">· откройте красную или янтарную строку</span>
+            </div>
+          ) : null}
         </div>
         <button
           type="button"
-          className="btn btn-primary"
+          className="btn btn-primary primary-cta"
+          disabled={!nextRow}
           onClick={() => {
-            const next =
-              queueRows.find((row) => row.demo_key === "rosters") ??
-              queueRows.find((row) => row.sla.includes("мин")) ??
-              queueRows[0];
-            if (next) {
-              openCase(next);
+            if (nextRow) {
+              openCase(nextRow);
             }
           }}
         >
@@ -196,33 +244,16 @@ export function QueueScreen() {
       </div>
 
       <div className="bank-toolbar">
-        <div className="bank-filters">
-          {(
-            [
-              ["all", `Все`, counts.all],
-              ["manual", "Ручная проверка", counts.manual],
-              ["anomaly", "Аномалии", counts.anomaly],
-              ["docs", "Нужны документы", counts.docs],
-              ["counter", "Встречные", counts.counter],
-            ] as Array<[QueueFilter, string, number]>
-          ).map(([id, label, count]) => (
-            <button
-              key={id}
-              type="button"
-              className={`bank-chip ${filter === id ? "active" : ""}`}
-              onClick={() => setFilter(id)}
-            >
-              {label}
-              <span>{count}</span>
-            </button>
-          ))}
-        </div>
         <input
           className="bank-search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="ИНН или название"
+          aria-label="Поиск по очереди"
         />
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("bank-signal")}>
+          Сигнал CAPEX
+        </button>
       </div>
 
       {showSkeleton ? (
@@ -232,86 +263,69 @@ export function QueueScreen() {
           title="Очередь пуста"
           text="Все заявки разобраны. Новые появятся здесь автоматически."
         />
+      ) : visibleRows.length === 0 ? (
+        <BankEmptyState
+          title="Ничего не найдено"
+          text="По поиску заявок нет — очистите строку или проверьте ИНН."
+        />
       ) : (
-      <section className="figma-panel figma-panel-sm bank-queue">
-        {filtered.length === 0 ? (
-          <BankEmptyState
-            title="Ничего не найдено"
-            text="По выбранным фильтрам заявок нет."
-          />
-        ) : (
-          <table className="ops-table">
-            <thead>
-              <tr>
-                <th>Клиент</th>
-                <th>Продукт</th>
-                <th>Сумма</th>
-                <th>RiskScore</th>
-                <th>Статус</th>
-                <th>SLA ↑</th>
-                <th>Исполнитель</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <strong>{row.name}</strong>
-                    <div className="muted" style={{ fontSize: 12 }}>
-                      ИНН {row.inn} · {row.okved_cluster || row.okved_code}
-                    </div>
-                  </td>
-                  <td>{row.product}</td>
-                  <td>{formatMoney(row.amount)}</td>
-                  <td
-                    style={{ fontWeight: 700 }}
-                    className={row.score === 0 ? "red" : row.score >= 750 ? "green" : undefined}
+        <div className="ops-list bank-queue" role="list">
+          {visibleRows.map((row, index) => {
+            const priority = priorityLabel(row.tone, row.sla);
+            const mins = slaMinutes(row.sla);
+            const slaHot = !row.sla.includes("выполнен") && mins < 30;
+            const rowTone =
+              priority.className === "risk"
+                ? "is-risk"
+                : priority.className === "warn"
+                  ? "is-warn"
+                  : priority.className === "good"
+                    ? "is-good"
+                    : "";
+            return (
+              <div
+                key={row.id}
+                className={`ops-row ${rowTone}`}
+                role="listitem"
+                style={{ animationDelay: `${Math.min(index, 8) * 30}ms` }}
+              >
+                <div className="ops-row-main">
+                  <div className="ops-row-title">{row.name}</div>
+                  <div className="ops-row-sub">
+                    ИНН {row.inn} · {row.product}
+                    {row.score > 0 ? ` · риск ${row.score}` : " · стоп-фактор"}
+                  </div>
+                </div>
+                <div className="ops-row-amount">{formatMoney(row.amount)}</div>
+                <div className="ops-row-meta">
+                  <span className={`status-tag is-${priority.className}`}>{priority.label}</span>
+                  <span
+                    className={`status-tag ${
+                      row.tone === "good"
+                        ? "is-good"
+                        : row.tone === "risk"
+                          ? "is-risk"
+                          : row.tone === "info"
+                            ? "is-info"
+                            : "is-warn"
+                    }`}
                   >
-                    {row.score || "—"}
-                  </td>
-                  <td>
-                    <span
-                      className={`pill ${
-                        row.tone === "good"
-                          ? "pill-good"
-                          : row.tone === "risk"
-                            ? "pill-risk"
-                            : row.tone === "info"
-                              ? "pill-outline"
-                              : "pill-warn"
-                      }`}
-                    >
-                      {row.status}
-                    </span>
-                  </td>
-                  <td
-                    className={
-                      row.sla.includes("мин") && Number.parseInt(row.sla, 10) < 30 ? "red" : undefined
-                    }
-                  >
-                    {row.sla}
-                  </td>
-                  <td>
-                    <span className="chat-avatar" style={{ width: 28, height: 28, fontSize: 10 }}>
-                      {row.assignee}
-                    </span>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-secondary"
-                      onClick={() => openCase(row)}
-                    >
-                      Открыть
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+                    {row.status}
+                  </span>
+                  {slaHot ? <span className="status-tag is-risk">SLA {row.sla}</span> : null}
+                </div>
+                <div className="ops-row-do">{nextAction(row.status, row.tone, row.score)}</div>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
+                  onClick={() => openCase(row)}
+                >
+                  Открыть
+                </button>
+              </div>
+            );
+          })}
+        </div>
       )}
     </>
   );

@@ -5,6 +5,7 @@ import { CollateralPicker } from "../components/CollateralPicker";
 import { FlowStepper, stepFromStatus } from "../components/FlowStepper";
 import { useApp } from "../state/AppState";
 import { useDemoStore } from "../state/demoStore";
+import { INVOICE_INSTANT_FINANCING_RATIO } from "../domain-ui/invoiceFinancing";
 import { formatMoney, formatPercent, roleLabel } from "../utils/format";
 
 function suggestedCollateral(amount: number): number {
@@ -48,7 +49,9 @@ export function ApplyScreen() {
   const [purpose, setPurpose] = useState("Покупка оборудования");
   const applyIntent = useDemoStore((state) => state.applyIntent);
   const prefillCollateral = useDemoStore((state) => state.prefillCollateral);
+  const applyPrefillAmount = useDemoStore((state) => state.applyPrefillAmount);
   const setApplyIntent = useDemoStore((state) => state.setApplyIntent);
+  const setApplyPrefillAmount = useDemoStore((state) => state.setApplyPrefillAmount);
   const [collateralType, setCollateralType] = useState<CollateralType>(
     applyIntent === "collateral" ? "REAL_ESTATE" : "NONE",
   );
@@ -60,20 +63,41 @@ export function ApplyScreen() {
   const amountRef = useRef<HTMLInputElement>(null);
   const termRef = useRef<HTMLInputElement>(null);
   const seededCollateral = useRef(false);
+  const seededAmount = useRef(false);
 
   useEffect(() => {
-    if (!company || applyIntent === "collateral") {
+    seededAmount.current = false;
+  }, [company?.id]);
+
+  useEffect(() => {
+    if (!company || applyIntent === "collateral" || seededAmount.current) {
       return;
     }
     const badge = searchResult?.credit_badge;
+    // Invoice-to-Credit: 85% суммы счёта из кабинета; иначе полная сумма распознанного счёта.
+    const fromFinancing = applyPrefillAmount;
     const fromInvoice = invoiceResult?.invoice.amount_rub;
-    setAmount(fromInvoice ?? badge?.amount_rub ?? 2_500_000);
-    setTerm(badge?.term_months ?? 12);
+    if (fromFinancing == null && fromInvoice == null && !badge) {
+      return;
+    }
+    setAmount(fromFinancing ?? fromInvoice ?? badge?.amount_rub ?? 2_500_000);
+    setTerm(fromFinancing != null ? 6 : (badge?.term_months ?? 12));
     setProduct(badge?.product_type ?? "INVEST_LEASING");
     if (invoiceResult?.invoice.purpose) {
       setPurpose(invoiceResult.invoice.purpose);
     }
-  }, [company?.id, searchResult, invoiceResult, applyIntent]);
+    seededAmount.current = true;
+    if (fromFinancing != null) {
+      setApplyPrefillAmount(null);
+    }
+  }, [
+    company,
+    searchResult,
+    invoiceResult,
+    applyIntent,
+    applyPrefillAmount,
+    setApplyPrefillAmount,
+  ]);
 
   useEffect(() => {
     if (seededCollateral.current || !prefillCollateral || !application) {
@@ -103,6 +127,11 @@ export function ApplyScreen() {
 
   const bankSuggested = searchResult?.credit_badge?.amount_rub ?? 900_000;
   const invoice = invoiceResult?.invoice;
+  const invoiceFinancingTarget = invoice
+    ? Math.round(invoice.amount_rub * INVOICE_INSTANT_FINANCING_RATIO)
+    : null;
+  const isInvoiceFinancing =
+    invoiceFinancingTarget != null && Math.abs(amount - invoiceFinancingTarget) < 1;
 
   if (!company) {
     return (
@@ -146,15 +175,20 @@ export function ApplyScreen() {
       problems[0]?.();
       return;
     }
-    await createApplication({
-      product_type: collateralType === "NONE" ? product : "VKL_SEC",
-      requested_amount_rub: amount,
-      term_months: term,
-      declared_monthly_revenue: company.declared_monthly_revenue,
-      collateral_type: collateralType,
-      collateral_value_rub: collateralType === "NONE" ? 0 : collateralValue,
-      draft_application_id: invoiceResult?.draft.application_id,
-    });
+    // Всегда сначала «Проверки» (паспорт), даже если бэкенд уже вернул решение —
+    // иначе 3-й шаг степпера пролетает мимо.
+    await createApplication(
+      {
+        product_type: collateralType === "NONE" ? product : "VKL_SEC",
+        requested_amount_rub: amount,
+        term_months: term,
+        declared_monthly_revenue: company.declared_monthly_revenue,
+        collateral_type: collateralType,
+        collateral_value_rub: collateralType === "NONE" ? 0 : collateralValue,
+        draft_application_id: invoiceResult?.draft.application_id,
+      },
+      "passport",
+    );
   }
 
   function chooseSafe() {
@@ -182,16 +216,47 @@ export function ApplyScreen() {
 
   return (
     <>
-      <div className="page-header">
-        <div>
-          <div className="figma-eyebrow">Заявки и предложения · кредит на развитие бизнеса</div>
-          <h1 className="figma-h1">Сколько нужно бизнесу?</h1>
+      <section className="home-hero">
+        <div className="home-hero-main">
+          <div className="figma-eyebrow">
+            {company.name} · {isInvoiceFinancing ? "Invoice-to-Credit" : "Кредит"}
+          </div>
+          <h1 className="figma-h1">
+            {isInvoiceFinancing ? "Финансирование счёта" : "Проверьте условия кредита"}
+          </h1>
           <p className="figma-lead">
-            Мы подставили данные из выписки{invoice ? " и счёта поставщика" : ""}. Проверьте сумму и
-            срок — ориентир платежа обновится сразу. Решение считает банк.
+            Сумма, срок и данные компании уже подставлены
+            {isInvoiceFinancing
+              ? " из счёта (85%)"
+              : invoice
+                ? " из счёта и выписки"
+                : " из выписки"}
+            . Справа — нагрузка по платежу и безопасный вариант.
           </p>
+          {isInvoiceFinancing || invoice ? (
+            <div className="home-hero-balance">
+              <span>{isInvoiceFinancing ? "К финансированию" : "Сумма счёта"}</span>
+              <strong>{formatMoney(amount)}</strong>
+              <small>
+                {invoice
+                  ? `${invoice.supplier_name} · ${invoice.purpose}`
+                  : "условия можно скорректировать ниже"}
+              </small>
+            </div>
+          ) : null}
         </div>
-      </div>
+        <div className="home-hero-cta">
+          {invoice ? (
+            <button type="button" className="btn btn-ghost" onClick={() => goToScreen("invoice")}>
+              ← К счетам
+            </button>
+          ) : (
+            <button type="button" className="btn btn-ghost" onClick={() => goToScreen("home")}>
+              ← На главную
+            </button>
+          )}
+        </div>
+      </section>
       <FlowStepper active={stepFromStatus(application?.status, "apply")} />
 
       <div className="figma-grid-2">
@@ -216,6 +281,12 @@ export function ApplyScreen() {
                   ИНН {invoice.supplier_inn} · {invoice.purpose}
                 </div>
                 <div style={{ marginTop: 8, fontWeight: 650 }}>{formatMoney(invoice.amount_rub)}</div>
+                {isInvoiceFinancing ? (
+                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                    В заявку подставлено финансирование{" "}
+                    {Math.round(INVOICE_INSTANT_FINANCING_RATIO * 100)}% · {formatMoney(amount)}
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : (
@@ -365,7 +436,7 @@ export function ApplyScreen() {
           )}
 
           <div className="figma-panel-title" style={{ marginTop: 28 }}>
-            Данные компании — подставлены автоматически
+            Данные компании — из кабинета
           </div>
           <div className="kv-list">
             <div className="meta-row">
@@ -382,15 +453,25 @@ export function ApplyScreen() {
               <span>Подготовила заявку</span>
               <strong>{roleLabel(userRole)}</strong>
             </div>
-            <div className="meta-row">
-              <span>Среднемесячная выручка</span>
-              <strong>{formatMoney(company.monthly_revenue_alfa)} · из выписки</strong>
-            </div>
           </div>
         </form>
 
         <aside className="figma-panel figma-panel-sm">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <div className="why-offer-block">
+            <div className="figma-panel-title">Почему банк предлагает кредит</div>
+            <strong style={{ display: "block", marginTop: 8, fontSize: 16 }}>
+              {invoice
+                ? `Оплата ${invoice.supplier_name}`
+                : "Закрыть кассовый разрыв и сохранить оборот"}
+            </strong>
+            <p className="why-offer-list" style={{ listStyle: "none", paddingLeft: 0 }}>
+              {invoice
+                ? `Счёт на ${formatMoney(invoice.amount_rub)} · ${invoice.purpose}. Кредит сохранит деньги на счёте под зарплату и аренду.`
+                : "По выписке крупные выплаты идут раньше выручки — кредит закрывает разрыв."}
+            </p>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", marginTop: 20 }}>
             <div>
               <div className="figma-panel-title">Нагрузка по платежу</div>
               <div className="pay-figure">≈ {formatMoney(loadPreview.roughPayment)}</div>
@@ -432,14 +513,6 @@ export function ApplyScreen() {
               </div>
             </div>
           </div>
-
-          <ul style={{ margin: "14px 0 0", paddingLeft: 18, color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.45 }}>
-            <li>Летом выручка кофеен ниже на ~31% — платёж съест свободный поток.</li>
-            <li>
-              Рядом {company.competitors_count || 9} кофеен · запас прочности небольшой при падении
-              трафика.
-            </li>
-          </ul>
 
           <div className="figma-offer-card" style={{ marginTop: 16 }}>
             <strong>Безопасный вариант</strong>

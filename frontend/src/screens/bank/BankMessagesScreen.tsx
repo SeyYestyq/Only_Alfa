@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { BankEmptyState, InboxSkeleton } from "../../components/Skeleton";
 import { useApp } from "../../state/AppState";
+import { useDemoStore } from "../../state/demoStore";
 import { formatMoney } from "../../utils/format";
 
 type InboxFilter = "unassigned" | "mine" | "all";
 
-/** Б4 — Входящие инспектора (copy 7 + состояния copy 12–13). */
+/** Б4 — Входящие: клиент, стадия кредита, приложенные документы. */
 export function BankMessagesScreen() {
-  const { application, companies, selectCompany, goToScreen, isBusy } = useApp();
+  const { application, companies, selectCompany, goToScreen, isBusy, dashboard } = useApp();
+  const creditDocs = useDemoStore((state) => state.creditDocs);
   const [filter, setFilter] = useState<InboxFilter>("unassigned");
   const [taken, setTaken] = useState(false);
+  const [reply, setReply] = useState("");
+  const [sent, setSent] = useState<string[]>([]);
 
   const threads = [
     {
@@ -17,7 +21,9 @@ export function BankMessagesScreen() {
       initials: "РК",
       title: "ООО «Ростерс Кафе»",
       time: "23:05",
-      preview: "Тема: кредит на оборудование · «Хотим взять ещё на второй ростер…»",
+      preview: application
+        ? `Заявка № ${application.application_id.slice(-8).toUpperCase()} · ${application.status_label}`
+        : "Тема: кредит на оборудование · «Хотим взять ещё…»",
       unassigned: true,
     },
     {
@@ -51,6 +57,16 @@ export function BankMessagesScreen() {
   if (isBusy) {
     return <InboxSkeleton />;
   }
+
+  const company = dashboard?.company ?? application?.company;
+  const contactName =
+    dashboard?.company.director_name ??
+    application?.company.users.find((user) => user.role === "CEO_OWNER" || user.role === "IP_OWNER")
+      ?.full_name ??
+    application?.company.users[0]?.full_name ??
+    "Клиент";
+  const companyName = company?.name ?? application?.company.name ?? "Компания";
+  const stage = application?.status_label ?? "Заявка не привязана";
 
   return (
     <div className="bank-messages-shell">
@@ -91,9 +107,9 @@ export function BankMessagesScreen() {
             type="button"
             className="chat-thread-item active"
             onClick={() => {
-              const company = companies.find((row) => row.demo_key === thread.id);
-              if (company) {
-                void selectCompany(company.id, { nextScreen: "bank-messages" });
+              const row = companies.find((item) => item.demo_key === thread.id);
+              if (row) {
+                void selectCompany(row.id, { nextScreen: "bank-messages" });
               }
             }}
           >
@@ -113,59 +129,127 @@ export function BankMessagesScreen() {
         <header className="chat-pane-head">
           <span className="chat-avatar">АВ</span>
           <div style={{ flex: 1 }}>
-            <strong>Алексей Воронов · ООО «Ростерс Кафе»</strong>
-            <div className="muted">Тема: кредит на оборудование · заявка не привязана</div>
+            <strong>
+              {contactName} · {companyName}
+            </strong>
+            <div className="muted">
+              {application
+                ? `Кредит · № ${application.application_id.slice(-8).toUpperCase()} · ${stage}`
+                : "Диалог без привязанной заявки"}
+            </div>
           </div>
           {!taken && (
-            <button type="button" className="btn btn-primary btn-sm" onClick={() => setTaken(true)}>
+            <button type="button" className="btn btn-primary" onClick={() => setTaken(true)}>
               Взять в работу
             </button>
           )}
         </header>
 
+        {application ? (
+          <div className="bank-msg-case">
+            <div>
+              <strong>
+                {companyName} · № {application.application_id.slice(-8).toUpperCase()} ·{" "}
+                {formatMoney(application.requested_amount_rub)}
+              </strong>
+              <div className="ops-row-meta" style={{ marginTop: 8, justifyContent: "flex-start" }}>
+                <span className="status-tag is-warn">{stage}</span>
+                <span
+                  className={`status-tag ${
+                    application.risk_score === 0 || application.risk_score < 520
+                      ? "is-risk"
+                      : application.risk_score >= 750
+                        ? "is-good"
+                        : "is-info"
+                  }`}
+                >
+                  Риск {application.risk_score || "стоп"}
+                </span>
+              </div>
+            </div>
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => goToScreen("bank-xray")}>
+              К разбору заявки
+            </button>
+          </div>
+        ) : (
+          <div className="bank-msg-case">
+            <div>
+              <strong>Заявка не привязана</strong>
+              <span className="muted">Ответьте клиенту или выберите диалог слева</span>
+            </div>
+          </div>
+        )}
+
         <div className="chat-stream">
-          <div className="chat-system">Диалог без исполнителя · клиент ждёт ответа 18 минут. Норматив — 30 минут.</div>
+          <div className="chat-system">
+            {application
+              ? `Что сделать: ответить по стадии «${stage}» · сумма ${formatMoney(application.requested_amount_rub)}`
+              : "Диалог без исполнителя · клиент ждёт ответа."}
+          </div>
           <div className="chat-bubble in">
-            <div className="chat-bubble-meta">Алексей Воронов</div>
+            <div className="chat-bubble-meta">{contactName}</div>
             <p>
-              Добрый вечер! Мы взяли ростер на 2 500 000 ₽, но хотим второй — для доставки. Можно ли увеличить
-              сумму по текущей заявке или нужна новая?
+              {application?.status === "NEED_MORE_INFO"
+                ? "Добрый день! Загружаю документы, которые вы запросили. Подскажите, всё ли на месте?"
+                : "Добрый вечер! Подскажите статус по кредиту и можно ли чуть снизить платёж летом?"}
             </p>
-            <p style={{ marginTop: 8 }}>И ещё: можно ли платить меньше летом?</p>
             <div className="chat-time">23:06</div>
           </div>
+
+          {creditDocs.map((doc) => (
+            <div key={doc} className="chat-card">
+              <div className="figma-panel-title">Документ от клиента</div>
+              <strong>PDF · {doc}</strong>
+              <p>Прикреплён к заявке — виден в карточке справа.</p>
+            </div>
+          ))}
+
+          {sent.map((text) => (
+            <div key={text} className="chat-bubble out">
+              <p>{text}</p>
+              <div className="chat-time">сейчас</div>
+            </div>
+          ))}
+
           {!taken && (
             <div className="alert alert-warn">Возьмите диалог в работу, чтобы ответить.</div>
           )}
+
           {application && (
             <div className="chat-card offer">
-              <div className="figma-panel-title">Связать с заявкой</div>
+              <div className="figma-panel-title">Заявка в работе</div>
               <strong>
-                № {application.application_id.slice(-8).toUpperCase()} · {formatMoney(application.requested_amount_rub)}
+                № {application.application_id.slice(-8).toUpperCase()} ·{" "}
+                {formatMoney(application.requested_amount_rub)}
               </strong>
-              <p>{application.status_label}</p>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                style={{ marginTop: 10 }}
-                onClick={() => goToScreen("bank-xray")}
-              >
-                Открыть рентген
-              </button>
+              <p className="muted" style={{ marginTop: 6 }}>
+                {application.status_label} · риск {application.risk_score || "стоп"} · кнопка разбора — в шапке
+                чата
+              </p>
             </div>
           )}
-          <div className="chat-card">
-            <div className="figma-panel-title">Подсказка</div>
-            <p>«Платёж от выручки» снижает платёж в низкий сезон — 9% эквайринга.</p>
-          </div>
         </div>
 
         {taken && (
-          <form className="chat-compose" onSubmit={(event) => event.preventDefault()}>
-            <button type="button" className="chat-attach">
+          <form
+            className="chat-compose"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!reply.trim()) {
+                return;
+              }
+              setSent((prev) => [...prev, reply.trim()]);
+              setReply("");
+            }}
+          >
+            <button type="button" className="chat-attach" aria-label="Вложение">
               +
             </button>
-            <input placeholder="Ответ клиенту…" />
+            <input
+              value={reply}
+              onChange={(event) => setReply(event.target.value)}
+              placeholder="Ответ клиенту…"
+            />
             <button type="submit" className="btn btn-primary btn-sm">
               ↑
             </button>
@@ -174,21 +258,72 @@ export function BankMessagesScreen() {
       </section>
 
       <aside className="bank-client-card">
-        <div className="figma-panel-title">Клиент</div>
+        <div className="figma-panel-title">Контекст кейса</div>
         <div className="kv-list">
           <div className="meta-row">
+            <span>Клиент</span>
+            <strong>{companyName}</strong>
+          </div>
+          <div className="meta-row">
             <span>ИНН</span>
-            <strong>{application?.company.inn ?? "7704561238"}</strong>
+            <strong>{company?.inn ?? application?.company.inn ?? "—"}</strong>
+          </div>
+          <div className="meta-row">
+            <span>Стадия</span>
+            <strong>{stage}</strong>
+          </div>
+          {application && (
+            <div className="meta-row">
+              <span>Сумма</span>
+              <strong>{formatMoney(application.requested_amount_rub)}</strong>
+            </div>
+          )}
+          <div className="meta-row">
+            <span>Риск</span>
+            <strong>{application?.risk_score || "—"}</strong>
           </div>
           <div className="meta-row">
             <span>Выручка / мес.</span>
-            <strong>2,1 млн ₽</strong>
-          </div>
-          <div className="meta-row">
-            <span>RiskScore</span>
-            <strong>{application?.risk_score ?? 610}</strong>
+            <strong>
+              {formatMoney(
+                application?.monthly_revenue_alfa ??
+                  dashboard?.company.monthly_revenue_alfa ??
+                  0,
+              )}
+            </strong>
           </div>
         </div>
+
+        {company || application ? (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            style={{ marginTop: 12, width: "100%" }}
+            onClick={() => goToScreen("bank-profile")}
+          >
+            Портрет 360°
+          </button>
+        ) : null}
+
+        <div className="figma-panel-title" style={{ marginTop: 20 }}>
+          Документы по заявке
+        </div>
+        {creditDocs.length === 0 ? (
+          <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+            Клиент ещё ничего не приложил. Файлы из чата появятся здесь.
+          </p>
+        ) : (
+          <ul className="bank-doc-list">
+            {creditDocs.map((doc) => (
+              <li key={doc}>
+                <span className="apply-invoice pdf" style={{ width: 36, height: 36, fontSize: 10 }}>
+                  PDF
+                </span>
+                <span>{doc}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </aside>
     </div>
   );

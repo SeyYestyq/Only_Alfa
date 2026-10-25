@@ -1,29 +1,33 @@
 :root {
-  /* Figma DS «00 — Дизайн-система» */
-  --bg-base: #0b0b0c;
-  --surface-1: #111113;
-  --surface-2: #17171a;
-  --surface-3: #202024;
-  --border-strong: #303036;
-  --border: #232327;
-  --text-primary: #f5f5f7;
-  --text-secondary: #a1a1aa;
-  --text-faint: #71717a;
+  /* Clarity DS — Alfa red puncture on calm anthracite
+     Refs: N26 (balance-first), Diffusion Studio (red accent only),
+     minimal.gallery / recent.design (space + hierarchy) */
+
+  --bg-base: #080809;
+  --surface-1: #101012;
+  --surface-2: #161618;
+  --surface-3: #1e1e22;
+  --border-strong: #35353c;
+  --border: #242428;
+  --text-primary: #f7f7f8;
+  --text-secondary: #9c9ca6;
+  --text-faint: #6a6a74;
 
   --accent: #ef3124;
   --accent-dark: #c9241a;
   --accent-soft: rgba(239, 49, 36, 0.14);
+  --accent-glow: rgba(239, 49, 36, 0.22);
 
-  --status-success: #34c77b;
-  --status-success-soft: rgba(52, 199, 123, 0.14);
-  --status-warning: #f2b33d;
-  --status-warning-soft: rgba(242, 179, 61, 0.14);
+  --status-success: #3dd68c;
+  --status-success-soft: rgba(61, 214, 140, 0.12);
+  --status-warning: #f0b429;
+  --status-warning-soft: rgba(240, 180, 41, 0.12);
   --status-danger: #f26b5b;
-  --status-danger-soft: rgba(242, 107, 91, 0.14);
-  --status-info: #6ca8ff;
-  --status-info-soft: rgba(108, 168, 255, 0.14);
+  --status-danger-soft: rgba(242, 107, 91, 0.12);
+  --status-info: #7ab0ff;
+  --status-info-soft: rgba(122, 176, 255, 0.12);
 
-  /* Aliases used across existing CSS */
+  /* Aliases */
   --alfa-red: var(--accent);
   --alfa-red-dark: var(--accent-dark);
   --alfa-red-soft: var(--accent-soft);
@@ -42,16 +46,38 @@
   --blue: var(--status-info);
   --blue-soft: var(--status-info-soft);
 
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 16px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+  --space: 8px;
 
-  --font: "Manrope", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --mono: "SF Mono", ui-monospace, Menlo, monospace;
+  /* Satoshi (Fontshare) — grotesk like N26 / Linear clarity */
+  --font: "Satoshi", "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+  --font-num: "Satoshi", var(--mono);
+
+  --fs-display: clamp(40px, 5vw, 56px);
+  --fs-h1: clamp(28px, 3.2vw, 36px);
+  --fs-h2: 24px;
+  --fs-h3: 18px;
+  --fs-body-l: 16px;
+  --fs-body: 15px;
+  --fs-label: 13px;
+  --fs-caption: 12px;
+  --fs-micro: 11px;
 
   --page-max: 1440px;
-  --page-pad-x: 72px;
+  --page-pad-x: clamp(20px, 5vw, 72px);
   --gutter: 24px;
+  --col: 86px;
+
+  /* Motion — motion.dev / GSAP-inspired easings, CSS-only */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 160ms;
+  --dur: 280ms;
+  --dur-slow: 520ms;
 }

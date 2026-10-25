@@ -4,6 +4,7 @@ import App from "./App";
 import { AppProvider } from "./state/AppState";
 import "./styles/global.css";
 import "./styles/figma-layout.css";
+import "./styles/clarity.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

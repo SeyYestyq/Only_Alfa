@@ -1,6 +1,5 @@
-import { CashForecastChart } from "../components/CashForecastChart";
 import { OperationsTable } from "../components/OperationsTable";
-import { RevenueBars } from "../components/RevenueBars";
+import { PeriodChart } from "../components/PeriodChart";
 import { useApp } from "../state/AppState";
 import { useDemoStore } from "../state/demoStore";
 import { formatMoney, formatPercent, givenName } from "../utils/format";
@@ -24,7 +23,7 @@ const ROSTERS_OBLIGATIONS = [
   { date: "28.11", title: "ЕНП", amount: 182_000, accent: true },
 ];
 
-/** К1 — Главная: мой бизнес. Макет Figma 47:388 — структура и копирайт 1:1. */
+/** К1 — Главная: баланс крупно, KPI, внимание+оплаты, счёт. */
 export function DashboardScreen() {
   const { dashboard, goToScreen, userRole } = useApp();
   const setApplyIntent = useDemoStore((state) => state.setApplyIntent);
@@ -65,6 +64,24 @@ export function DashboardScreen() {
           accent: false,
         }));
 
+  const importantItems =
+    important.length > 0
+      ? important.slice(0, 3)
+      : [
+          {
+            code: "GAP",
+            severity: "RISK" as const,
+            title: "Кассовый разрыв 26–30.11",
+            value: "Налоги и аренда раньше выручки · до −35 000 ₽",
+          },
+          {
+            code: "GROWTH",
+            severity: "GOOD" as const,
+            title: "Выручка растёт +11%",
+            value: "Средний чек +6% · хороший фон для кредита",
+          },
+        ];
+
   function startCredit() {
     setApplyIntent("standard");
     goToScreen("apply");
@@ -72,8 +89,8 @@ export function DashboardScreen() {
 
   return (
     <>
-      <div className="page-header" style={{ alignItems: "flex-end", marginBottom: 8 }}>
-        <div>
+      <section className="home-hero clarity-rise">
+        <div className="home-hero-main">
           <div className="figma-eyebrow">
             {company.name} ·{" "}
             {new Date().toLocaleDateString("ru-RU", {
@@ -86,23 +103,27 @@ export function DashboardScreen() {
             {greeting()}, {givenName(user?.full_name)}
           </h1>
           <p className="figma-lead">
-            Сводка по счёту, выручке и обязательствам. Данные обновлены{" "}
-            {new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}.
+            Счёт, ближайшие платежи и финансирование — без лишних экранов.
           </p>
-        </div>
-        <button type="button" className="btn btn-secondary" onClick={() => goToScreen("messages")}>
-          Написать в банк
-        </button>
-      </div>
-
-      <div className="figma-kpi-row">
-        <div className="figma-kpi">
-          <div className="figma-kpi-label">Остаток на счёте</div>
-          <div className="figma-kpi-value">{formatMoney(dashboard.account_balance)}</div>
-          <div className="figma-kpi-delta">
-            {isRosters ? "−418 600 ₽ за 30 дней на оборудование" : "текущий баланс в Альфе"}
+          <div className="home-hero-balance">
+            <span>На счёте сейчас</span>
+            <strong>{formatMoney(dashboard.account_balance)}</strong>
+            <small>
+              {isRosters ? "−418 600 ₽ за 30 дней на оборудование" : "расчётный счёт в Альфе"}
+            </small>
           </div>
         </div>
+        <div className="home-hero-cta">
+          <button type="button" className="btn btn-primary primary-cta" onClick={() => goToScreen("invoice")}>
+            Счета → финансирование
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={startCredit}>
+            Оформить кредит
+          </button>
+        </div>
+      </section>
+
+      <div className="home-bento clarity-rise clarity-rise-d1">
         <div className="figma-kpi">
           <div className="figma-kpi-label">Выручка в октябре</div>
           <div className="figma-kpi-value">
@@ -110,57 +131,47 @@ export function DashboardScreen() {
           </div>
           <div className={`figma-kpi-delta ${company.revenue_growth_pct >= 0 ? "green" : "red"}`}>
             {company.revenue_growth_pct >= 0 ? "+" : ""}
-            {formatPercent(company.revenue_growth_pct, 0)} к октябрю прошлого года
+            {formatPercent(company.revenue_growth_pct, 0)} к прошлому году
           </div>
         </div>
         <div className="figma-kpi">
-          <div className="figma-kpi-label">Свободный денежный поток</div>
+          <div className="figma-kpi-label">После расходов</div>
           <div className="figma-kpi-value">{formatMoney(fcfDisplay)}</div>
           <div className="figma-kpi-delta">в среднем за 3 месяца</div>
         </div>
         <div className="figma-kpi">
-          <div className="figma-kpi-label">Обязательства до 30 ноября</div>
+          <div className="figma-kpi-label">К оплате до 30.11</div>
           <div className="figma-kpi-value">{formatMoney(obligationsTotal)}</div>
-          <div className="figma-kpi-delta">
-            {obligations.length} платежей · ближайший {obligations[0]?.date ?? "—"}
-          </div>
+          <div className="figma-kpi-delta">ближайший {obligations[0]?.date ?? "—"}</div>
         </div>
       </div>
 
-      <div className="figma-grid-2">
-        <section className="figma-panel">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-            <div>
-              <div className="figma-panel-title">Выручка · 12 месяцев</div>
-              <div className="figma-panel-heading">
-                {isRosters
-                  ? "24,85 млн ₽ · +12% к прошлому году"
-                  : `${formatMoney(company.annual_revenue)} · ${company.revenue_growth_pct >= 0 ? "+" : ""}${formatPercent(company.revenue_growth_pct, 0)}`}
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 16, alignItems: "center", fontSize: 13, color: "var(--text-secondary)" }}>
-              <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-                <i style={{ width: 10, height: 10, borderRadius: 3, background: "var(--accent)", display: "inline-block" }} />
-                2025–2026
-              </span>
-              <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-                <i style={{ width: 10, height: 10, borderRadius: 3, background: "#202024", display: "inline-block" }} />
-                2024–2025
-              </span>
-            </div>
-          </div>
-          <RevenueBars />
-          <p className="muted" style={{ marginTop: 14, fontSize: 13, lineHeight: 1.45 }}>
-            Низкий сезон июль–август: студенты уезжают, трафик кофеен падает. Жёлтые столбцы — месяцы
-            с выручкой ниже среднего.
-          </p>
-        </section>
+      <div className="home-section clarity-rise clarity-rise-d2">
+        <PeriodChart monthlyRevenue={isRosters ? 2_100_000 : company.monthly_revenue_alfa} />
+      </div>
 
-        <section className="figma-panel figma-panel-sm">
-          <div className="figma-panel-title">Календарь обязательств</div>
-          <div className="figma-panel-heading">Ближайшие платежи</div>
-          <div className="obligations-list">
-            {obligations.map((row) => (
+      <section className="figma-panel attention-split home-section clarity-rise clarity-rise-d3">
+        <div className="attention-col">
+          <div className="figma-panel-title">Что важно сейчас</div>
+          <div className="radar-list" style={{ marginTop: 14 }}>
+            {importantItems.map((item) => (
+              <div key={item.code} className="radar-item">
+                <span className={`radar-dot ${item.severity}`} />
+                <div>
+                  <div className="radar-title">{item.title}</div>
+                  <div className="radar-value">{item.value}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="attention-divider" aria-hidden="true" />
+
+        <div className="attention-col">
+          <div className="figma-panel-title">Ближайшие оплаты</div>
+          <div className="obligations-list" style={{ marginTop: 6 }}>
+            {obligations.slice(0, 4).map((row) => (
               <div
                 key={`${row.date}-${row.title}`}
                 className={`obligation-row ${row.accent ? "accent" : ""}`}
@@ -171,98 +182,50 @@ export function DashboardScreen() {
               </div>
             ))}
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
-      <div className="figma-grid-2">
-        <section className="figma-panel">
-          <div className="figma-panel-title">Прогноз остатка · 60 дней</div>
-          <div className="figma-panel-heading">
-            {dashboard.cash_forecast.has_gap
-              ? isRosters
-                ? "Разрыв 26–30 ноября"
-                : `Разрыв · мин. ${formatMoney(dashboard.cash_forecast.min_balance_rub)}`
-              : "Кассового разрыва не ожидается"}
+      {!offersMuted && (
+        <section className="home-offer-quiet home-section clarity-rise clarity-rise-d4">
+          <div className="home-offer-body">
+            <span className="status-tag is-info">Предложение банка</span>
+            <strong>900 000 ₽ · 24 мес. · ≈ 44 930 ₽ / мес.</strong>
+            <p className="muted">Вернуть деньги за оборудование и закрыть кассовый разрыв</p>
           </div>
-          <div style={{ marginTop: 16 }}>
-            <CashForecastChart forecast={dashboard.cash_forecast} />
-          </div>
-          <p className="muted" style={{ marginTop: 12, fontSize: 12 }}>
-            Прогноз по выписке за 24 месяца и календарю обязательств. Не учитывает новые договоры.
-          </p>
-        </section>
-
-        <section className="figma-panel figma-panel-sm">
-          <div className="figma-panel-title">Что важно сейчас</div>
-
-          <div className="radar-list" style={{ marginTop: 16 }}>
-            {important.slice(0, 2).map((item) => (
-              <div key={item.code} className="radar-item">
-                <span className={`radar-dot ${item.severity}`} />
-                <div>
-                  <div className="radar-title">{item.title}</div>
-                  <div className="radar-value">{item.value}</div>
-                </div>
-              </div>
-            ))}
-            {important.length === 0 && (
-              <>
-                <div className="radar-item">
-                  <span className="radar-dot RISK" />
-                  <div>
-                    <div className="radar-title">Кассовый разрыв 26–30.11</div>
-                    <div className="radar-value">
-                      Налоги и аренда раньше выручки · до −35 000 ₽
-                    </div>
-                  </div>
-                </div>
-                <div className="radar-item">
-                  <span className="radar-dot GOOD" />
-                  <div>
-                    <div className="radar-title">Выручка растёт +11%</div>
-                    <div className="radar-value">Средний чек +6% · хороший фон для кредита</div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="silence-row">
-            <div>
-              <strong>Режим тишины</strong>
-              <p>Предложения банка скрыты. Аналитика и прогноз остаются на месте.</p>
-            </div>
+          <div className="home-offer-actions">
+            <button type="button" className="btn btn-secondary btn-sm" onClick={startCredit}>
+              Условия
+            </button>
             <button
               type="button"
-              className={`silence-switch ${offersMuted ? "on" : ""}`}
-              role="switch"
-              aria-checked={offersMuted}
-              onClick={() => setOffersMuted(!offersMuted)}
-            />
+              className="btn btn-ghost btn-sm"
+              onClick={() => setOffersMuted(true)}
+            >
+              Скрыть
+            </button>
           </div>
-
-          {!offersMuted && (
-            <div className="figma-offer-card">
-              <div className="figma-panel-title">Предложение банка</div>
-              <strong style={{ marginTop: 8 }}>
-                900 000 ₽ на 24 мес. — вернуть в оборот деньги за оборудование и закрыть разрыв
-              </strong>
-              <p>18,0% годовых, платёж ≈ 44 930 ₽ / мес.</p>
-              <button type="button" className="btn btn-primary" onClick={startCredit}>
-                Посмотреть предложение
-              </button>
-            </div>
-          )}
         </section>
-      </div>
+      )}
 
-      <section className="figma-panel" style={{ marginTop: 24 }}>
+      {offersMuted && (
+        <div className="silence-restore">
+          <span className="muted">Предложения банка скрыты</span>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOffersMuted(false)}>
+            Показать снова
+          </button>
+        </div>
+      )}
+
+      <section className="figma-panel home-section clarity-rise clarity-rise-d5">
         <div className="ops-head">
-          <div className="figma-panel-heading" style={{ marginTop: 0 }}>
-            Последние операции
+          <div>
+            <div className="figma-panel-title">Движения по счёту</div>
+            <div className="figma-panel-heading" style={{ marginTop: 4, fontSize: 18 }}>
+              Последние операции
+            </div>
           </div>
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("payments")}>
-            Все операции →
+            Все →
           </button>
         </div>
         <OperationsTable rows={dashboard.transactions} />

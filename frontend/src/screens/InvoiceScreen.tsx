@@ -1,124 +1,226 @@
+import { useEffect, useMemo, useState } from "react";
+import { ApiError, api } from "../api/client";
+import type { SupplierDealRisk } from "../api/types";
 import { InvoicePanel, InvoiceRecognizedSummary } from "../components/InvoicePanel";
+import { InvoiceDetailPane } from "../components/invoice/InvoiceDetailPane";
+import { InvoiceKpiStrip } from "../components/invoice/InvoiceKpiStrip";
+import { InvoiceListPane } from "../components/invoice/InvoiceListPane";
+import {
+  instantFinancingAmount,
+  toUnpaidInvoiceRow,
+  unpaidInvoiceKpis,
+} from "../domain-ui/invoiceFinancing";
 import { useApp } from "../state/AppState";
-import { formatMoney, roughAnnuity } from "../utils/format";
-import type { Transaction } from "../api/types";
+import { useDemoStore } from "../state/demoStore";
+import { formatMoney } from "../utils/format";
 
-function rentRisk(balance: number, payment: number, transactions: Transaction[]) {
-  const remainder = balance - payment;
-  const rent = transactions.find(
-    (row) => row.direction === "OUT" && /аренд/i.test(`${row.description} ${row.category}`),
-  );
-  const obligation = rent ? Math.abs(rent.amount_rub) : 0;
-  return {
-    remainder,
-    obligation,
-    title: rent?.description ?? "аренду",
-    shortfall: rent !== undefined && remainder < obligation,
-  };
-}
+type FilterTab = "all" | "unpaid" | "draft";
 
-/** Оплата счёта поставщика в кредит — макет «счёт поставщика». */
+/**
+ * Invoice-to-Credit: кабинет неоплаченных счетов (list + detail) и CTA
+ * «мгновенное финансирование 85%» → форма заявки с предзаполненной суммой.
+ */
 export function InvoiceScreen() {
-  const { dashboard, invoiceResult, createApplication, isBusy, viewMode, goToScreen } = useApp();
-  const invoice = invoiceResult?.invoice;
+  const {
+    dashboard,
+    templates,
+    invoiceResult,
+    isBusy,
+    viewMode,
+    goToScreen,
+    parseTemplate,
+  } = useApp();
+  const setApplyIntent = useDemoStore((state) => state.setApplyIntent);
+  const setApplyPrefillAmount = useDemoStore((state) => state.setApplyPrefillAmount);
+
+  const [tab, setTab] = useState<FilterTab>("unpaid");
+  const [selectedCode, setSelectedCode] = useState<string | null>(null);
+  const [paidFromAccount, setPaidFromAccount] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [supplierRisk, setSupplierRisk] = useState<SupplierDealRisk | null>(null);
+  const [supplierRiskLoading, setSupplierRiskLoading] = useState(false);
+  const [supplierRiskError, setSupplierRiskError] = useState<string | null>(null);
+
+  const unpaidRows = useMemo(() => templates.map(toUnpaidInvoiceRow), [templates]);
+
+  useEffect(() => {
+    if (!selectedCode && unpaidRows[0]) {
+      setSelectedCode(unpaidRows[0].code);
+    }
+  }, [selectedCode, unpaidRows]);
+
+  useEffect(() => {
+    const fromParse = invoiceResult?.invoice.template_code;
+    if (fromParse && unpaidRows.some((row) => row.code === fromParse)) {
+      setSelectedCode(fromParse);
+    }
+  }, [invoiceResult?.invoice.template_code, unpaidRows]);
+
+  const selected = unpaidRows.find((row) => row.code === selectedCode) ?? unpaidRows[0] ?? null;
+  const kpis = unpaidInvoiceKpis(unpaidRows);
   const company = dashboard?.company;
   const balance = dashboard?.account_balance ?? 0;
-  const risk =
-    invoice && dashboard ? rentRisk(balance, invoice.amount_rub, dashboard.transactions) : null;
-  const termMonths = 6;
-  const paymentHint = invoice ? roughAnnuity(invoice.amount_rub, termMonths) : 0;
+  const bankView = viewMode === "bank";
 
-  async function applyForCredit() {
-    if (!invoice || !company || !invoiceResult) {
+  useEffect(() => {
+    if (!selected || !company) {
+      setSupplierRisk(null);
+      setSupplierRiskError(null);
       return;
     }
-    await createApplication(
-      {
-        product_type: "VKL",
-        requested_amount_rub: invoice.amount_rub,
-        term_months: termMonths,
-        declared_monthly_revenue: company.declared_monthly_revenue,
-        draft_application_id: invoiceResult.draft.application_id,
-      },
-      "applications",
-    );
+
+    const supplierInn = selected.supplier_inn;
+    const amountRub = selected.amount_rub;
+    const supplierName = selected.supplier_name;
+    const companyId = company.id;
+
+    let cancelled = false;
+    setSupplierRiskLoading(true);
+    setSupplierRiskError(null);
+
+    void api
+      .getSupplierDealRisk(supplierInn, {
+        buyerCompanyId: companyId,
+        invoiceAmountRub: amountRub,
+        displayName: supplierName,
+      })
+      .then((payload) => {
+        if (!cancelled) {
+          setSupplierRisk(payload);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setSupplierRisk(null);
+          setSupplierRiskError(
+            err instanceof ApiError ? err.detail : "Не удалось загрузить аналитику поставщика",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setSupplierRiskLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selected?.code, selected?.supplier_inn, selected?.amount_rub, selected?.supplier_name, company?.id]);
+
+  async function startFinancing(code: string, amountRub: number) {
+    setApplyPrefillAmount(instantFinancingAmount(amountRub));
+    setApplyIntent("standard");
+    await parseTemplate(code);
+    goToScreen("apply");
+  }
+
+  async function financeSelected() {
+    if (!selected || bankView) {
+      return;
+    }
+    await startFinancing(selected.code, selected.amount_rub);
   }
 
   return (
     <>
-      <div className="page-header">
-        <div>
-          <div className="figma-eyebrow">Заявки и предложения · счёт поставщика</div>
-          <h1 className="figma-h1">Оплатите счёт поставщика в кредит</h1>
+      <section className="home-hero">
+        <div className="home-hero-main">
+          <div className="figma-eyebrow">
+            {company?.name ?? "Кабинет"} · Invoice-to-Credit
+          </div>
+          <h1 className="figma-h1">Счета к оплате</h1>
           <p className="figma-lead">
-            Перетащите PDF-счёт — реквизиты, сумму и НДС распознаем за 5 секунд, а поставщика проверим
-            по ЕГРЮЛ и ФССП.
+            Выберите счёт поставщика — банк профинансирует до 85%. Остаток закроется после оплаты
+            контрагентом.
           </p>
+          <div className="home-hero-balance">
+            <span>На счёте сейчас</span>
+            <strong>{formatMoney(balance)}</strong>
+            <small>можно оплатить целиком или взять финансирование</small>
+          </div>
         </div>
-      </div>
+        <div className="home-hero-cta">
+          <button
+            type="button"
+            className="btn btn-primary primary-cta"
+            disabled={isBusy || bankView || !selected}
+            onClick={() => void financeSelected()}
+          >
+            Финансировать выбранный
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => setShowUpload((open) => !open)}
+          >
+            {showUpload ? "Скрыть PDF" : "Загрузить PDF"}
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={() => goToScreen("home")}>
+            ← На главную
+          </button>
+        </div>
+      </section>
 
-      <div className={`invoice-layout ${invoice ? "has-result" : ""}`}>
-        <section className="figma-panel figma-panel-sm">
+      <InvoiceKpiStrip
+        overdueRub={kpis.overdue}
+        dueSoonRub={kpis.dueSoon}
+        availableRub={kpis.available}
+        onFinanceAll={() => void financeSelected()}
+        financeDisabled={isBusy || bankView || !selected}
+      />
+
+      <section className="inv-workspace">
+        <InvoiceListPane
+          rows={tab === "draft" ? [] : unpaidRows}
+          selectedCode={selected?.code ?? null}
+          tab={tab}
+          onTabChange={setTab}
+          onSelect={(code) => {
+            setSelectedCode(code);
+            setPaidFromAccount(false);
+          }}
+        />
+
+        <div className="inv-detail-wrap">
+          {selected && company ? (
+            <InvoiceDetailPane
+              invoice={selected}
+              companyName={company.name}
+              balanceRub={balance}
+              isBusy={isBusy}
+              disabled={bankView}
+              onFinance={() => void financeSelected()}
+              onPayFromAccount={() => setPaidFromAccount(true)}
+              paidFromAccount={paidFromAccount}
+              supplierRisk={supplierRisk}
+              supplierRiskLoading={supplierRiskLoading}
+              supplierRiskError={supplierRiskError}
+            />
+          ) : (
+            <div className="inv-list-empty">
+              <strong>Выберите счёт</strong>
+              <p className="muted">Слева — демо-шаблоны Invoice-to-Credit из API.</p>
+            </div>
+          )}
+
+          {invoiceResult ? (
+            <div className="inv-recognized">
+              <InvoiceRecognizedSummary />
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      {showUpload ? (
+        <section className="figma-panel figma-panel-sm" style={{ marginTop: 16 }}>
+          <div className="figma-panel-title">Свой PDF-счёт</div>
+          <div className="figma-panel-heading" style={{ fontSize: 18, marginBottom: 12 }}>
+            Распознать и перейти к финансированию
+          </div>
           <InvoicePanel />
         </section>
-
-        {invoice && company && risk ? (
-          <div className="invoice-side">
-            <InvoiceRecognizedSummary />
-
-            <aside className="figma-offer-card" style={{ marginTop: 16 }}>
-              <div className="figma-panel-title">Предложение по счёту</div>
-              <strong style={{ marginTop: 8 }}>Кредит на оплату поставщику</strong>
-              <p>
-                Деньги уйдут напрямую {invoice.supplier_name}.{" "}
-                {risk.shortfall
-                  ? `Если платить со счёта сейчас, может не хватить на «${risk.title}».`
-                  : "После платежа на аренду ещё хватает — кредит по желанию."}
-              </p>
-              <div className="offer-metrics">
-                <div>
-                  <span>Сумма</span>
-                  <strong>{formatMoney(invoice.amount_rub)}</strong>
-                </div>
-                <div>
-                  <span>Срок</span>
-                  <strong>{termMonths} мес.</strong>
-                </div>
-                <div>
-                  <span>Платёж</span>
-                  <strong>≈ {formatMoney(paymentHint)}</strong>
-                </div>
-              </div>
-              <p className="muted" style={{ fontSize: 12, marginBottom: 12 }}>
-                18,0% годовых · без залога · ориентир платежа до решения банка
-              </p>
-              <label className="pay-account" style={{ marginBottom: 12 }}>
-                <input type="radio" name="pay-account" defaultChecked readOnly />
-                <span>
-                  <strong>Расчётный счёт · Альфа-Банк</strong>
-                  <span className="muted">Доступно {formatMoney(balance)}</span>
-                </span>
-              </label>
-              <button
-                type="button"
-                className="btn btn-primary btn-block"
-                disabled={isBusy || viewMode === "bank"}
-                onClick={() => void applyForCredit()}
-              >
-                Оформить кредит на {formatMoney(invoice.amount_rub)}
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost btn-block"
-                style={{ marginTop: 8 }}
-                onClick={() => goToScreen("apply")}
-              >
-                Изменить условия в заявке
-              </button>
-            </aside>
-          </div>
-        ) : null}
-      </div>
+      ) : null}
     </>
   );
 }

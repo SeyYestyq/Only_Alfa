@@ -3,7 +3,7 @@ import { FileUp } from "lucide-react";
 import { useApp } from "../state/AppState";
 import { formatMoney, formatMoneyExact } from "../utils/format";
 
-/** Зона PDF и демо-счета. Результат распознавания рисует InvoiceScreen. */
+/** Зона PDF-счёта. Демо-шаблоны также в списке InvoiceScreen (Invoice-to-Credit). */
 export function InvoicePanel() {
   const { templates, parseTemplate, parseFile, isBusy, error, clearError, goToScreen } = useApp();
 

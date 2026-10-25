@@ -1,48 +1,22 @@
+import { useState } from "react";
 import type { Application } from "../api/types";
+import { CreditChatModal } from "./CreditChatModal";
 import { useApp } from "../state/AppState";
 import { formatDateTime, formatMoney, formatPercent } from "../utils/format";
 
 const SIGNING_STATUSES = ["APPROVED", "AWAITING_CEO_APPROVAL"];
 
-const PATH = [
-  "Черновик",
-  "Отправлена",
-  "Проверки",
-  "Скоринг",
-  "Встречное предложение",
-  "Ожидает гендиректора",
-  "Подписание",
-  "Выдано",
-];
-
-function pathIndex(status: string): number {
-  if (status === "FUNDED") {
-    return 7;
-  }
-  if (
-    status === "CONTRACT_SIGNING" ||
-    status === "APPROVED" ||
-    status === "AWAITING_CEO_APPROVAL"
-  ) {
-    return 6;
-  }
-  if (status === "COUNTER_OFFER") {
-    return 4;
-  }
-  if (status === "MANUAL_REVIEW" || status === "NEED_MORE_INFO") {
-    return 3;
-  }
-  return 2;
-}
-
-/** Подписание: условия слева, код ПЭП справа, путь заявки снизу. */
+/** Подписание: условия слева, код ПЭП справа. */
 export function SigningPanel({ application }: { application: Application }) {
-  const { signApplication, isBusy, effectiveRole, viewMode, goToScreen } = useApp();
+  const { signApplication, isBusy, effectiveRole, viewMode } = useApp();
+  const [chatOpen, setChatOpen] = useState(false);
   const legalForm = application.company.legal_form;
   const isSigningRole = legalForm === "OOO" ? effectiveRole === "CEO_OWNER" : effectiveRole === "IP_OWNER";
   const canSign = SIGNING_STATUSES.includes(application.status) && isSigningRole && viewMode !== "bank";
-  const current = pathIndex(application.status);
   const digits = ["4", "8", "1", "7", "", ""];
+  const director =
+    application.company.users.find((user) => user.role === "CEO_OWNER" || user.role === "IP_OWNER")
+      ?.full_name ?? "гендиректору";
 
   return (
     <>
@@ -141,7 +115,7 @@ export function SigningPanel({ application }: { application: Application }) {
                 type="button"
                 className="btn btn-primary btn-block"
                 style={{ marginTop: 16 }}
-                onClick={() => goToScreen("messages")}
+                onClick={() => setChatOpen(true)}
               >
                 Отправить гендиректору
               </button>
@@ -175,24 +149,13 @@ export function SigningPanel({ application }: { application: Application }) {
         </section>
       </div>
 
-      <section className="figma-panel figma-panel-sm path-track" style={{ marginTop: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-          <strong>Путь заявки</strong>
-          <span className="muted" style={{ fontSize: 12 }}>Все переходы фиксируются в журнале банка</span>
-        </div>
-        <div className="path">
-          {PATH.map((label, index) => (
-            <div
-              key={label}
-              className={`path-step ${index < current ? "done" : ""} ${index === current ? "now" : ""}`}
-            >
-              <div className="dot" />
-              <div>{label}</div>
-              <div>{index === current ? "сейчас" : index === 0 && application.created_at ? formatDateTime(application.created_at) : "—"}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {chatOpen && (
+        <CreditChatModal
+          application={application}
+          onClose={() => setChatOpen(false)}
+          initialDraft={`Прошу направить условия кредита на подпись: ${director}.`}
+        />
+      )}
     </>
   );
 }

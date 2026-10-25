@@ -1,5 +1,6 @@
 import { AppNav } from "./components/AppNav";
-import { DemoControlBar } from "./components/DemoControlBar";
+import { CreditNoticeToasts } from "./components/CreditNoticeToasts";
+import { DynamicIsland } from "./components/DynamicIsland";
 import { ApplicationsScreen } from "./screens/ApplicationsScreen";
 import { ApplyScreen } from "./screens/ApplyScreen";
 import { BankHubScreen } from "./screens/BankHubScreen";
@@ -15,7 +16,7 @@ import { SigningScreen } from "./screens/SigningScreen";
 import { useApp } from "./state/AppState";
 
 export default function App() {
-  const { isReady, screen, error, clearError, viewMode, isBusy } = useApp();
+  const { isReady, screen, viewMode } = useApp();
 
   if (!isReady) {
     return (
@@ -29,23 +30,10 @@ export default function App() {
   const isBank = viewMode === "bank" || screen.startsWith("bank-");
 
   return (
-    <div className="app-shell">
-      <DemoControlBar />
+    <div className="app-shell has-dyn-island">
+      <DynamicIsland />
       <AppNav />
-      {error && (
-        <div className="banner banner-error" role="alert">
-          <span>{error}</span>
-          <button type="button" className="banner-close" onClick={clearError} aria-label="Закрыть">
-            ×
-          </button>
-        </div>
-      )}
-      {isBusy && (
-        <div className="banner banner-info">
-          <span>Выполняем расчёт…</span>
-        </div>
-      )}
-      <main className="page">
+      <main className={`page ${isBank ? "page-bank" : ""}`}>
         {isBank ? (
           <BankHubScreen />
         ) : (
@@ -71,6 +59,7 @@ export default function App() {
         <span>Демо-данные. Расчёты выполняет бэкенд, фронтенд только отображает ответы API.</span>
         <span>Режим: {viewMode === "bank" ? "глазами банка" : "глазами бизнеса"}</span>
       </footer>
+      <CreditNoticeToasts />
     </div>
   );
 }

@@ -24,6 +24,7 @@ info:
     - `POST /api/v1/applications/{application_id}/accept-offer` — выбор одного из 4 встречных офферов.
     - `GET /api/v1/applications/invoice-templates` — 3 предзаготовленных демо-счёта.
     - `GET /api/v1/companies/{company_id}/applications` — история заявок компании.
+    - `GET /api/v1/suppliers/{supplier_inn}/deal-risk` — аналитика поставщика для Invoice-to-Credit (вероятность сделки, плюсы/минусы, seed=hash(INN)).
     - `GET /health` — проверка живости сервиса.
 
     ## Коды ошибок
@@ -47,6 +48,8 @@ tags:
   description: Заявки, счёт, рассрочка, Мультибанк, действия инспектора, ПЭП и Xray.
 - name: system
   description: Дополнительные служебные эндпоинты (health-check).
+- name: suppliers
+  description: Аналитика контрагента для Invoice-to-Credit (симулятор реестров).
 paths:
   /api/v1/companies:
     get:
@@ -120,7 +123,8 @@ paths:
       tags:
       - companies
       summary: Company Applications
-      description: Дополнительный эндпоинт (сверх 11 обязательных ТЗ). История заявок компании (дополнительный эндпоинт для навигации SPA).
+      description: Дополнительный эндпоинт (сверх 11 обязательных ТЗ). История заявок компании (дополнительный эндпоинт для
+        навигации SPA).
       operationId: company_applications_api_v1_companies__company_id__applications_get
       parameters:
       - name: company_id
@@ -249,7 +253,8 @@ paths:
       tags:
       - applications
       summary: Get Application
-      description: Дополнительный эндпоинт (сверх 11 обязательных ТЗ). Текущее состояние заявки (дополнительный эндпоинт для SPA).
+      description: Дополнительный эндпоинт (сверх 11 обязательных ТЗ). Текущее состояние заявки (дополнительный эндпоинт для
+        SPA).
       operationId: get_application_api_v1_applications__application_id__get
       parameters:
       - name: application_id
@@ -276,10 +281,8 @@ paths:
       tags:
       - applications
       summary: Verify Multibank
-      description: >-
-        Симулятор Open Banking: снимает ANOMALY_VERIFICATION, добавляет фактор
-        CF_MULTIBANK_VERIFIED (+90), пересчитывает FCF/DSCR/RiskScore и даёт +25% к лимиту.
-        Эталон ТехноСтрой: 295 → 760 после verify-multibank.
+      description: 'Симулятор Open Banking: снимает ANOMALY_VERIFICATION, добавляет фактор CF_MULTIBANK_VERIFIED (+90), пересчитывает
+        FCF/DSCR/RiskScore и даёт +25% к лимиту. Эталон ТехноСтрой: 295 → 760 после verify-multibank.'
       operationId: verify_multibank_api_v1_applications__application_id__verify_multibank_post
       parameters:
       - name: application_id
@@ -306,7 +309,8 @@ paths:
       tags:
       - applications
       summary: Accept Offer
-      description: Дополнительный эндпоинт (сверх 11 обязательных ТЗ). Клиент выбирает один из 4 встречных офферов (дополнительный эндпоинт).
+      description: Дополнительный эндпоинт (сверх 11 обязательных ТЗ). Клиент выбирает один из 4 встречных офферов (дополнительный
+        эндпоинт).
       operationId: accept_offer_api_v1_applications__application_id__accept_offer_post
       parameters:
       - name: application_id
@@ -474,6 +478,61 @@ paths:
               schema:
                 type: object
                 title: Response Health Health Get
+  /api/v1/suppliers/{supplier_inn}/deal-risk:
+    get:
+      tags:
+      - suppliers
+      summary: Supplier Deal Risk
+      description: 'Аналитика контрагента для Invoice-to-Credit: плюсы/минусы и
+
+        вероятность успешной сделки (симулятор, seed=hash(INN)).'
+      operationId: supplier_deal_risk_api_v1_suppliers__supplier_inn__deal_risk_get
+      parameters:
+      - name: supplier_inn
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Supplier Inn
+      - name: buyer_company_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Buyer Company Id
+      - name: invoice_amount_rub
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: 'null'
+          title: Invoice Amount Rub
+      - name: display_name
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Display Name
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierDealRiskResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AcceptOfferRequest:
@@ -1780,6 +1839,10 @@ components:
         parsing_ms:
           type: number
           title: Parsing Ms
+        supplier_deal_risk:
+          anyOf:
+          - $ref: '#/components/schemas/SupplierDealRiskResponse'
+          - type: 'null'
       type: object
       required:
       - invoice
@@ -2072,3 +2135,81 @@ components:
       - checks
       - cash_forecast_summary
       title: XrayResponse
+    SupplierRiskSignalSchema:
+      properties:
+        code:
+          type: string
+          title: Code
+        label:
+          type: string
+          title: Label
+        polarity:
+          type: string
+          title: Polarity
+        value_label:
+          type: string
+          title: Value Label
+        is_flagged:
+          type: boolean
+          title: Is Flagged
+        score_delta_pct:
+          type: number
+          title: Score Delta Pct
+      type: object
+      required:
+      - code
+      - label
+      - polarity
+      - value_label
+      - is_flagged
+      - score_delta_pct
+      title: SupplierRiskSignalSchema
+    SupplierDealRiskResponse:
+      properties:
+        supplier_inn:
+          type: string
+          title: Supplier Inn
+        supplier_name:
+          type: string
+          title: Supplier Name
+        okved_cluster:
+          type: string
+          title: Okved Cluster
+        deal_success_probability_pct:
+          type: number
+          title: Deal Success Probability Pct
+        risk_band:
+          type: string
+          title: Risk Band
+        risk_score:
+          type: integer
+          title: Risk Score
+        pros:
+          items:
+            $ref: '#/components/schemas/SupplierRiskSignalSchema'
+          type: array
+          title: Pros
+        cons:
+          items:
+            $ref: '#/components/schemas/SupplierRiskSignalSchema'
+          type: array
+          title: Cons
+        summary:
+          type: string
+          title: Summary
+        source:
+          type: string
+          title: Source
+      type: object
+      required:
+      - supplier_inn
+      - supplier_name
+      - okved_cluster
+      - deal_success_probability_pct
+      - risk_band
+      - risk_score
+      - pros
+      - cons
+      - summary
+      - source
+      title: SupplierDealRiskResponse

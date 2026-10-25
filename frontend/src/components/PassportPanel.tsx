@@ -1,22 +1,18 @@
 import type { Application } from "../api/types";
 import { formatMoney, formatPercent } from "../utils/format";
+import { RiskScoreGauge } from "./RiskScoreGauge";
 
 export function PassportPanel({ application }: { application: Application }) {
-  const scoreWidth = Math.max(0, Math.min(100, application.risk_score / 10));
-
   return (
     <div className="passport-grid">
-      <article className="passport-card">
-        <div className="passport-label">RiskScore</div>
-        <div className="passport-value">{application.risk_score}</div>
-        <div className="passport-sub">
-          из 1000 · {application.outcome_label}
+      <article className="passport-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingBottom: 16 }}>
+        <div className="passport-label" style={{ width: "100%", textAlign: "left" }}>RiskScore</div>
+        <RiskScoreGauge score={application.risk_score} size="sm" showCorridors={true} />
+        <div className="passport-sub" style={{ marginTop: 8 }}>
+          {application.outcome_label}
           {application.raw_score !== application.risk_score && (
             <> · сырой балл {application.raw_score}</>
           )}
-        </div>
-        <div className="score-bar">
-          <span style={{ width: `${scoreWidth}%` }} />
         </div>
       </article>
 

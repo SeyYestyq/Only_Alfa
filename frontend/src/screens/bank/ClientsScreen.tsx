@@ -2,13 +2,14 @@ import { useMemo, useState } from "react";
 import { BankEmptyState, ClientsSkeleton } from "../../components/Skeleton";
 import { useApp } from "../../state/AppState";
 import { formatMoney } from "../../utils/format";
+import { Profile360Screen } from "./Profile360Screen";
 
-type ClientFilter = "all" | "signals" | "active" | "risk";
-
-/** Б6 — Портфель клиентов (copy 9 + состояния copy 14). */
+/**
+ * Б6–Б7 — Портфель клиентов + 360° как master-detail.
+ * ScreenId bank-profile остаётся для deep-link.
+ */
 export function ClientsScreen() {
-  const { companies, selectCompany, application, isBusy, isReady } = useApp();
-  const [filter, setFilter] = useState<ClientFilter>("all");
+  const { companies, selectCompany, isBusy, isReady, screen, goToScreen } = useApp();
   const [query, setQuery] = useState("");
   const showSkeleton = !isReady || (isBusy && companies.length === 0);
 
@@ -45,7 +46,7 @@ export function ClientsScreen() {
         signal: "Стоп-фактор",
       },
     };
-    return companies.map((company) => ({
+    const mapped = companies.map((company) => ({
       ...company,
       ...(extra[company.demo_key ?? ""] ?? {
         revenue: formatMoney(company.account_balance),
@@ -54,34 +55,50 @@ export function ClientsScreen() {
         signal: "—",
       }),
     }));
+    return [...mapped].sort((a, b) => {
+      const aExc = a.signal !== "—" || (a.score > 0 && a.score < 520) || a.score === 0 ? 0 : 1;
+      const bExc = b.signal !== "—" || (b.score > 0 && b.score < 520) || b.score === 0 ? 0 : 1;
+      if (aExc !== bExc) {
+        return aExc - bExc;
+      }
+      return a.score - b.score;
+    });
   }, [companies]);
 
-  const filtered = rows.filter((row) => {
-    const hay = `${row.name} ${row.inn} ${row.okved_code}`.toLowerCase();
-    if (query.trim() && !hay.includes(query.trim().toLowerCase())) {
-      return false;
+  const visibleRows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) {
+      return rows;
     }
-    if (filter === "signals") {
-      return row.signal !== "—";
-    }
-    if (filter === "active") {
-      return application?.company.id === row.id || row.signal.includes("документ") || row.signal.includes("Аномал");
-    }
-    if (filter === "risk") {
-      return row.score > 0 && row.score < 520;
-    }
-    return true;
-  });
+    return rows.filter((row) => `${row.name} ${row.inn} ${row.okved_code}`.toLowerCase().includes(q));
+  }, [rows, query]);
+
+  if (screen === "bank-profile") {
+    return (
+      <>
+        <button
+          type="button"
+          className="bank-back-link"
+          onClick={() => goToScreen("bank-clients")}
+        >
+          ← К списку клиентов
+        </button>
+        <Profile360Screen />
+      </>
+    );
+  }
 
   return (
     <>
-      <div className="figma-eyebrow">Портфель · малый бизнес</div>
-      <h1 className="figma-h1" style={{ fontSize: 32, lineHeight: "40px" }}>
-        Клиенты
-      </h1>
-      <p className="figma-lead">
-        1 248 компаний · в демо {companies.length} эталонных профиля. Сверху — клиенты со свежими сигналами в платежах.
-      </p>
+      <div className="bank-page-head">
+        <div>
+          <div className="figma-eyebrow">Портфель · малый бизнес</div>
+          <h1 className="figma-h1">Портфель компаний</h1>
+          <p className="figma-lead">
+            Один список · сверху исключения. В демо {companies.length} эталонных профиля.
+          </p>
+        </div>
+      </div>
 
       {showSkeleton ? (
         <ClientsSkeleton />
@@ -93,96 +110,82 @@ export function ClientsScreen() {
       ) : (
         <>
           <div className="bank-toolbar">
-            <div className="bank-filters">
-              {(
-                [
-                  ["all", "Все", 1248],
-                  ["signals", "Со сигналами", rows.filter((r) => r.signal !== "—").length],
-                  ["active", "С активной заявкой", 1],
-                  ["risk", "Риск растёт", rows.filter((r) => r.score > 0 && r.score < 520).length],
-                ] as Array<[ClientFilter, string, number]>
-              ).map(([id, label, count]) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={`bank-chip ${filter === id ? "active" : ""}`}
-                  onClick={() => setFilter(id)}
-                >
-                  {label}
-                  <span>{count}</span>
-                </button>
-              ))}
-            </div>
             <input
               className="bank-search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Название, ИНН или ОКВЭД"
+              aria-label="Поиск по клиентам"
             />
           </div>
 
-          <section className="figma-panel figma-panel-sm">
-            {filtered.length === 0 ? (
-              <BankEmptyState
-                title="Ничего не найдено"
-                text={`По запросу «${query.trim() || "фильтр"}» клиентов нет. Проверьте ИНН — его можно пробить через ФНС.`}
-              />
-            ) : (
-              <>
-                <table className="ops-table">
-                  <thead>
-                    <tr>
-                      <th>Клиент</th>
-                      <th>ОКВЭД</th>
-                      <th>Выручка / мес.</th>
-                      <th>RiskScore</th>
-                      <th>Продукты в Альфа</th>
-                      <th>Последний сигнал</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((row) => (
-                      <tr key={row.id}>
-                        <td>
-                          <strong>{row.name}</strong>
-                          <div className="muted" style={{ fontSize: 12 }}>
-                            ИНН {row.inn}
-                          </div>
-                        </td>
-                        <td>
-                          {row.okved_code} {row.okved_cluster}
-                        </td>
-                        <td>{row.revenue}</td>
-                        <td
-                          style={{ fontWeight: 700 }}
-                          className={row.score === 0 ? "red" : row.score >= 750 ? "green" : undefined}
+          {visibleRows.length === 0 ? (
+            <BankEmptyState
+              title="Ничего не найдено"
+              text={`По запросу «${query.trim()}» клиентов нет.`}
+            />
+          ) : (
+            <div className="ops-list" role="list">
+              {visibleRows.map((row, index) => {
+                const action =
+                  row.signal === "Стоп-фактор"
+                    ? "Смотреть отказ"
+                    : row.signal !== "—"
+                      ? "Открыть сигнал"
+                      : "Карточка 360°";
+                const rowClass =
+                  row.score === 0 || row.signal === "Стоп-фактор"
+                    ? "is-risk"
+                    : row.score < 520 || row.signal !== "—"
+                      ? "is-warn"
+                      : "";
+                const scoreTag =
+                  row.score === 0
+                    ? { label: "Стоп", cls: "is-risk" }
+                    : row.score < 520
+                      ? { label: `Риск ${row.score}`, cls: "is-warn" }
+                      : row.score >= 750
+                        ? { label: `Риск ${row.score}`, cls: "is-good" }
+                        : { label: `Риск ${row.score}`, cls: "is-info" };
+                return (
+                  <div
+                    key={row.id}
+                    className={`ops-row ${rowClass}`}
+                    role="listitem"
+                    style={{ animationDelay: `${Math.min(index, 8) * 30}ms` }}
+                  >
+                    <div className="ops-row-main">
+                      <div className="ops-row-title">{row.name}</div>
+                      <div className="ops-row-sub">
+                        ИНН {row.inn} · {row.okved_code} {row.okved_cluster} · {row.products}
+                      </div>
+                    </div>
+                    <div className="ops-row-amount">{row.revenue}</div>
+                    <div className="ops-row-meta">
+                      <span className={`status-tag ${scoreTag.cls}`}>{scoreTag.label}</span>
+                      {row.signal !== "—" ? (
+                        <span
+                          className={`status-tag ${row.signal.includes("Стоп") ? "is-risk" : "is-warn"}`}
                         >
-                          {row.score || "—"}
-                        </td>
-                        <td>{row.products}</td>
-                        <td>{row.signal}</td>
-                        <td>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-secondary"
-                            onClick={() => {
-                              void selectCompany(row.id, { nextScreen: "bank-profile" });
-                            }}
-                          >
-                            360°
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <p className="muted" style={{ marginTop: 12, fontSize: 12 }}>
-                  Показано {filtered.length} из {companies.length} · сортировка: свежесть сигнала
-                </p>
-              </>
-            )}
-          </section>
+                          {row.signal}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="ops-row-do">{action}</div>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary"
+                      onClick={() => {
+                        void selectCompany(row.id, { nextScreen: "bank-profile" });
+                      }}
+                    >
+                      Открыть
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
     </>

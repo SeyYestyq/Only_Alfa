@@ -274,6 +274,28 @@ export interface ParsedInvoice {
   template_code: string | null;
 }
 
+export interface SupplierRiskSignal {
+  code: string;
+  label: string;
+  polarity: string;
+  value_label: string;
+  is_flagged: boolean;
+  score_delta_pct: number;
+}
+
+export interface SupplierDealRisk {
+  supplier_inn: string;
+  supplier_name: string;
+  okved_cluster: string;
+  deal_success_probability_pct: number;
+  risk_band: string;
+  risk_score: number;
+  pros: SupplierRiskSignal[];
+  cons: SupplierRiskSignal[];
+  summary: string;
+  source: string;
+}
+
 export interface InvoiceParseResult {
   invoice: ParsedInvoice;
   antifraud: {
@@ -284,6 +306,7 @@ export interface InvoiceParseResult {
   };
   draft: Application;
   parsing_ms: number;
+  supplier_deal_risk?: SupplierDealRisk | null;
 }
 
 export interface BankPnl {

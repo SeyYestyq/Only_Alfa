@@ -25,7 +25,8 @@ import type {
   ViewMode,
   Xray,
 } from "../api/types";
-import { useDemoStore } from "./demoStore";
+import { notifyClientAboutStatus, useDemoStore } from "./demoStore";
+import { formatMoney } from "../utils/format";
 
 export interface MultibankResult {
   previousScore: number;
@@ -272,7 +273,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const goToScreen = useCallback((next: ScreenId) => {
     setScreen(next);
-    if ((next === "bank-xray" || next === "bank-queue") && application) {
+    if (
+      (next === "bank-xray" || next === "bank-signal" || next === "bank-queue") &&
+      application
+    ) {
       loadXray(application.application_id).catch(handleError);
     }
   }, [application, handleError, loadXray, setScreen]);
@@ -433,6 +437,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       await afterApplicationChange(created);
+      notifyClientAboutStatus(
+        created.status,
+        created.application_id,
+        formatMoney(created.requested_amount_rub),
+      );
       if (next === "applications") {
         const payload = await api.listApplications(targetCompanyId);
         if (companyRef.current === targetCompanyId) {
@@ -468,6 +477,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       setUserRole(ownerRole(payload.company));
+
+      // Сначала открываем уже отправленную клиентом заявку — не плодим новую.
+      const listed = await api.listApplications(id);
+      if (companyRef.current !== id) {
+        return;
+      }
+      setApplications(listed.applications);
+      const priority = [
+        "NEED_MORE_INFO",
+        "MANUAL_REVIEW",
+        "COUNTER_OFFER",
+        "ANOMALY_VERIFICATION",
+        "APPROVED",
+        "AWAITING_CEO_APPROVAL",
+      ];
+      const existing =
+        priority
+          .map((status) => listed.applications.find((row) => row.status === status))
+          .find((row) => row !== undefined) ?? listed.applications[0];
+
+      if (existing) {
+        const opened = await api.getApplication(existing.application_id);
+        if (companyRef.current !== id) {
+          return;
+        }
+        await afterApplicationChange(opened);
+        await loadXray(opened.application_id);
+        setScreen("bank-xray");
+        return;
+      }
+
       const created = await api.createApplication({
         ...input,
         company_id: id,
@@ -592,6 +632,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       await afterApplicationChange(updated);
+      notifyClientAboutStatus(
+        updated.status,
+        updated.application_id,
+        formatMoney(updated.approved_amount_rub || updated.requested_amount_rub),
+      );
     } catch (cause) {
       handleError(cause);
     } finally {

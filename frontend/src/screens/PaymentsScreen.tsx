@@ -40,16 +40,16 @@ export function PaymentsScreen() {
       <div className="page-header">
         <div>
           <div className="figma-eyebrow">
-            Выручка и платежи ·{" "}
+            Счёт ·{" "}
             {new Date().toLocaleDateString("ru-RU", { month: "long", year: "numeric" })}
           </div>
-          <h1 className="figma-h1">Операции по счёту</h1>
+          <h1 className="figma-h1">Операции</h1>
           <p className="figma-lead">
-            Крупные целевые расходы за 30 дней можно перевести в рассрочку и вернуть деньги на счёт.
+            Движения по счёту. Крупный расход можно разложить в рассрочку — оплата счёта с главной.
           </p>
         </div>
-        <button type="button" className="btn btn-secondary" onClick={() => goToScreen("invoice")}>
-          Оплатить счёт
+        <button type="button" className="btn btn-ghost" onClick={() => goToScreen("home")}>
+          ← На главную
         </button>
       </div>
 
@@ -65,9 +65,8 @@ export function PaymentsScreen() {
           <thead>
             <tr>
               <th>Дата</th>
-              <th>Контрагент</th>
-              <th>Назначение</th>
-              <th>Категория</th>
+              <th>Операция</th>
+              <th>Тип</th>
               <th className="ops-amount">Сумма</th>
               <th />
             </tr>
@@ -77,7 +76,6 @@ export function PaymentsScreen() {
               <tr key={row.id}>
                 <td className="muted">{formatDate(row.occurred_at)}</td>
                 <td>{row.description}</td>
-                <td className="muted">{row.category}</td>
                 <td>
                   <span className={`cat-pill ${row.direction === "IN" ? "in" : ""}`}>
                     <i />

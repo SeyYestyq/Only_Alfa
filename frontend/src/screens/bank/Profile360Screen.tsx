@@ -11,11 +11,10 @@ const OBLIGATIONS = [
   { date: "28.11", title: "ЕНП", amount: 182_000 },
 ];
 
-/** Б7 — 360°-ДНК клиента (index copy 10.html). */
+/** Б7 — 360°: портрет → заявки → детали. */
 export function Profile360Screen() {
   const { dashboard, application, goToScreen, isBusy } = useApp();
 
-  // Нет данных или идёт сбор ДНК после смены клиента (copy 14 · Загрузка профиля).
   if (!dashboard || isBusy) {
     return <Profile360Skeleton />;
   }
@@ -23,19 +22,128 @@ export function Profile360Screen() {
   const company = dashboard.company;
   const years = Math.floor(company.age_months / 12);
   const isRosters = company.demo_key === "rosters";
+  const triggerCount = dashboard.radar_triggers.length;
+  const hasStop = !company.is_egrul_active || company.fssp_amount > 0;
 
   return (
     <>
-      <div className="figma-eyebrow">Клиенты · 360°-ДНК бизнеса · собрано за 1,4 с</div>
-      <h1 className="figma-h1" style={{ fontSize: 32, lineHeight: "40px" }}>
-        {company.name}
-      </h1>
-      <p className="figma-lead">
-        ИНН {company.inn}
-        {isRosters ? " · ОГРН 1217700412345 · кофейни и обжарка · клиент Альфа-Банка с июня 2021." : ` · ${company.okved_cluster || company.okved_code} · ${company.city}${company.address ? `, ${company.address}` : ""}.`}
-      </p>
+      <div className="bank-page-head">
+        <div>
+          <div className="figma-eyebrow">Клиент · портрет 360°</div>
+          <h1 className="figma-h1">{company.name}</h1>
+          <p className="figma-lead">
+            ИНН {company.inn}
+            {isRosters
+              ? " · ОГРН 1217700412345 · кофейни и обжарка · клиент с июня 2021."
+              : ` · ${company.okved_cluster || company.okved_code} · ${company.city}${company.address ? `, ${company.address}` : ""}.`}
+          </p>
+          <div className="bank-portrait-flags" style={{ marginTop: 12 }}>
+            <span className={`pill ${company.is_egrul_active ? "pill-good" : "pill-risk"}`}>
+              ЕГРЮЛ · {company.is_egrul_active ? "действует" : "стоп"}
+            </span>
+            <span className={`pill ${company.bki_overdue_days > 0 ? "pill-risk" : "pill-good"}`}>
+              БКИ · {company.bki_overdue_days > 0 ? `${company.bki_overdue_days} дн. просрочки` : "чисто"}
+            </span>
+            <span className={`pill ${triggerCount > 0 ? "pill-warn" : "pill-outline"}`}>
+              Сигналы · {triggerCount}
+            </span>
+            {hasStop ? <span className="pill pill-risk">Есть стоп-фактор</span> : null}
+          </div>
+        </div>
+      </div>
 
-      <div className="figma-check-grid" style={{ marginTop: 24 }}>
+      <div className="bank-portrait">
+        <section className="figma-panel figma-panel-sm bank-portrait-main">
+          <div className="figma-panel-title">Портрет</div>
+          <div className="kv-list">
+            <div className="meta-row">
+              <span>Руководитель</span>
+              <strong>{company.director_name}</strong>
+            </div>
+            <div className="meta-row">
+              <span>Возраст бизнеса</span>
+              <strong>
+                {years} лет {company.age_months % 12} мес.
+              </strong>
+            </div>
+            <div className="meta-row">
+              <span>ОКВЭД</span>
+              <strong>
+                {company.okved_code}
+                {company.okved_cluster ? ` · ${company.okved_cluster}` : ""}
+              </strong>
+            </div>
+            <div className="meta-row">
+              <span>Остаток на счёте</span>
+              <strong>{formatMoney(dashboard.account_balance)}</strong>
+            </div>
+            <div className="meta-row">
+              <span>ФССП</span>
+              <strong>{company.fssp_amount > 0 ? formatMoney(company.fssp_amount) : "нет"}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section className="figma-panel figma-panel-sm bank-apps-block">
+          <div className="figma-panel-title">Заявки и действия</div>
+          {application ? (
+            <div className="bank-decision-card is-warn" style={{ marginBottom: 12, padding: 14 }}>
+              <div className="bank-decision-kicker">Активная заявка</div>
+              <strong style={{ fontSize: 16 }}>
+                № {application.application_id.slice(-8).toUpperCase()} ·{" "}
+                {formatMoney(application.requested_amount_rub)}
+              </strong>
+              <p className="bank-decision-text" style={{ marginBottom: 10 }}>
+                {application.status_label} · риск {application.risk_score || "стоп"}
+              </p>
+              <div className="bank-decision-cta">
+                <button type="button" className="btn btn-primary primary-cta" onClick={() => goToScreen("bank-xray")}>
+                  Разбор заявки
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bank-decision-card is-warn" style={{ marginBottom: 12, padding: 14 }}>
+              <div className="bank-decision-kicker">Что сделать</div>
+              <strong style={{ fontSize: 16 }}>Активной заявки нет</strong>
+              <p className="bank-decision-text" style={{ marginBottom: 10 }}>
+                Можно сформировать предложение по свежему сигналу в платежах.
+              </p>
+              <div className="bank-decision-cta">
+                <button type="button" className="btn btn-primary" onClick={() => goToScreen("bank-queue")}>
+                  К очереди заявок
+                </button>
+              </div>
+            </div>
+          )}
+          <ul className="check-list">
+            {dashboard.radar_triggers.slice(0, 3).map((trigger) => (
+              <li key={trigger.code}>
+                {trigger.title}: {trigger.value}
+              </li>
+            ))}
+            {dashboard.radar_triggers.length === 0 ? <li className="muted">Свежих сигналов нет</li> : null}
+          </ul>
+        </section>
+      </div>
+
+      <section className="figma-panel figma-panel-sm" style={{ marginBottom: 16 }}>
+        <div className="figma-panel-title">360°-ДНК бизнеса</div>
+        <p className="muted" style={{ marginTop: 4, marginBottom: 12, fontSize: 13 }}>
+          Пять блоков Business DNA за 1–2 с после выбора компании (BRD).
+        </p>
+        <div className="dna-grid">
+          {dashboard.business_dna.blocks.map((block) => (
+            <div key={block.code} className={`dna-card ${block.status}`}>
+              <div className="dna-title">{block.title}</div>
+              <div className="dna-value">{block.value}</div>
+              <div className="dna-desc">{block.description}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="figma-check-grid">
         <article className="figma-check-card">
           <header>
             <h3>ЕГРЮЛ</h3>
@@ -44,9 +152,7 @@ export function Profile360Screen() {
             </span>
           </header>
           <ul className="check-list">
-            <li>
-              ОПФ {company.legal_form === "OOO" ? "ООО · МСП, микро" : "ИП"}
-            </li>
+            <li>ОПФ {company.legal_form === "OOO" ? "ООО · МСП, микро" : "ИП"}</li>
             <li>
               Регистрация · {years} лет {company.age_months % 12} мес.
               {isRosters ? " · с 14.06.2021" : ""}
@@ -54,13 +160,11 @@ export function Profile360Screen() {
             <li>Гендиректор: {company.director_name}</li>
             {isRosters ? <li>Учредители: Воронов А. С. 70% · Кравец М. И. 30%</li> : null}
             <li>
-              ОКВЭД {company.okved_code}
-              {isRosters ? " · доп. 10.83 обжарка" : company.okved_cluster ? ` · ${company.okved_cluster}` : ""}
+              Адрес:{" "}
+              {isRosters
+                ? "Москва, ул. Покровка, 17"
+                : `${company.city}${company.address ? `, ${company.address}` : ""}`}
             </li>
-            <li>
-              Адрес: {isRosters ? "Москва, ул. Покровка, 17" : `${company.city}${company.address ? `, ${company.address}` : ""}`}
-            </li>
-            {isRosters ? <li>Сотрудники: 9 · ФОТ 810 000 ₽ / мес.</li> : null}
           </ul>
         </article>
 
@@ -71,9 +175,11 @@ export function Profile360Screen() {
           </header>
           <ul className="check-list">
             <li>Просрочки за 24 мес.: {company.bki_overdue_days > 0 ? `${company.bki_overdue_days} дн.` : "нет"}</li>
-            <li>Действующие кредиты: {isRosters ? "1 · автокредит, 18 400 ₽ / мес." : `${company.bki_history_months} мес. истории`}</li>
+            <li>
+              Действующие кредиты:{" "}
+              {isRosters ? "1 · автокредит, 18 400 ₽ / мес." : `${company.bki_history_months} мес. истории`}
+            </li>
             <li>Запросы за 30 дней: {isRosters ? "2" : "—"}</li>
-            <li>Балл БКИ: {isRosters ? "812 из 850" : "—"}</li>
             <li>
               ФССП: {company.fssp_amount > 0 ? formatMoney(company.fssp_amount) : "производств нет"}
             </li>
@@ -100,7 +206,7 @@ export function Profile360Screen() {
         <article className="figma-check-card">
           <header>
             <h3>Сигналы</h3>
-            <span className="pill pill-warn">{dashboard.radar_triggers.length}</span>
+            <span className="pill pill-warn">{triggerCount}</span>
           </header>
           <ul className="check-list">
             {dashboard.radar_triggers.slice(0, 3).map((trigger) => (
@@ -112,59 +218,35 @@ export function Profile360Screen() {
         </article>
       </div>
 
-      <div className="figma-grid-2" style={{ marginTop: 16 }}>
-        <section className="figma-panel">
-          <div className="figma-panel-title">Выручка · 24 месяца</div>
-          <div className="figma-panel-heading">
-            Сезонность: июль–август −31%
-          </div>
-          <RevenueBars />
-          <p className="muted" style={{ marginTop: 12, fontSize: 13 }}>
-            В низкий сезон 2026 спад меньше, чем в 2025: −31% против −33% — помогли доставка и корпоративные заказы.
-          </p>
-        </section>
-        <section className="figma-panel figma-panel-sm">
-          <div className="figma-panel-title">Обязательства · 60 дней</div>
-          <div className="obligations-list">
-            {OBLIGATIONS.map((row) => (
-              <div key={row.date + row.title} className="obligation-row">
-                <span className="date">{row.date}</span>
-                <span>{row.title}</span>
-                <span className="amount">{formatMoney(row.amount)}</span>
+      <details className="bank-collapse">
+        <summary>
+          <span>
+            Выручка и обязательства
+            <span className="muted"> · детали ниже сгиба</span>
+          </span>
+        </summary>
+        <div className="bank-collapse-body">
+          <div className="figma-grid-2" style={{ marginTop: 12 }}>
+            <section className="figma-panel">
+              <div className="figma-panel-title">Выручка · 24 месяца</div>
+              <div className="figma-panel-heading">Сезонность: июль–август −31%</div>
+              <RevenueBars />
+            </section>
+            <section className="figma-panel figma-panel-sm">
+              <div className="figma-panel-title">Обязательства · 60 дней</div>
+              <div className="obligations-list">
+                {OBLIGATIONS.map((row) => (
+                  <div key={row.date + row.title} className="obligation-row">
+                    <span className="date">{row.date}</span>
+                    <span>{row.title}</span>
+                    <span className="amount">{formatMoney(row.amount)}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
-      </div>
-
-      <div className="dna-grid" style={{ marginTop: 16 }}>
-        {dashboard.business_dna.blocks.map((block) => (
-          <div key={block.code} className={`dna-card ${block.status}`}>
-            <div className="dna-title">{block.title}</div>
-            <div className="dna-value">{block.value}</div>
-            <div className="dna-desc">{block.description}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="figma-footer-bar">
-        <div>
-          <strong>История предложений</strong>
-          <div className="muted" style={{ fontSize: 13 }}>
-            {application
-              ? `Текущая: ${application.status_label} · ${formatMoney(application.requested_amount_rub)}`
-              : "Активной заявки нет"}
+            </section>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" className="btn btn-ghost" onClick={() => goToScreen("bank-signal")}>
-            Сигналы
-          </button>
-          <button type="button" className="btn btn-primary" onClick={() => goToScreen("bank-signal")}>
-            Сформировать предложение
-          </button>
-        </div>
-      </div>
+      </details>
     </>
   );
 }

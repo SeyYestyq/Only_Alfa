@@ -9,6 +9,7 @@ from app.core.exceptions import EntityNotFound, InvoiceParseError
 from app.infra.invoice_parser import parse_demo_template, parse_pdf, run_antifraud
 from app.repositories.company_repository import CompanyRepository
 from app.services.application_service import ApplicationService
+from app.services.supplier_risk_service import SupplierRiskService
 
 
 class InvoiceService:
@@ -16,6 +17,7 @@ class InvoiceService:
         self.session = session
         self.companies = CompanyRepository(session)
         self.applications = ApplicationService(session)
+        self.supplier_risk = SupplierRiskService(session)
 
     def parse_invoice(
         self,
@@ -35,6 +37,12 @@ class InvoiceService:
             raise InvoiceParseError("Загрузите PDF-счёт или выберите один из 3 демо-шаблонов")
 
         antifraud = run_antifraud(parsed.supplier_inn)
+        deal_risk = self.supplier_risk.assess_deal_risk(
+            parsed.supplier_inn,
+            buyer_company_id=company_id,
+            invoice_amount_rub=parsed.amount_rub,
+            display_name=parsed.supplier_name,
+        )
         draft = self.applications.create_draft(
             profile, parsed.to_dict(), antifraud, actor_role="ACCOUNTANT"
         )
@@ -43,4 +51,5 @@ class InvoiceService:
             "antifraud": antifraud,
             "draft": draft,
             "parsing_ms": round((time.perf_counter() - started) * 1000, 2),
+            "supplier_deal_risk": deal_risk,
         }

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import EntityNotFound
 from app.domain.types import CompanyProfile
-from app.infra.demo_content import SEARCH_CHIPS_BY_CLUSTER
+from app.infra.demo_content import SEARCH_CHIPS_BY_CLUSTER, SEARCH_CHIPS_BY_DEMO_KEY
 from app.infra.registry_simulator import simulate_company, validate_inn
 from app.repositories.catalog_repository import CatalogRepository
 from app.repositories.company_repository import CompanyRepository
@@ -58,5 +58,8 @@ class CompanyService:
         profile = self.get_profile(company_id)
         transactions = self.transactions.list_by_company(company_id)
         news = self.catalog.list_news(company_id)
-        chips = SEARCH_CHIPS_BY_CLUSTER.get(cluster_key(profile), SEARCH_CHIPS_BY_CLUSTER["HORECA"])
+        chips = SEARCH_CHIPS_BY_DEMO_KEY.get(profile.demo_key or "") or SEARCH_CHIPS_BY_CLUSTER.get(
+            cluster_key(profile),
+            SEARCH_CHIPS_BY_CLUSTER["HORECA"],
+        )
         return dashboard_payload(profile, transactions, news, chips)

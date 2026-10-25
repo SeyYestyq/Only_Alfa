@@ -13,14 +13,13 @@ body,
 body {
   margin: 0;
   font-family: var(--font);
-  background:
-    radial-gradient(circle at 12% -10%, rgba(239, 49, 36, 0.12), transparent 36%),
-    radial-gradient(circle at 88% 4%, rgba(108, 168, 255, 0.06), transparent 30%),
-    var(--bg-base);
+  background: var(--bg-base);
   color: var(--ink);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
+  letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -1069,7 +1068,7 @@ p {
   border: 1px solid var(--border);
   border-radius: 11px;
   padding: 11px;
-  background: linear-gradient(180deg, #fff, #fcfdff);
+  background: var(--surface-2);
 }
 
 .news-item.is-new {
@@ -1323,25 +1322,25 @@ p {
 .alert-risk {
   background: var(--alfa-red-soft);
   border-color: rgba(239, 49, 36, 0.28);
-  color: #8f1d13;
+  color: #ffb4ac;
 }
 
 .alert-warn {
   background: var(--amber-soft);
   border-color: rgba(196, 122, 5, 0.3);
-  color: #7c5105;
+  color: #f5d78a;
 }
 
 .alert-good {
   background: var(--green-soft);
   border-color: rgba(21, 148, 95, 0.28);
-  color: var(--status-success);
+  color: #9aefc4;
 }
 
 .alert-info {
   background: var(--blue-soft);
   border-color: rgba(37, 99, 168, 0.25);
-  color: #1d4f86;
+  color: #b7d2ff;
 }
 
 .checklist {
@@ -1462,13 +1461,13 @@ p {
   justify-content: space-between;
   gap: 8px;
   align-items: center;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(16, 16, 18, 0.92);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 9px;
   font-size: 10.5px;
   color: var(--ink-muted);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
 }
 
 .map-caption a {
@@ -1541,6 +1540,221 @@ p {
   align-items: center;
 }
 
+.banner-good {
+  background: rgba(34, 160, 107, 0.16);
+  border-bottom: 1px solid rgba(34, 160, 107, 0.35);
+  color: #d8f5e6;
+}
+
+/* ── Credit toasts (как системные уведомления: title | tag + CTA) ─────── */
+.credit-toast-stack {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 12px;
+  width: min(420px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.credit-toast {
+  pointer-events: auto;
+  background: #151518;
+  border: 1px solid var(--figma-border, #2a2a30);
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  animation: credit-toast-in 0.22s ease-out;
+}
+
+.credit-toast--good {
+  border-color: rgba(34, 160, 107, 0.45);
+}
+
+.credit-toast--risk {
+  border-color: rgba(239, 49, 36, 0.45);
+}
+
+.credit-toast--warn {
+  border-color: rgba(240, 180, 41, 0.45);
+}
+
+.credit-toast--info {
+  border-color: rgba(108, 168, 255, 0.35);
+}
+
+@keyframes credit-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.credit-toast-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.credit-toast-head strong {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.credit-toast-meta {
+  font-size: 12px;
+  color: var(--figma-muted, #8b8b93);
+}
+
+.credit-toast-x {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--figma-muted, #8b8b93);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.credit-toast-text {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-secondary, #b4b4bc);
+}
+
+.credit-toast-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.notice-bell {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.notice-bell-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--figma-border, #2a2a30);
+  background: #17171a;
+  color: var(--text-secondary, #b4b4bc);
+  display: grid;
+  place-items: center;
+}
+
+.notice-bell-btn.active,
+.notice-bell-btn:hover {
+  color: var(--text-primary, #f5f5f7);
+  border-color: #3a3a42;
+}
+
+.notice-bell-btn .figma-nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+}
+
+.notice-bell-ico {
+  display: grid;
+  place-items: center;
+}
+
+.notice-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(360px, calc(100vw - 24px));
+  background: #111113;
+  border: 1px solid var(--figma-border, #2a2a30);
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+  z-index: 70;
+  overflow: hidden;
+}
+
+.notice-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--figma-border, #2a2a30);
+}
+
+.notice-panel-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.notice-panel-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid var(--figma-border, #2a2a30);
+  cursor: pointer;
+}
+
+.notice-panel-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.notice-panel-item:last-child {
+  border-bottom: none;
+}
+
+.notice-panel-kind {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #f0a39c;
+}
+
+.notice-panel-item strong {
+  font-size: 14px;
+}
+
+.notice-panel-item .muted {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.notice-panel-cta {
+  font-size: 12px;
+  font-weight: 650;
+  margin-top: 4px;
+  color: var(--text-primary, #f5f5f7);
+}
+
+@media (max-width: 720px) {
+  .credit-toast-stack {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    width: auto;
+  }
+}
+
 .banner-error {
   background: var(--surface-2);
   border: 1px solid rgba(239, 49, 36, 0.4);
@@ -1551,7 +1765,7 @@ p {
 .banner-info {
   background: var(--blue-soft);
   border: 1px solid rgba(37, 99, 168, 0.25);
-  color: #1d4f86;
+  color: #b7d2ff;
 }
 
 .banner-close {
@@ -1979,13 +2193,6 @@ p {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.bank-tabs {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
 }
 
 .skeleton {

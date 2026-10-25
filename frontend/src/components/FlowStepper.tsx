@@ -47,20 +47,43 @@ export function stepFromStatus(status: string | undefined, screen: string): Flow
   return "offer";
 }
 
-/** Stepper как на К2–К5 в Figma. */
+/** Stepper как на К2–К5. Будущие шаги не кликабельны — нельзя «пролететь» вперёд. */
 export function FlowStepper({ active }: { active: FlowStepId }) {
-  const { goToScreen } = useApp();
+  const { goToScreen, application } = useApp();
   const activeIndex = ORDER.indexOf(active);
+
+  function canOpen(index: number, step: (typeof STEPS)[number]): boolean {
+    if (index < activeIndex) {
+      return true;
+    }
+    if (index === activeIndex) {
+      return false;
+    }
+    // Вперёд — только если заявка уже есть и шаг логически доступен по статусу
+    if (!application) {
+      return false;
+    }
+    const byStatus = stepFromStatus(application.status, step.screen);
+    return ORDER.indexOf(byStatus) >= index;
+  }
+
   return (
     <nav className="figma-stepper" aria-label="Этапы заявки">
       {STEPS.map((step, index) => {
         const state = index < activeIndex ? "done" : index === activeIndex ? "active" : "";
+        const openable = canOpen(index, step);
         return (
           <button
             key={step.id}
             type="button"
             className={`figma-step ${state}`}
-            onClick={() => goToScreen(step.screen)}
+            disabled={!openable && index !== activeIndex}
+            aria-current={index === activeIndex ? "step" : undefined}
+            onClick={() => {
+              if (openable) {
+                goToScreen(step.screen);
+              }
+            }}
           >
             <span className="n">{index + 1}</span>
             <span>{step.label}</span>

@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { COLLATERAL_LABELS, COLLATERAL_STATUS_LABELS } from "../api/client";
+import { CreditChatModal } from "../components/CreditChatModal";
 import { FlowStepper, stepFromStatus } from "../components/FlowStepper";
-import { MultibankPanel } from "../components/MultibankPanel";
 import { useApp } from "../state/AppState";
 import { formatMoney } from "../utils/format";
 
@@ -29,6 +30,7 @@ function pillClass(tone: Tone): string {
 /** К3 — Паспорт готовности: четыре группы и готовность к решению банка. */
 export function PassportScreen() {
   const { application, dashboard, goToScreen } = useApp();
+  const [chatOpen, setChatOpen] = useState(false);
 
   if (!application) {
     return (
@@ -166,22 +168,11 @@ export function PassportScreen() {
               <i key={index} className={tone === "PASS" ? "pass" : tone === "WARN" ? "warn" : ""} />
             ))}
           </div>
-          <div className="meta-row">
-            <span>Продукт</span>
-            <strong>{application.product_label}</strong>
-          </div>
-          <div className="meta-row">
-            <span>Сумма</span>
-            <strong>{formatMoney(application.requested_amount_rub)}</strong>
-          </div>
-          <div className="meta-row">
-            <span>Срок</span>
-            <strong>{application.term_months} мес.</strong>
-          </div>
-          <div className="meta-row">
-            <span>Источник</span>
-            <strong>{invoice ? "Счёт поставщика" : "Заявка из кабинета"}</strong>
-          </div>
+          <p className="muted" style={{ marginTop: 12, fontSize: 13, lineHeight: 1.45 }}>
+            {application.product_label} · {formatMoney(application.requested_amount_rub)} ·{" "}
+            {application.term_months} мес.
+            {invoice ? " · по счёту поставщика" : ""}
+          </p>
           <button
             type="button"
             className="btn btn-primary btn-block"
@@ -194,17 +185,15 @@ export function PassportScreen() {
             type="button"
             className="btn btn-ghost btn-block"
             style={{ marginTop: 8 }}
-            onClick={() => goToScreen("messages")}
+            onClick={() => setChatOpen(true)}
           >
             Задать вопрос в чате
           </button>
         </aside>
       </div>
 
-      {(application.multibank.available || application.multibank.verified) && (
-        <div className="section-gap">
-          <MultibankPanel application={application} />
-        </div>
+      {chatOpen && (
+        <CreditChatModal application={application} onClose={() => setChatOpen(false)} />
       )}
     </>
   );
