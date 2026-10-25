@@ -44,8 +44,12 @@ def _apply_multibank(profile: CompanyProfile) -> CompanyProfile:
     )
 
 
-def _noop(profile: CompanyProfile) -> CompanyProfile:
-    return profile
+def _with_supplement(profile: CompanyProfile, code: str) -> CompanyProfile:
+    from dataclasses import replace
+
+    merged = set(profile.verified_supplement_codes)
+    merged.add(code)
+    return replace(profile, verified_supplement_codes=frozenset(merged))
 
 
 SUPPLEMENT_REGISTRY: dict[str, SupplementDocumentType] = {
@@ -61,21 +65,21 @@ SUPPLEMENT_REGISTRY: dict[str, SupplementDocumentType] = {
         label="Договор поставки",
         score_delta=SUPPLEMENT_SCORE_SUPPLY_CONTRACT,
         reason="Снижает риск нецелевого использования средств.",
-        apply=_noop,
+        apply=lambda profile: _with_supplement(profile, "SUPPLY_CONTRACT"),
     ),
     "COLLATERAL_DOC": SupplementDocumentType(
         code="COLLATERAL_DOC",
         label="Документ по обеспечению",
         score_delta=SUPPLEMENT_SCORE_COLLATERAL_DOC,
         reason="Уточняет залоговую массу для ВКЛ с залогом.",
-        apply=_noop,
+        apply=lambda profile: _with_supplement(profile, "COLLATERAL_DOC"),
     ),
     "EQUIPMENT_INVOICE": SupplementDocumentType(
         code="EQUIPMENT_INVOICE",
         label="Счёт на оборудование",
         score_delta=SUPPLEMENT_SCORE_EQUIPMENT_INVOICE,
         reason="Подтверждает CAPEX-закупку под инвест-кредит.",
-        apply=_noop,
+        apply=lambda profile: _with_supplement(profile, "EQUIPMENT_INVOICE"),
     ),
 }
 

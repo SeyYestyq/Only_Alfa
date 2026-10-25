@@ -78,13 +78,43 @@ class ProactiveService:
 
             raise EntityNotFound(f"Действие {action_id} не найдено")
         self.actions.mark_sent(row)
+        payload = row.payload_json or {}
         self.catalog.add_news(
             row.company_id,
             title=row.title,
             text=row.client_text,
-            cta=row.payload_json.get("cta", "Открыть"),
+            cta=payload.get("cta", "Открыть"),
             cluster="PROACTIVE",
             source="NEWS_TO_ACTION",
+            meta_json={
+                "system_action_id": row.id,
+                "target_screen": row.target_screen,
+                "rule_code": row.rule_code,
+                "offer_product_type": payload.get("offer_product_type"),
+            },
         )
         self.session.commit()
         return {"id": row.id, "status": row.status}
+
+    def mark_opened(self, action_id: str) -> dict:
+        from datetime import datetime, timezone
+
+        row = self.actions.get(action_id)
+        if row is None:
+            from app.core.exceptions import EntityNotFound
+
+            raise EntityNotFound(f"Действие {action_id} не найдено")
+        if row.client_opened_at is None:
+            self.actions.update(row, client_opened_at=datetime.now(timezone.utc))
+        self.session.commit()
+        return {"id": row.id, "client_opened_at": iso(row.client_opened_at)}
+
+    def mark_client_response(self, action_id: str, response: str) -> dict:
+        row = self.actions.get(action_id)
+        if row is None:
+            from app.core.exceptions import EntityNotFound
+
+            raise EntityNotFound(f"Действие {action_id} не найдено")
+        self.actions.update(row, client_response=response[:500])
+        self.session.commit()
+        return {"id": row.id, "client_response": row.client_response}

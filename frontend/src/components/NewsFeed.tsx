@@ -1,9 +1,10 @@
 import type { NewsItem } from "../api/types";
+import { api } from "../api/client";
 import { useApp } from "../state/AppState";
 import { formatDateTime } from "../utils/format";
 
 export function NewsFeed({ items }: { items: NewsItem[] }) {
-  const { goToScreen } = useApp();
+  const { goToScreen, companyId } = useApp();
 
   return (
     <section className="figma-panel figma-panel-sm">
@@ -25,6 +26,16 @@ export function NewsFeed({ items }: { items: NewsItem[] }) {
               className="btn btn-ghost btn-sm"
               style={{ marginTop: 10 }}
               onClick={() => {
+                const meta = item.meta ?? {};
+                const actionId = meta.system_action_id as string | undefined;
+                if (companyId && actionId) {
+                  void api.openSystemAction(companyId, actionId);
+                }
+                const target = (meta.target_screen as string) || "";
+                if (target === "signing" || target === "decision" || target === "apply" || target === "passport") {
+                  goToScreen(target);
+                  return;
+                }
                 if (item.cluster === "PROACTIVE" || item.cta.toLowerCase().includes("загруз")) {
                   goToScreen("decision");
                 } else if (item.cta.toLowerCase().includes("кредит") || item.cta.toLowerCase().includes("оффер")) {

@@ -108,6 +108,23 @@ export function MessagesScreen() {
               </div>
               <div className="chat-system">Статус: {application.status_label}</div>
 
+              {(application.correspondence ?? []).map((message) => (
+                <div key={message.id} className="chat-bubble in">
+                  <div className="chat-bubble-meta">{message.sender_label}</div>
+                  <p style={{ whiteSpace: "pre-wrap" }}>{message.text}</p>
+                  {message.offer_letter && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ marginTop: 10 }}
+                      onClick={() => goToScreen("decision")}
+                    >
+                      Открыть в заявке
+                    </button>
+                  )}
+                </div>
+              ))}
+
               {(application.status === "NEED_MORE_INFO" || application.status === "COUNTER_OFFER") && (
                 <div className="chat-bubble in">
                   <div className="chat-bubble-meta">Елена Орлова</div>

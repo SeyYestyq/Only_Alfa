@@ -129,6 +129,7 @@ def transaction_row(transaction: Transaction) -> dict:
 
 
 def news_row(item: NewsFeedItem) -> dict:
+    meta = getattr(item, "meta_json", None) or {}
     return {
         "id": item.id,
         "title": item.title,
@@ -136,6 +137,7 @@ def news_row(item: NewsFeedItem) -> dict:
         "cta": item.cta,
         "cluster": item.cluster,
         "source": item.source,
+        "meta": meta,
         "created_at": iso(item.created_at),
     }
 
@@ -343,6 +345,7 @@ def application_detail(
         "client_product_request": ctx.get("client_product_request"),
         "score_changes": ctx.get("score_changes") or [],
         "applied_supplements": ctx.get("applied_supplements") or [],
+        "correspondence": ctx.get("correspondence") or [],
     }
 
 

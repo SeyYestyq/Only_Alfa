@@ -16,6 +16,7 @@ from app.core.constants import (
 )
 from app.domain.finances import calculate_fcf
 from app.domain.scoring.rules import FACTOR_SELECTORS
+from app.domain.scoring.supplement_factors import supplement_factor_breakdowns
 from app.domain.types import CompanyProfile, FactorBreakdown, ScoreResult
 
 
@@ -51,6 +52,7 @@ def build_factors_breakdown(profile: CompanyProfile) -> list[FactorBreakdown]:
         condition="Base = 500",
     )]
     factors.extend(selector(profile) for selector in FACTOR_SELECTORS)
+    factors.extend(supplement_factor_breakdowns(profile))
     return factors
 
 

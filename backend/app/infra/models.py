@@ -59,6 +59,7 @@ class Company(Base):
     alfa_revenue_share: Mapped[float] = mapped_column(Float, default=0.0)
     account_balance: Mapped[float] = mapped_column(Float, default=0.0)
     is_multibank_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    verified_supplements_json: Mapped[list[str]] = mapped_column(JSONType, default=list)
     demo_key: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
@@ -218,6 +219,7 @@ class NewsFeedItem(Base):
     cta: Mapped[str] = mapped_column(String(128), default="")
     cluster: Mapped[str] = mapped_column(String(64), default="")
     source: Mapped[str] = mapped_column(String(32), default="NEWS")
+    meta_json: Mapped[dict[str, Any]] = mapped_column(JSONType, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     company: Mapped[Company] = relationship(back_populates="news")

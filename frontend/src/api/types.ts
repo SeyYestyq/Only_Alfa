@@ -105,7 +105,17 @@ export interface NewsItem {
   cta: string;
   cluster: string;
   source: string;
+  meta?: Record<string, unknown>;
   created_at: string;
+}
+
+export interface CorrespondenceMessage {
+  id: string;
+  sender_role: string;
+  sender_label: string;
+  message_type: string;
+  text: string;
+  offer_letter?: OfferLetter;
 }
 
 export interface Transaction {
@@ -336,6 +346,7 @@ export interface Application {
   client_product_request?: ClientProductRequestState | null;
   score_changes?: ScoreChange[];
   applied_supplements?: string[];
+  correspondence?: CorrespondenceMessage[];
 }
 
 export interface InvoiceTemplate {

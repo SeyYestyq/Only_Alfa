@@ -54,6 +54,7 @@ def _to_domain(company: Company) -> CompanyProfile:
         is_egrul_active=company.is_egrul_active,
         is_multibank_verified=company.is_multibank_verified,
         demo_key=company.demo_key,
+        verified_supplement_codes=frozenset(company.verified_supplements_json or []),
         users=[
             CompanyUser(
                 id=user.id,
@@ -227,3 +228,18 @@ class CompanyRepository:
         company.monthly_revenue_multibank = monthly_revenue_multibank
         company.is_multibank_verified = is_multibank_verified
         company.declared_monthly_revenue = declared_monthly_revenue
+
+    def add_verified_supplement(self, company_id: str, document_code: str) -> None:
+        company = self.session.get(Company, company_id)
+        if company is None:
+            return
+        codes = list(company.verified_supplements_json or [])
+        if document_code not in codes:
+            codes.append(document_code)
+        company.verified_supplements_json = codes
+
+    def clear_verified_supplements(self, company_id: str) -> None:
+        company = self.session.get(Company, company_id)
+        if company is None:
+            return
+        company.verified_supplements_json = []

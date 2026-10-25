@@ -58,6 +58,14 @@ export function SystemDecidedFeed() {
             </div>
             <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>{action.explanation}</p>
             <p style={{ fontSize: 13, marginTop: 8 }}>Клиенту: {action.client_text}</p>
+            {action.client_opened_at && (
+              <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                Клиент открыл: {action.client_opened_at}
+              </p>
+            )}
+            {action.client_response && (
+              <p style={{ fontSize: 12, marginTop: 4 }}>Ответ клиента: {action.client_response}</p>
+            )}
             {action.status === "PENDING" && (
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                 <button

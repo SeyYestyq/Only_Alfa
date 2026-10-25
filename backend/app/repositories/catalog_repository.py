@@ -38,6 +38,7 @@ class CatalogRepository:
         cta: str,
         cluster: str,
         source: str = "NEWS_TO_ACTION",
+        meta_json: dict | None = None,
     ) -> NewsFeedItem:
         item = NewsFeedItem(
             id=f"news_{uuid.uuid4().hex[:10]}",
@@ -47,6 +48,7 @@ class CatalogRepository:
             cta=cta,
             cluster=cluster,
             source=source,
+            meta_json=meta_json or {},
             created_at=datetime.now(timezone.utc),
         )
         self.session.add(item)

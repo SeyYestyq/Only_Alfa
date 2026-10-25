@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { Application, CorrespondenceMessage } from "../api/types";
 
 export interface ChatAttachment {
   name: string;
@@ -299,7 +300,28 @@ interface BankMessagesState {
   setFilter: (filter: "all" | "attention" | "with_app") => void;
   sendMessage: (text: string, attachment?: ChatAttachment) => void;
   sendQuickAction: (actionKey: string) => void;
+  syncApplicationCorrespondence: (application: Application) => void;
   resetAll: () => void;
+}
+
+function correspondenceToChatMessage(row: CorrespondenceMessage): ChatMessage {
+  const offer = row.offer_letter;
+  return {
+    id: row.id,
+    sender: row.sender_role === "UNDERWRITER" ? "bank" : "client",
+    senderName: row.sender_label,
+    text: row.text,
+    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    offerCard: offer
+      ? {
+          title: "Письмо к предложению банка",
+          body: offer.why_this_product,
+          amount: `${offer.amount_rub.toLocaleString("ru-RU")} ₽`,
+          term: `${offer.term_months} мес.`,
+          badge: offer.product_label,
+        }
+      : undefined,
+  };
 }
 
 export const useBankMessagesStore = create<BankMessagesState>((set, get) => ({
@@ -425,6 +447,41 @@ export const useBankMessagesStore = create<BankMessagesState>((set, get) => ({
       default:
         break;
     }
+  },
+
+  syncApplicationCorrespondence: (application) => {
+    const demoKey =
+      application.company.demo_key?.replace(/^cmp_/, "") ??
+      application.company.id.replace(/^cmp_/, "");
+    const incoming = application.correspondence ?? [];
+    if (incoming.length === 0) {
+      return;
+    }
+    set((state) => ({
+      threads: state.threads.map((thread) => {
+        if (thread.demoKey !== demoKey && thread.companyId !== application.company.id) {
+          return thread;
+        }
+        const existingIds = new Set(thread.messages.map((message) => message.id));
+        const merged = [...thread.messages];
+        for (const row of incoming) {
+          if (!existingIds.has(row.id)) {
+            merged.push(correspondenceToChatMessage(row));
+            existingIds.add(row.id);
+          }
+        }
+        const last = merged[merged.length - 1];
+        return {
+          ...thread,
+          score: application.risk_score,
+          requestedAmountRub: application.requested_amount_rub,
+          statusLabel: application.status_label,
+          messages: merged,
+          lastMessageSnippet: last?.text.slice(0, 96) ?? thread.lastMessageSnippet,
+          lastTime: "сейчас",
+        };
+      }),
+    }));
   },
 
   resetAll: () => {

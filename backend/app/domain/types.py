@@ -205,6 +205,7 @@ class CompanyProfile:
     is_egrul_active: bool = True
     is_multibank_verified: bool = False
     demo_key: Optional[str] = None
+    verified_supplement_codes: frozenset[str] = field(default_factory=frozenset)
     users: list[CompanyUser] = field(default_factory=list)
 
     @property

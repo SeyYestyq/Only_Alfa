@@ -7,6 +7,12 @@
 
 ## [Unreleased]
 
+- Документация приёмки: `docs/USER_JOURNEY.md`, `docs/ACCEPTANCE_MATRIX.md`.
+- Письмо к офферу дублируется в переписку (`correspondence` в API, чат клиента и банковский `bankMessagesStore.syncApplicationCorrespondence`).
+- Баллы за дозапрос документов через доменные факторы `DOC_*` в `supplement_factors.py` и `verified_supplements_json` на компании (без ручной «подкрутки» в сервисе).
+- Проактив: `meta` у news, `POST .../system-actions/{id}/open|respond`, отображение открытия/ответа клиента у пилота.
+- Уведомление «Деньги зачислены» для бухгалтера; переход из News-to-Action по `target_screen` из бэкенда.
+- Тесты: `test_supplement_scoring`, `test_acceptance_profiles` (×5), `test_api_correspondence`.
 - Пояснения статуса заявки для клиента (`client_brief`): где заявка, почему так, что делать, предупреждения до решения и письмо после одобрения/отказа — домен `domain/enrichment/briefs.py`, API `ApplicationSchema.client_brief`.
 - Письмо к каждому офферу банка (`offer_letters`): продукт, факторы, сумма/ставка/срок, бездействие — видят клиент и пилот на столе разбора.
 - Встречный запрос клиента на другой продукт: `POST .../client-product-request`, вердикт и причины на бэкенде, панели `ClientProductRequestPanel` / `PilotClientRequestCard`.

@@ -1,11 +1,13 @@
 import type { Application } from "../api/types";
 import { PRODUCT_LABELS } from "../api/client";
 import { useApp } from "../state/AppState";
+import { useBankMessagesStore } from "../state/bankMessagesStore";
 import { formatMoney } from "../utils/format";
 import { OfferLetterPanel } from "./OfferLetterPanel";
 
 export function PilotClientRequestCard({ application }: { application: Application }) {
-  const { decideClientProductRequest, isBusy } = useApp();
+  const { decideClientProductRequest, isBusy, goToScreen } = useApp();
+  const setActiveThread = useBankMessagesStore((state) => state.setActiveThread);
   const state = application.client_product_request;
   if (!state) {
     return null;
@@ -74,6 +76,21 @@ export function PilotClientRequestCard({ application }: { application: Applicati
         >
           Отправить свой вариант
         </button>
+        {letter && (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => {
+              const demoKey =
+                application.company.demo_key?.replace(/^cmp_/, "") ??
+                application.company.id.replace(/^cmp_/, "");
+              setActiveThread(demoKey);
+              goToScreen("bank-messages");
+            }}
+          >
+            Письмо в чате →
+          </button>
+        )}
       </div>
       {letter && (
         <div style={{ marginTop: 16 }}>

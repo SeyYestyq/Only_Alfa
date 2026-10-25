@@ -745,13 +745,16 @@ class ApplicationService:
         )
         doc = SUPPLEMENT_REGISTRY[body.document_code]
         if body.document_code != "MULTIBANK_STATEMENT":
-            boosted = min(1000, score_result.final_score + doc.score_delta)
-            score_result.final_score = boosted
+            self.companies.add_verified_supplement(profile.id, body.document_code)
+            updated_profile = self.companies.get_by_id(profile.id) or updated_profile
+            score_result = calculate_risk_score(updated_profile)
             snapshot = ScoreChangeSnapshot(
                 previous_score=snapshot.previous_score,
-                new_score=boosted,
-                score_delta=boosted - snapshot.previous_score,
-                shifted_factors=snapshot.shifted_factors,
+                new_score=score_result.final_score,
+                score_delta=score_result.final_score - snapshot.previous_score,
+                shifted_factors=[
+                    f"{doc.label}: фактор доменного скоринга (+{doc.score_delta} баллов)"
+                ],
                 document_code=snapshot.document_code,
                 document_label=snapshot.document_label,
             )
@@ -766,22 +769,11 @@ class ApplicationService:
         applied.add(body.document_code)
         changes = list(ctx.get("score_changes") or [])
         changes.append(snapshot.as_dict())
-        factors = [asdict(f) for f in score_result.factors_breakdown]
-        if body.document_code != "MULTIBANK_STATEMENT":
-            factors.append(
-                {
-                    "group": "G4",
-                    "code": body.document_code,
-                    "label": doc.label,
-                    "score_delta": doc.score_delta,
-                    "condition": doc.reason,
-                }
-            )
         self.applications.update(
             application,
             risk_score=score_result.final_score,
             raw_score=score_result.raw_score,
-            factors_breakdown_json=factors,
+            factors_breakdown_json=[asdict(f) for f in score_result.factors_breakdown],
         )
         client_req = ctx.get("client_product_request")
         if client_req and client_req.get("status") == "WAITING_CLIENT_DOCS":

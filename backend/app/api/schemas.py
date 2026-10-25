@@ -113,7 +113,17 @@ class NewsItemSchema(BaseModel):
     cta: str
     cluster: str
     source: str
+    meta: dict[str, Any] = Field(default_factory=dict)
     created_at: str
+
+
+class CorrespondenceMessageSchema(BaseModel):
+    id: str
+    sender_role: str
+    sender_label: str
+    message_type: str
+    text: str
+    offer_letter: Optional[dict[str, Any]] = None
 
 
 class TransactionSchema(BaseModel):
@@ -368,6 +378,7 @@ class ApplicationSchema(BaseModel):
     client_product_request: Optional[dict[str, Any]] = None
     score_changes: list[dict[str, Any]] = Field(default_factory=list)
     applied_supplements: list[str] = Field(default_factory=list)
+    correspondence: list[CorrespondenceMessageSchema] = Field(default_factory=list)
 
 
 class MultibankVerifyResponse(BaseModel):

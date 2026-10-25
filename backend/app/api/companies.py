@@ -60,6 +60,27 @@ def publish_system_action(
     return ProactiveService(session).publish(action_id)
 
 
+@router.post("/companies/{company_id}/system-actions/{action_id}/open")
+def open_system_action(
+    company_id: str,
+    action_id: str,
+    session: Session = Depends(get_session),
+) -> dict:
+    """Клиент открыл проактивное уведомление — фиксируем для пилота."""
+    return ProactiveService(session).mark_opened(action_id)
+
+
+@router.post("/companies/{company_id}/system-actions/{action_id}/respond")
+def respond_system_action(
+    company_id: str,
+    action_id: str,
+    body: dict,
+    session: Session = Depends(get_session),
+) -> dict:
+    """Ответ клиента на проактивное действие (демо: текст из UI)."""
+    return ProactiveService(session).mark_client_response(action_id, str(body.get("response", "")))
+
+
 @router.post("/companies/{company_id}/system-actions/{action_id}/cancel")
 def cancel_system_action(
     company_id: str,

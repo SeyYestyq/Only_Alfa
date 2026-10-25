@@ -386,6 +386,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await loadDashboard(companyId);
     }
     await loadXray(updated.application_id);
+    useBankMessagesStore.getState().syncApplicationCorrespondence(updated);
   }, [companyId, loadDashboard, loadXray]);
 
   const submitDraft = useCallback(async (productType: ProductType, termMonths: number) => {
@@ -623,6 +624,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       await afterApplicationChange(updated);
+      notifyClientAboutStatus(updated.status, updated.application_id, formatMoney(updated.approved_amount_rub), {
+        isSigningAuthority: effectiveRole === "CEO_OWNER" || effectiveRole === "IP_OWNER",
+      });
       setScreen("signing");
     } catch (cause) {
       handleError(cause);

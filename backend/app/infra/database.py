@@ -19,6 +19,14 @@ _APPLICATION_COLUMNS = {
     "context_json": "JSON DEFAULT '{}'",
 }
 
+_COMPANY_COLUMNS = {
+    "verified_supplements_json": "JSON DEFAULT '[]'",
+}
+
+_NEWS_COLUMNS = {
+    "meta_json": "JSON DEFAULT '{}'",
+}
+
 
 def get_session() -> Iterator[Session]:
     """FastAPI dependency."""
@@ -29,16 +37,23 @@ def get_session() -> Iterator[Session]:
         session.close()
 
 
+def _ensure_table_columns(table: str, columns: dict[str, str]) -> None:
+    inspector = inspect(engine)
+    if table not in inspector.get_table_names():
+        return
+    existing = {column["name"] for column in inspector.get_columns(table)}
+    with engine.begin() as connection:
+        for name, definition in columns.items():
+            if name not in existing:
+                connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {definition}"))
+
+
 def _ensure_application_columns() -> None:
     """create_all не добавляет колонки в уже существующую таблицу."""
     inspector = inspect(engine)
-    if "applications" not in inspector.get_table_names():
-        return
-    existing = {column["name"] for column in inspector.get_columns("applications")}
-    with engine.begin() as connection:
-        for name, definition in _APPLICATION_COLUMNS.items():
-            if name not in existing:
-                connection.execute(text(f"ALTER TABLE applications ADD COLUMN {name} {definition}"))
+    _ensure_table_columns("applications", _APPLICATION_COLUMNS)
+    _ensure_table_columns("companies", _COMPANY_COLUMNS)
+    _ensure_table_columns("news_feed", _NEWS_COLUMNS)
 
 
 def create_schema() -> None:

@@ -187,6 +187,19 @@ function noticeFromStatus(
       signingAuthorityOnly: true,
     };
   }
+  if (status === "FUNDED") {
+    return {
+      kind: "approved",
+      title: "Деньги зачислены",
+      text: amountLabel
+        ? `На расчётный счёт зачислено ${amountLabel}. Статус обновлён автоматически.`
+        : "Договор подписан, деньги зачислены на расчётный счёт.",
+      applicationId,
+      targetScreen: "signing",
+      primaryLabel: "Смотреть статус",
+      secondaryLabel: "Закрыть",
+    };
+  }
   if (status === "REJECTED") {
     return {
       kind: "rejected",

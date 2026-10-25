@@ -86,6 +86,7 @@ class CompanyService:
                 comp.monthly_revenue_multibank = 0.0
                 comp.is_multibank_verified = False
                 comp.declared_monthly_revenue = profile.declared_monthly_revenue
+                comp.verified_supplements_json = []
                 self.companies.save_dna(comp.id, profile)
 
         self.session.commit()

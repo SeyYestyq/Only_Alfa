@@ -230,6 +230,18 @@ export const api = {
   cancelSystemAction(companyId: string, actionId: string): Promise<{ id: string; status: string }> {
     return request(`/companies/${companyId}/system-actions/${actionId}/cancel`, { method: "POST" });
   },
+
+  openSystemAction(companyId: string, actionId: string): Promise<{ id: string; client_opened_at: string | null }> {
+    return request(`/companies/${companyId}/system-actions/${actionId}/open`, { method: "POST" });
+  },
+
+  respondSystemAction(
+    companyId: string,
+    actionId: string,
+    response: string,
+  ): Promise<{ id: string; client_response: string | null }> {
+    return request(`/companies/${companyId}/system-actions/${actionId}/respond`, jsonInit({ response }));
+  },
 };
 
 export const PRODUCT_LABELS: Record<ProductType, string> = {
