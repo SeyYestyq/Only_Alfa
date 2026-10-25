@@ -9,17 +9,15 @@ import { UnderwriterActions } from "../../components/UnderwriterActions";
 import { RiskScoreGauge } from "../../components/RiskScoreGauge";
 import { XrayBaseDecomposition } from "../../components/XrayBaseDecomposition";
 import { useApp } from "../../state/AppState";
-import { useDemoStore } from "../../state/demoStore";
 import { formatMoney, formatPercent } from "../../utils/format";
 
-type DeskSection = "decision" | "evidence" | "analytics" | "chat" | "audit";
+type DeskSection = "decision" | "evidence" | "analytics" | "audit";
 
 const SECTIONS: Array<{ id: DeskSection; label: string }> = [
   { id: "decision", label: "1. Решение" },
   { id: "evidence", label: "2. Доказательства" },
   { id: "analytics", label: "3. Аналитика" },
-  { id: "chat", label: "4. Переписка" },
-  { id: "audit", label: "5. Журнал" },
+  { id: "audit", label: "4. Журнал" },
 ];
 
 function decisionTone(status: string): "good" | "warn" | "risk" {
@@ -54,24 +52,11 @@ function scrollToSection(id: DeskSection) {
 
 /**
  * Единый стол заявки для инспектора (BRD Экран 3).
- * Один вертикальный путь: решение → доказательства → аналитика → чат → аудит.
- * ScreenId bank-xray / bank-messages открывают этот стол.
+ * Вертикальный путь: решение → доказательства → аналитика → аудит.
  */
 export function ApplicationDeskScreen() {
-  const { application, xray, cbrRate, dashboard, goToScreen, isBusy, screen } = useApp();
-  const creditDocs = useDemoStore((state) => state.creditDocs);
-  const [reply, setReply] = useState("");
-  const [sent, setSent] = useState<string[]>([]);
+  const { application, xray, cbrRate, dashboard, goToScreen, isBusy } = useApp();
   const [activeSection, setActiveSection] = useState<DeskSection>("decision");
-
-  useEffect(() => {
-    if (screen === "bank-messages") {
-      setActiveSection("chat");
-      window.requestAnimationFrame(() => scrollToSection("chat"));
-      return;
-    }
-    setActiveSection("decision");
-  }, [screen]);
 
   if (isBusy && !application) {
     return <XraySkeleton />;
@@ -303,72 +288,8 @@ export function ApplicationDeskScreen() {
         </details>
       </section>
 
-      <section className="figma-panel figma-panel-sm app-desk-block" id="desk-chat">
-        <div className="figma-panel-title">Шаг 4 · переписка с клиентом</div>
-        <p className="muted" style={{ margin: "6px 0 12px", fontSize: 13 }}>
-          Часть кейса, не отдельный раздел. Документы клиента видны здесь и в журнале.
-        </p>
-        <div className="desk-chat-stream">
-          <div className="chat-bubble in">
-            <div className="chat-bubble-meta">
-              {dashboard?.company.director_name ||
-                application.company.users.find(
-                  (row) => row.role === "CEO_OWNER" || row.role === "IP_OWNER",
-                )?.full_name ||
-                application.company.users[0]?.full_name ||
-                "Клиент"}
-            </div>
-            <p>
-              {application.status === "NEED_MORE_INFO"
-                ? "Добрый день! Загружаю запрошенные документы. Всё ли на месте?"
-                : "Добрый вечер! Подскажите статус по кредиту и можно ли снизить платёж летом?"}
-            </p>
-          </div>
-          {creditDocs.map((doc) => (
-            <div key={doc} className="chat-card">
-              <strong>PDF · {doc}</strong>
-              <p className="muted">Прикреплён к заявке</p>
-            </div>
-          ))}
-          {sent.map((text) => (
-            <div key={text} className="chat-bubble out">
-              <p>{text}</p>
-            </div>
-          ))}
-        </div>
-        <form
-          className="chat-compose"
-          style={{ marginTop: 12 }}
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!reply.trim()) {
-              return;
-            }
-            setSent((prev) => [...prev, reply.trim()]);
-            setReply("");
-          }}
-        >
-          <input
-            value={reply}
-            onChange={(event) => setReply(event.target.value)}
-            placeholder="Ответ клиенту по этой заявке…"
-          />
-          <button type="submit" className="btn btn-primary btn-sm">
-            Отправить
-          </button>
-        </form>
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm"
-          style={{ marginTop: 10 }}
-          onClick={() => goToScreen("bank-profile")}
-        >
-          Портрет компании 360°
-        </button>
-      </section>
-
       <section className="figma-panel figma-panel-sm app-desk-block" id="desk-audit">
-        <div className="figma-panel-title">Шаг 5 · журнал аудита</div>
+        <div className="figma-panel-title">Шаг 4 · журнал аудита</div>
         <p className="muted" style={{ margin: "6px 0 12px", fontSize: 13 }}>
           Неизменяемый лог application_events — для банка и жюри.
         </p>
