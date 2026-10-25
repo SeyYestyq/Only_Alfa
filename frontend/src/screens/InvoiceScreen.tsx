@@ -44,6 +44,7 @@ export function InvoiceScreen() {
     parseTemplate,
     parseFile,
     createApplication,
+    goToScreen,
   } = useApp();
 
   const rows = useMemo(() => templates.map(toUnpaidInvoiceRow), [templates]);
@@ -164,10 +165,17 @@ export function InvoiceScreen() {
 
   return (
     <>
+      <div className="v2-crumb">
+        <button type="button" className="v2-link" onClick={() => goToScreen("apply")}>Кредит</button>
+        {" / Счёт поставщика"}
+      </div>
       <div className="v2-row v2-inv-head">
         <div>
           <h1 className="v2-h1">Счёт и финансирование</h1>
           <p className="v2-lead">Загрузите счёт — банк оплатит поставщику</p>
+          <button type="button" className="v2-link" style={{ marginTop: 8 }} onClick={() => goToScreen("apply")}>
+            Назад к заявке
+          </button>
         </div>
         <div className="v2-steps" aria-label="Шаги">
           {STEPS.map((label, index) => (

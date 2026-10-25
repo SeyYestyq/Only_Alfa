@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Stepper } from "../../components/v2/Stepper";
+import { Stepper, screenForCreditStep, stepForStatus } from "../../components/v2/Stepper";
 import {
   APPLY_PRESET,
   ROSTERS_OFFER_AMOUNT,
@@ -11,7 +11,7 @@ import { useApp } from "../../state/AppState";
 import { formatAge, formatMoney, formatPercent, roughAnnuity } from "../../utils/format";
 
 export function ClientApply() {
-  const { dashboard, createApplication, isBusy, goToScreen } = useApp();
+  const { dashboard, application, createApplication, isBusy, goToScreen } = useApp();
   const preset = APPLY_PRESET[dashboard?.company.demo_key ?? ""] ?? APPLY_PRESET.rosters;
   const [amount, setAmount] = useState(preset.amount);
   const [term, setTerm] = useState(preset.term);
@@ -33,9 +33,21 @@ export function ClientApply() {
 
   return (
     <>
-      <div className="v2-crumb">Кредит / Заявка</div>
-      <h1 className="v2-h1">Заявка</h1>
-      <p className="v2-lead">Сумма, срок и платёж</p>
+      <div className="v2-crumb">
+        <button type="button" className="v2-link" onClick={() => goToScreen("home")}>Кредит</button>
+        {" / Заявка"}
+      </div>
+      <div className="v2-row">
+        <div>
+          <h1 className="v2-h1">Заявка</h1>
+          <p className="v2-lead">Сумма, срок и платёж</p>
+        </div>
+        {application && stepForStatus(application.status) > 1 ? (
+          <button type="button" className="v2-link" onClick={() => goToScreen(screenForCreditStep(stepForStatus(application.status)))}>
+            К текущему шагу
+          </button>
+        ) : null}
+      </div>
       <div className="v2-period" role="group" aria-label="Откуда сумма">
         <button type="button" className={source === "own" ? "on" : ""} onClick={() => setSource("own")}>
           Своя сумма
@@ -53,7 +65,11 @@ export function ClientApply() {
         </button>
         <button type="button" onClick={() => goToScreen("invoice")}>По счёту поставщика</button>
       </div>
-      <Stepper active={1} />
+      <Stepper
+        active={Math.max(1, stepForStatus(application?.status))}
+        view={1}
+        onGo={(step) => goToScreen(screenForCreditStep(step))}
+      />
       <div className="v2-split case">
         <div>
           <section className="v2-card">

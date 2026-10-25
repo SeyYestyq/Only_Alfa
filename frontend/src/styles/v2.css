@@ -262,6 +262,10 @@
   margin-bottom: 8px;
 }
 
+.v2-crumb .v2-link {
+  font-size: inherit;
+}
+
 .v2-h1 {
   font-size: 34px;
   line-height: 1.15;
@@ -799,10 +803,44 @@
 .v2-steps {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin: 8px 0 16px;
   color: var(--text-faint);
   font-size: 13px;
+}
+
+.v2-steps > span,
+.v2-steps > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.2;
+}
+
+.v2-steps > button.go {
+  cursor: pointer;
+}
+
+.v2-steps > button.go:hover {
+  color: var(--text-primary);
+}
+
+.v2-steps > button.go:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.v2-steps-sep {
+  margin: 0 4px 0 8px;
+  color: var(--text-faint);
 }
 
 .v2-steps .n {
@@ -812,8 +850,8 @@
   display: inline-grid;
   place-items: center;
   background: #2a2a32;
-  margin-right: 6px;
   font-size: 12px;
+  flex-shrink: 0;
 }
 
 .v2-steps .on {
@@ -822,6 +860,7 @@
 
 .v2-steps .on .n {
   background: var(--accent);
+  color: white;
 }
 
 .v2-steps .done .n {

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { CodeCells } from "../../components/v2/CodeCells";
 import { ForecastLine } from "../../components/v2/ForecastLine";
 import { Kbd } from "../../components/v2/Kbd";
-import { Stepper } from "../../components/v2/Stepper";
+import { Stepper, screenForCreditStep, stepForStatus } from "../../components/v2/Stepper";
 import { INSPECTOR_NAME, PEP_CODE, RESTRUCTURE_PAYMENT, ROSTERS_PSK_LABEL } from "../../domain-ui/caseScript";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
@@ -106,8 +106,17 @@ export function ClientSign() {
   if (addendum) {
     return (
       <>
-        <h1 className="v2-h1">Подпись</h1>
-        <p className="v2-lead">Платёж {formatMoney(RESTRUCTURE_PAYMENT)} · июль–август</p>
+        <div className="v2-crumb">
+          <button type="button" className="v2-link" onClick={() => goToScreen("home")}>Обзор</button>
+          {" / Подпись"}
+        </div>
+        <div className="v2-row">
+          <div>
+            <h1 className="v2-h1">Подпись</h1>
+            <p className="v2-lead">Платёж {formatMoney(RESTRUCTURE_PAYMENT)} · июль–август</p>
+          </div>
+          <button type="button" className="v2-link" onClick={() => goToScreen("home")}>Назад</button>
+        </div>
         <p className="v2-pill demo">Демо · без API</p>
         <section className="v2-card" style={{ marginTop: 12 }}>
           <h2>Допсоглашение</h2>
@@ -144,8 +153,15 @@ export function ClientSign() {
   if (funded) {
     return (
       <>
-        <div className="v2-crumb">Кредиты / Деньги на счёте</div>
-        <Stepper active={4} />
+        <div className="v2-crumb">
+          <button type="button" className="v2-link" onClick={() => goToScreen("apply")}>Кредит</button>
+          {" / Деньги на счёте"}
+        </div>
+        <Stepper
+          active={4}
+          view={4}
+          onGo={(step) => goToScreen(screenForCreditStep(step))}
+        />
         <div className="v2-split">
           <section className="v2-card v2-green-hero">
             <span className="v2-pill good">Договор подписан</span>
@@ -216,7 +232,10 @@ export function ClientSign() {
 
   return (
     <>
-      <div className="v2-crumb">Кредиты / Подпись</div>
+      <div className="v2-crumb">
+        <button type="button" className="v2-link" onClick={() => goToScreen("apply")}>Кредит</button>
+        {" / Подпись"}
+      </div>
       <div className="v2-row">
         <div>
           <h1 className="v2-h1">Подпись</h1>
@@ -228,11 +247,13 @@ export function ClientSign() {
                 : "Ждёт подписи предпринимателя"}
           </p>
         </div>
-        <span className={`v2-pill ${canSign ? "warn" : "good"}`}>
-          {canSign ? "Ждёт вашей подписи" : "Уведомление отправлено"}
-        </span>
+        <button type="button" className="v2-link" onClick={() => goToScreen("decision")}>К решению</button>
       </div>
-      <Stepper active={3} />
+      <Stepper
+        active={Math.max(3, stepForStatus(application.status))}
+        view={3}
+        onGo={(step) => goToScreen(screenForCreditStep(step))}
+      />
       <div className="v2-split case">
         <div>
           <section className="v2-card">

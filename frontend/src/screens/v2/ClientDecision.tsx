@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChatThread } from "../../components/v2/ChatThread";
 import { DecisionScoreCard } from "../../components/v2/DecisionScoreCard";
-import { Stepper, stepForStatus } from "../../components/v2/Stepper";
+import { Stepper, screenForCreditStep, stepForStatus } from "../../components/v2/Stepper";
 import { INSPECTOR_NAME, ROSTERS_SUMMER_SAFE } from "../../domain-ui/caseScript";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
@@ -43,15 +43,22 @@ export function ClientDecision() {
 
   return (
     <>
-      <div className="v2-crumb">Кредит / Решение</div>
+      <div className="v2-crumb">
+        <button type="button" className="v2-link" onClick={() => goToScreen("apply")}>Кредит</button>
+        {" / Решение"}
+      </div>
       <div className="v2-row">
         <div>
           <h1 className="v2-h1">Решение</h1>
           <p className="v2-lead">{subtitle}</p>
         </div>
-        <button type="button" className="v2-link" onClick={() => goToScreen("apply")}>Новая заявка</button>
+        <button type="button" className="v2-link" onClick={() => goToScreen("apply")}>К условиям</button>
       </div>
-      <Stepper active={stepForStatus(application.status)} />
+      <Stepper
+        active={stepForStatus(application.status)}
+        view={2}
+        onGo={(step) => goToScreen(screenForCreditStep(step))}
+      />
 
       {waiting ? (
         <section className="v2-score-card">

@@ -198,6 +198,10 @@ export function Chrome() {
               className={active(link.id) ? "active" : ""}
               onClick={() => {
                 if (link.id === "apply") {
+                  const inCredit = ["apply", "decision", "signing", "passport", "invoice", "applications"].includes(screen);
+                  if (inCredit) {
+                    return;
+                  }
                   const status = application?.status;
                   if (status === "FUNDED" || status === "AWAITING_CEO_APPROVAL" || status === "APPROVED") {
                     goToScreen("signing");
