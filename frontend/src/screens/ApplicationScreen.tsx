@@ -16,18 +16,17 @@ function checkTone(status: string): string {
 }
 
 export function ApplicationScreen() {
-  const { application, goToScreen } = useApp();
+  const { application, setBusinessTab, setBankTab, clearApplication } = useApp();
 
   if (!application) {
     return (
       <div className="empty-state">
         <h3>Заявка ещё не создана</h3>
         <p>
-          Вернитесь в кабинет, выберите сценарий в умном поиске, загрузите PDF-счёт или заполните форму
-          заявки. Скоринг запустится автоматически.
+          Вернитесь на главную, загрузите счёт для платежа или укажите свою сумму во вкладке «Кредиты».
         </p>
-        <button type="button" className="btn btn-primary" onClick={() => goToScreen(1)}>
-          Перейти в кабинет
+        <button type="button" className="btn btn-primary" onClick={() => setBusinessTab("home")}>
+          На главную
         </button>
       </div>
     );
@@ -63,11 +62,21 @@ export function ApplicationScreen() {
           </p>
         </div>
         <div className="page-actions">
-          <button type="button" className="btn btn-secondary" onClick={() => goToScreen(3)}>
-            Рентген инспектора
+          <button type="button" className="btn btn-secondary" onClick={() => setBankTab("applications")}>
+            Открыть в пилоте банка
           </button>
-          <button type="button" className="btn btn-ghost" onClick={() => goToScreen(1)}>
-            В кабинет
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => {
+              clearApplication();
+              setBusinessTab("credits");
+            }}
+          >
+            Новая заявка
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={() => setBusinessTab("home")}>
+            На главную
           </button>
         </div>
       </div>

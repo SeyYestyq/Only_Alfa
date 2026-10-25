@@ -13,6 +13,8 @@ import type {
   ActorRole,
   Application,
   ApplicationCreateInput,
+  BankTab,
+  BusinessTab,
   CompanyBrief,
   Dashboard,
   InstallmentResult,
@@ -45,6 +47,8 @@ interface AppContextValue {
   effectiveRole: ActorRole;
   viewMode: ViewMode;
   screen: ScreenId;
+  businessTab: BusinessTab;
+  bankTab: BankTab;
   isReady: boolean;
   isBusy: boolean;
   error: string | null;
@@ -57,7 +61,11 @@ interface AppContextValue {
   lookupInn: (inn: string) => Promise<void>;
   setUserRole: (role: ActorRole) => void;
   setViewMode: (mode: ViewMode) => void;
+  setBusinessTab: (tab: BusinessTab) => void;
+  setBankTab: (tab: BankTab) => void;
   goToScreen: (screen: ScreenId) => void;
+  openApplication: (applicationId: string) => Promise<void>;
+  clearApplication: () => void;
   runSearch: (query: string) => Promise<void>;
   parseTemplate: (code: string) => Promise<void>;
   parseFile: (file: File) => Promise<void>;
@@ -93,9 +101,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const screen = useDemoStore((state) => state.screen);
   const viewMode = useDemoStore((state) => state.viewMode);
   const userRole = useDemoStore((state) => state.userRole);
+  const businessTab = useDemoStore((state) => state.businessTab);
+  const bankTab = useDemoStore((state) => state.bankTab);
   const setScreen = useDemoStore((state) => state.setScreen);
   const setUserRole = useDemoStore((state) => state.setUserRole);
   const setViewModeStore = useDemoStore((state) => state.setViewMode);
+  const setBusinessTabStore = useDemoStore((state) => state.setBusinessTab);
+  const setBankTabStore = useDemoStore((state) => state.setBankTab);
   const [isReady, setIsReady] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +117,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [templates, setTemplates] = useState<InvoiceTemplate[]>([]);
   const [multibankResult, setMultibankResult] = useState<MultibankResult | null>(null);
   const companyRef = useRef<string | null>(null);
+  const viewModeRef = useRef(viewMode);
+  viewModeRef.current = viewMode;
 
   const effectiveRole: ActorRole = viewMode === "bank" ? "UNDERWRITER" : userRole;
 
@@ -140,14 +154,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const selectCompany = useCallback(async (id: string) => {
+    const stayInBank = viewModeRef.current === "bank";
     companyRef.current = id;
     setCompanyId(id);
     setSearchResult(null);
     setInvoiceResult(null);
-    setApplication(null);
-    setXray(null);
+    if (!stayInBank) {
+      setApplication(null);
+      setXray(null);
+      setBusinessTabStore("home");
+    }
     setMultibankResult(null);
-    setScreen(1);
     setError(null);
     setIsBusy(true);
     try {
@@ -155,13 +172,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!payload || companyRef.current !== id) {
         return;
       }
-      setUserRole(ownerRole(payload.company));
+      if (!stayInBank) {
+        setUserRole(ownerRole(payload.company));
+      }
     } catch (cause) {
       handleError(cause);
     } finally {
       setIsBusy(false);
     }
-  }, [handleError, loadDashboard]);
+  }, [handleError, loadDashboard, setBusinessTabStore, setUserRole]);
 
   useEffect(() => {
     let cancelled = false;
@@ -202,7 +221,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [handleError]);
+  }, [handleError, setUserRole]);
 
   const lookupInn = useCallback(async (inn: string) => {
     setIsBusy(true);
@@ -220,7 +239,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setApplication(null);
       setXray(null);
       setMultibankResult(null);
-      setScreen(1);
+      setBusinessTabStore("home");
       const payload = await api.getDashboard(company.id);
       setDashboard(payload);
       setUserRole(ownerRole(payload.company));
@@ -229,22 +248,66 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsBusy(false);
     }
-  }, [handleError]);
+  }, [handleError, setBusinessTabStore, setUserRole]);
 
   const setViewMode = useCallback((mode: ViewMode) => {
     setViewModeStore(mode);
-    setScreen(mode === "bank" ? 3 : application ? 2 : 1);
-    if (mode === "bank" && application) {
-      loadXray(application.application_id).catch(handleError);
+    if (mode === "bank") {
+      setBankTabStore(application ? "applications" : "clients");
+      if (application) {
+        loadXray(application.application_id).catch(handleError);
+      }
+    } else {
+      setBusinessTabStore(application && application.status !== "FUNDED" ? "credits" : "home");
     }
-  }, [application, handleError, loadXray, setScreen, setViewModeStore]);
+  }, [application, handleError, loadXray, setBankTabStore, setBusinessTabStore, setViewModeStore]);
+
+  const setBusinessTab = useCallback((tab: BusinessTab) => {
+    setBusinessTabStore(tab);
+  }, [setBusinessTabStore]);
+
+  const setBankTab = useCallback((tab: BankTab) => {
+    setBankTabStore(tab);
+  }, [setBankTabStore]);
 
   const goToScreen = useCallback((next: ScreenId) => {
     setScreen(next);
     if (next === 3 && application) {
       loadXray(application.application_id).catch(handleError);
     }
-  }, [application, handleError, loadXray]);
+  }, [application, handleError, loadXray, setScreen]);
+
+  const clearApplication = useCallback(() => {
+    setApplication(null);
+    setXray(null);
+    setMultibankResult(null);
+  }, []);
+
+  const openApplication = useCallback(async (applicationId: string) => {
+    if (!applicationId) {
+      clearApplication();
+      return;
+    }
+    setIsBusy(true);
+    setError(null);
+    try {
+      const payload = await api.getApplication(applicationId);
+      companyRef.current = payload.company.id;
+      setCompanyId(payload.company.id);
+      setApplication(payload);
+      await loadDashboard(payload.company.id);
+      await loadXray(payload.application_id);
+      if (viewModeRef.current === "bank") {
+        setBankTabStore("applications");
+      } else {
+        setBusinessTabStore("credits");
+      }
+    } catch (cause) {
+      handleError(cause);
+    } finally {
+      setIsBusy(false);
+    }
+  }, [clearApplication, handleError, loadDashboard, loadXray, setBankTabStore, setBusinessTabStore]);
 
   const refresh = useCallback(async () => {
     if (!companyId) {
@@ -358,13 +421,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       await afterApplicationChange(created);
-      setScreen(2);
+      setBusinessTabStore("credits");
     } catch (cause) {
       handleError(cause);
     } finally {
       setIsBusy(false);
     }
-  }, [afterApplicationChange, companyId, dashboard?.company.declared_monthly_revenue, effectiveRole, handleError, invoiceResult]);
+  }, [
+    afterApplicationChange,
+    companyId,
+    dashboard?.company.declared_monthly_revenue,
+    effectiveRole,
+    handleError,
+    invoiceResult,
+    setBusinessTabStore,
+  ]);
 
   const createApplication = useCallback(async (
     input: Omit<ApplicationCreateInput, "company_id" | "actor_role">,
@@ -384,13 +455,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       await afterApplicationChange(created);
-      setScreen(2);
+      setBusinessTabStore("credits");
     } catch (cause) {
       handleError(cause);
     } finally {
       setIsBusy(false);
     }
-  }, [afterApplicationChange, companyId, effectiveRole, handleError]);
+  }, [afterApplicationChange, companyId, effectiveRole, handleError, setBusinessTabStore]);
 
   const verifyMultibank = useCallback(async () => {
     if (!application) {
@@ -451,12 +522,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       await afterApplicationChange(updated);
+      if (updated.status === "FUNDED") {
+        setBusinessTabStore("home");
+      }
     } catch (cause) {
       handleError(cause);
     } finally {
       setIsBusy(false);
     }
-  }, [afterApplicationChange, application, effectiveRole, handleError]);
+  }, [afterApplicationChange, application, effectiveRole, handleError, setBusinessTabStore]);
 
   const underwriterAction = useCallback(async (
     action: "APPROVE" | "COUNTER_OFFER" | "NEED_MORE_INFO" | "REJECT",
@@ -513,6 +587,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     effectiveRole,
     viewMode,
     screen,
+    businessTab,
+    bankTab,
     isReady,
     isBusy,
     error,
@@ -525,7 +601,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     lookupInn,
     setUserRole,
     setViewMode,
+    setBusinessTab,
+    setBankTab,
     goToScreen,
+    openApplication,
+    clearApplication,
     runSearch,
     parseTemplate,
     parseFile,
@@ -539,11 +619,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     refresh,
     clearError: () => setError(null),
   }), [
-    acceptOffer, application, cbrRate, companies, companyId, createApplication, dashboard,
-    effectiveRole, error, goToScreen, invoiceResult, isBusy, isReady, lookupInn, multibankResult,
-    parseFile, parseTemplate, refresh, runInstallment, runSearch, screen, searchResult, selectCompany,
-    setViewMode, signApplication, submitDraft, templates, underwriterAction, userRole,
-    verifyMultibank, viewMode, xray,
+    acceptOffer, application, bankTab, businessTab, cbrRate, clearApplication, companies, companyId,
+    createApplication, dashboard, effectiveRole, error, goToScreen, invoiceResult, isBusy, isReady,
+    lookupInn, multibankResult, openApplication, parseFile, parseTemplate, refresh, runInstallment,
+    runSearch, screen, searchResult, selectCompany, setBankTab, setBusinessTab, setViewMode,
+    signApplication, submitDraft, templates, underwriterAction, userRole, verifyMultibank, viewMode,
+    xray,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

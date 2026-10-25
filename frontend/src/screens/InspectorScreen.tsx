@@ -7,18 +7,18 @@ import { useApp } from "../state/AppState";
 import { formatMoney, formatPercent } from "../utils/format";
 
 export function InspectorScreen() {
-  const { application, xray, goToScreen, viewMode, setViewMode, cbrRate } = useApp();
+  const { application, xray, viewMode, setViewMode, setBankTab, cbrRate } = useApp();
 
   if (!application) {
     return (
       <div className="empty-state">
-        <h3>Нет заявки для рентгена</h3>
+        <h3>Нет заявки для разбора</h3>
         <p>
-          Экран 3 показывает экономику банка по конкретной заявке: P&L, Waterfall скоринга, карту
-          локации и живой audit trail. Сначала создайте заявку в кабинете.
+          Пилот банка показывает аналитику бизнеса, условия заявки, P&L, Waterfall и audit trail.
+          Выберите заявку в очереди или создайте её глазами бизнеса.
         </p>
-        <button type="button" className="btn btn-primary" onClick={() => goToScreen(1)}>
-          Создать заявку
+        <button type="button" className="btn btn-primary" onClick={() => setBankTab("applications")}>
+          К очереди заявок
         </button>
       </div>
     );
@@ -29,11 +29,11 @@ export function InspectorScreen() {
       <div className="page-header">
         <div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-            <span className="pill pill-risk">Экран 3 · Банк</span>
+            <span className="pill pill-risk">Пилот банка</span>
             <span className="pill pill-outline">{application.product_label}</span>
             <span className="pill pill-outline">ID {application.application_id.slice(-8)}</span>
           </div>
-          <h1 className="page-title">Рентген заявки: {application.company.name}</h1>
+          <h1 className="page-title">Заявка: {application.company.name}</h1>
           <p className="page-subtitle">
             RiskScore {application.risk_score} · статус {application.status_label} · ставка{" "}
             {formatPercent(application.final_rate_pct)} · КС ЦБ{" "}
@@ -46,8 +46,8 @@ export function InspectorScreen() {
               Включить режим банка
             </button>
           )}
-          <button type="button" className="btn btn-ghost" onClick={() => goToScreen(2)}>
-            К заявке
+          <button type="button" className="btn btn-ghost" onClick={() => setBankTab("clients")}>
+            К клиенту
           </button>
         </div>
       </div>
@@ -161,7 +161,7 @@ export function InspectorScreen() {
       ) : (
         <div className="loading">
           <span className="spinner" /> Считаем P&L и Waterfall…
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen(3)}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setBankTab("applications")}>
             Обновить
           </button>
         </div>

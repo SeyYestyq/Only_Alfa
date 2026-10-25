@@ -2,7 +2,10 @@ export type LegalForm = "IP" | "OOO";
 export type ActorRole = "CEO_OWNER" | "IP_OWNER" | "ACCOUNTANT" | "UNDERWRITER";
 export type ProductType = "INVEST_LEASING" | "VKL" | "OVERDRAFT";
 export type ViewMode = "business" | "bank";
+/** @deprecated экраны 1–3 сохранены для совместимости; навигация идёт через вкладки */
 export type ScreenId = 1 | 2 | 3;
+export type BusinessTab = "home" | "credits";
+export type BankTab = "clients" | "applications";
 
 export interface CompanyUser {
   id: string;
@@ -348,4 +351,20 @@ export interface HealthInfo {
   cbr_key_rate: number;
   ai_provider_mode: string;
   database: string;
+}
+
+export interface DraftSummary {
+  application_id: string;
+  status: string;
+  risk_score: number;
+  requested_amount_rub: number;
+  created_at: string | null;
+}
+
+export interface ApplicationListResponse {
+  applications: DraftSummary[];
+}
+
+export interface BankQueueItem extends DraftSummary {
+  company: CompanyBrief;
 }

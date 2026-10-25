@@ -5,6 +5,7 @@ import type { ProductType } from "../api/types";
 import { PRODUCT_LABELS } from "../api/client";
 import { useApp } from "../state/AppState";
 import { formatMoney, formatMoneyExact } from "../utils/format";
+import { LiquidityOfferBanner } from "./LiquidityOfferBanner";
 
 export function InvoicePanel() {
   const {
@@ -15,14 +16,17 @@ export function InvoicePanel() {
     submitDraft,
     isBusy,
     viewMode,
+    dashboard,
   } = useApp();
   const [product, setProduct] = useState<ProductType>("INVEST_LEASING");
   const [term, setTerm] = useState(24);
+  const [showPayConfirm, setShowPayConfirm] = useState(false);
 
   useEffect(() => {
     if (invoiceResult) {
       setProduct("INVEST_LEASING");
       setTerm(24);
+      setShowPayConfirm(false);
     }
   }, [invoiceResult]);
 
@@ -42,10 +46,12 @@ export function InvoicePanel() {
     <section className="card">
       <div className="card-header">
         <div>
-          <h2 className="card-title">Счёт в кредит</h2>
-          <p className="card-subtitle">PDF → ИНН поставщика → ЕГРЮЛ/ФССП → черновик заявки</p>
+          <h2 className="card-title">Создать платёж</h2>
+          <p className="card-subtitle">
+            Перетащите счёт или выберите шаблон — система проверит поставщика и кассовый разрыв
+          </p>
         </div>
-        <span className="pill pill-outline">pdfplumber · react-dropzone</span>
+        <span className="pill pill-outline">Invoice → Credit</span>
       </div>
       <div className="card-body">
         <div
@@ -58,9 +64,9 @@ export function InvoicePanel() {
           <input {...getInputProps()} />
           <FileUp className="dropzone-icon" size={28} strokeWidth={1.75} aria-hidden />
           <div className="dropzone-title">
-            {isDragActive ? "Отпустите PDF-счёт" : "Перетащите PDF-счёт сюда"}
+            {isDragActive ? "Отпустите документы платежа" : "Перетащите PDF-счёт сюда"}
           </div>
-          <div className="dropzone-sub">или нажмите, чтобы выбрать файл · до 5 секунд на разбор</div>
+          <div className="dropzone-sub">или нажмите, чтобы выбрать файл · проверка ЕГРЮЛ/ФССП</div>
         </div>
 
         <div className="template-buttons">
@@ -81,6 +87,21 @@ export function InvoicePanel() {
           ))}
         </div>
 
+        {invoiceResult && dashboard && (
+          <LiquidityOfferBanner
+            forecast={dashboard.cash_forecast}
+            triggers={dashboard.radar_triggers}
+            paymentAmount={invoiceResult.invoice.amount_rub}
+            accountBalance={dashboard.account_balance}
+            disabled={isBusy || viewMode === "bank"}
+            onRequest={(nextProduct, nextTerm) => {
+              setProduct(nextProduct);
+              setTerm(nextTerm);
+              void submitDraft(nextProduct, nextTerm);
+            }}
+          />
+        )}
+
         {invoiceResult && (
           <div className={`invoice-result ${invoiceResult.antifraud.is_verified ? "" : "warn"}`}>
             <div className="result-head">
@@ -90,14 +111,14 @@ export function InvoicePanel() {
                 ) : (
                   <TriangleAlert size={16} className="icon-warn" aria-hidden />
                 )}
-                Счёт распознан за {invoiceResult.parsing_ms.toFixed(0)} мс
+                Черновик платежа · {invoiceResult.parsing_ms.toFixed(0)} мс
               </strong>
               <span className={`pill ${invoiceResult.antifraud.is_verified ? "pill-good" : "pill-warn"}`}>
                 {invoiceResult.antifraud.egrul_status}
               </span>
             </div>
             <dl className="kv-list">
-              <dt>Поставщик</dt>
+              <dt>Кому</dt>
               <dd>{invoiceResult.invoice.supplier_name}</dd>
               <dt>ИНН</dt>
               <dd className="mono">{invoiceResult.invoice.supplier_inn}</dd>
@@ -116,7 +137,7 @@ export function InvoicePanel() {
 
             <div className="form-grid" style={{ marginTop: 10 }}>
               <label className="field">
-                <span className="field-label">Продукт</span>
+                <span className="field-label">Продукт финансирования</span>
                 <select
                   className="field-select"
                   value={product}
@@ -140,16 +161,40 @@ export function InvoicePanel() {
                   onChange={(event) => setTerm(Number(event.target.value))}
                 />
               </label>
-              <div className="field-full">
+              <div className="field-full payment-actions">
                 <button
                   type="button"
-                  className="btn btn-primary btn-block"
+                  className="btn btn-secondary"
+                  disabled={isBusy || viewMode === "bank"}
+                  onClick={() => setShowPayConfirm(true)}
+                >
+                  Оплатить счёт
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
                   disabled={isBusy || viewMode === "bank" || term < 3}
                   onClick={() => void submitDraft(product, term)}
                 >
-                  Отправить черновик в скоринг
+                  Оформить финансирование
                 </button>
               </div>
+              {showPayConfirm && (
+                <div className="alert alert-info field-full">
+                  {dashboard && invoiceResult.invoice.amount_rub > dashboard.account_balance ? (
+                    <>
+                      На счёте {formatMoney(dashboard.account_balance)}, к оплате{" "}
+                      {formatMoneyExact(invoiceResult.invoice.amount_rub)}. Сначала получите
+                      финансирование или верните деньги в оборот — затем оплатите счёт.
+                    </>
+                  ) : (
+                    <>
+                      Демо: оплата счёта доступна после зачисления кредита на главной. Оформите
+                      финансирование, подпишите ПЭП — и вернитесь к этому черновику.
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

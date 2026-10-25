@@ -47,9 +47,10 @@ export function UnderwriterActions() {
     <section className="card">
       <div className="card-header">
         <div>
-          <h2 className="card-title">Рабочее место кредитного инспектора</h2>
+          <h2 className="card-title">Решение пилота банка</h2>
           <p className="card-subtitle">
-            APPROVE / COUNTER_OFFER / NEED_MORE_INFO / REJECT · каждое действие попадает в audit trail
+            Одобрить · предложить другие условия · запросить документы · отказать. Клиент увидит
+            уведомление в кабинете.
           </p>
         </div>
         <span className="pill pill-warn">{application.status_label}</span>

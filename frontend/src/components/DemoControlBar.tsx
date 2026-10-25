@@ -1,14 +1,8 @@
 import { useState, type FormEvent } from "react";
-import type { ActorRole, ScreenId } from "../api/types";
+import type { ActorRole } from "../api/types";
 import { useApp } from "../state/AppState";
 import { roleLabel } from "../utils/format";
 import { formatMoney } from "../utils/format";
-
-const TABS: Array<{ id: ScreenId; label: string; hint: string }> = [
-  { id: 1, label: "Кабинет предпринимателя", hint: "360°-ДНК · касса · поиск · счёт" },
-  { id: 2, label: "Заявка и ПЭП", hint: "Паспорт · Мультибанк · офферы" },
-  { id: 3, label: "Рентген инспектора", hint: "P&L · Waterfall · аудит" },
-];
 
 export function DemoControlBar() {
   const {
@@ -18,14 +12,12 @@ export function DemoControlBar() {
     userRole,
     effectiveRole,
     viewMode,
-    screen,
     cbrRate,
     isBusy,
     selectCompany,
     lookupInn,
     setUserRole,
     setViewMode,
-    goToScreen,
   } = useApp();
   const [inn, setInn] = useState("");
 
@@ -146,24 +138,6 @@ export function DemoControlBar() {
                 Глазами банка
               </button>
             </div>
-          </div>
-
-          <div className="control-group" style={{ flex: 1 }}>
-            <span className="control-label">Экран</span>
-            <nav className="nav-tabs" style={{ marginTop: 0 }}>
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  title={tab.hint}
-                  className={`nav-tab ${screen === tab.id ? "active" : ""}`}
-                  onClick={() => goToScreen(tab.id)}
-                >
-                  <span className="nav-tab-index">{tab.id}</span>
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
           </div>
 
           <div className="metric-chip" style={{ minWidth: 150 }}>

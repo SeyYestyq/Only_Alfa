@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { ProductType } from "../api/types";
 import { PRODUCT_LABELS } from "../api/client";
 import { useApp } from "../state/AppState";
+import { formatMoney } from "../utils/format";
 
 export function ApplicationForm() {
   const { dashboard, searchResult, createApplication, isBusy, viewMode } = useApp();
@@ -11,12 +12,12 @@ export function ApplicationForm() {
   const [declaredRevenue, setDeclaredRevenue] = useState(0);
 
   const company = dashboard?.company;
+  const badge = searchResult?.credit_badge;
 
   useEffect(() => {
     if (!company) {
       return;
     }
-    const badge = searchResult?.credit_badge;
     const suggested = badge?.amount_rub
       ?? Math.max(100_000, Math.round((company.annual_revenue / 12) * 0.7 / 1000) * 1000);
     setAmount(suggested);
@@ -43,11 +44,19 @@ export function ApplicationForm() {
     <section className="card">
       <div className="card-header">
         <div>
-          <h2 className="card-title">Заявка на финансирование</h2>
-          <p className="card-subtitle">Параметры уйдут в скоринг и Decision Engine</p>
+          <h2 className="card-title">Своя сумма</h2>
+          <p className="card-subtitle">
+            Не нашли готовый вариант — укажите сумму, банк быстро прогонит скоринг по оборотам и контрагентам
+          </p>
         </div>
       </div>
       <div className="card-body">
+        {badge && (
+          <div className="alert alert-info" style={{ marginBottom: 12 }}>
+            Предварительно: {badge.product_label} до {formatMoney(badge.amount_rub)} ·{" "}
+            {badge.term_months} мес. · {badge.rate_pct.toFixed(1)}%
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
             <label className="field">
@@ -102,8 +111,12 @@ export function ApplicationForm() {
             </label>
           </div>
           <div style={{ marginTop: 12 }}>
-            <button className="btn btn-primary btn-block" type="submit" disabled={isBusy || viewMode === "bank" || amount <= 0}>
-              Запустить скоринг
+            <button
+              className="btn btn-primary btn-block"
+              type="submit"
+              disabled={isBusy || viewMode === "bank" || amount <= 0}
+            >
+              Просмотреть варианты / запустить скоринг
             </button>
             {viewMode === "bank" && (
               <p className="faint" style={{ fontSize: 11, marginTop: 6 }}>

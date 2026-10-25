@@ -23,23 +23,24 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
     <section className="card">
       <div className="card-header">
         <div>
-          <h2 className="card-title">Выписка по счёту</h2>
-          <p className="card-subtitle">Пост-транзакционная рассрочка на 3–6 месяцев</p>
+          <h2 className="card-title">Все операции</h2>
+          <p className="card-subtitle">Дата · контрагент · сумма · быстрый возврат денег в оборот</p>
         </div>
         <span className="pill pill-outline">{transactions.length} операции</span>
       </div>
       <div className="card-body">
         {result && (
           <div className="alert alert-good" style={{ marginBottom: 10 }}>
-            Рассрочка оформлена: {formatMoney(result.restored_amount_rub)} возвращены на счёт, платёж{" "}
-            {formatMoney(result.monthly_payment_rub)}/мес. Остаток: {formatMoney(result.account_balance)}.
+            Деньги возвращены в оборот: {formatMoney(result.restored_amount_rub)} снова на счёте,
+            платёж {formatMoney(result.monthly_payment_rub)}/мес. Остаток:{" "}
+            {formatMoney(result.account_balance)}.
           </div>
         )}
         <table className="table">
           <thead>
             <tr>
               <th>Дата</th>
-              <th>Операция</th>
+              <th>Кому / от кого</th>
               <th>Сумма</th>
               <th />
             </tr>
@@ -51,7 +52,7 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
                 <td>
                   <div>{transaction.description}</div>
                   <div className="faint" style={{ fontSize: 11 }}>
-                    {transaction.category}
+                    {transaction.direction === "IN" ? "Поступление" : "Платёж"} · {transaction.category}
                   </div>
                 </td>
                 <td className={`mono nowrap ${transaction.direction === "IN" ? "amount-in" : "amount-out"}`}>
@@ -60,7 +61,7 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
                 </td>
                 <td style={{ textAlign: "right" }}>
                   {transaction.installment_taken ? (
-                    <span className="pill pill-good">Оформлена</span>
+                    <span className="pill pill-good">В обороте</span>
                   ) : transaction.can_installment ? (
                     openId === transaction.id ? (
                       <div className="installment-control">
@@ -81,15 +82,20 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
                           disabled={isBusy}
                           onClick={() => void submit(transaction)}
                         >
-                          Оформить
+                          Вернуть
                         </button>
                         <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpenId(null)}>
                           ×
                         </button>
                       </div>
                     ) : (
-                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpenId(transaction.id)}>
-                        Рассрочка
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setOpenId(transaction.id)}
+                        title="Рассрочка возвращает сумму платежа на счёт"
+                      >
+                        Вернуть в оборот
                       </button>
                     )
                   ) : null}

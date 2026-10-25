@@ -6,24 +6,24 @@ import { formatMoney, formatPercent, roleLabel } from "../utils/format";
 const SIGNING_STATUSES = ["APPROVED", "AWAITING_CEO_APPROVAL"];
 
 export function SigningPanel({ application }: { application: Application }) {
-  const { signApplication, isBusy, effectiveRole, viewMode, goToScreen } = useApp();
+  const { signApplication, isBusy, effectiveRole, viewMode, setBankTab, setBusinessTab } = useApp();
   const legalForm = application.company.legal_form;
   const isSigningRole = legalForm === "OOO" ? effectiveRole === "CEO_OWNER" : effectiveRole === "IP_OWNER";
   const canSign = SIGNING_STATUSES.includes(application.status);
 
   const statusHint =
     application.status === "FUNDED"
-      ? "Заявка профинансирована, деньги зачислены на счёт."
+      ? "Заявка профинансирована, деньги зачислены на счёт. После подписи вы вернётесь на главную."
       : application.status === "REJECTED"
         ? "Подписание недоступно: заявка отклонена."
         : application.status === "ANOMALY_VERIFICATION"
           ? "Сначала подтвердите выручку в блоке Мультибанка."
           : ["MANUAL_REVIEW", "NEED_MORE_INFO"].includes(application.status)
-            ? "Решение принимает кредитный инспектор на Экране 3."
+            ? "Решение принимает пилот банка во вкладке «Заявки»."
             : application.status === "COUNTER_OFFER"
               ? "Сначала выберите один из 4 контр-офферов выше — после выбора станет доступна подпись ПЭП."
               : application.status === "AWAITING_CEO_APPROVAL"
-                ? "Оффер выбран, остался один шаг — подпись ПЭП."
+                ? "Бухгалтер оформил заявку, оффер выбран — предпринимателю осталось подписать ПЭП."
                 : "Условия готовы, можно подписывать ПЭП.";
 
   return (
@@ -43,9 +43,14 @@ export function SigningPanel({ application }: { application: Application }) {
       </div>
       <div className="card-body">
         {application.status === "FUNDED" ? (
-          <div className="alert alert-good">
-            <strong>Профинансировано.</strong> {statusHint} Остаток на счёте:{" "}
-            {formatMoney(application.account_balance)}.
+          <div className="alert alert-good" style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            <div>
+              <strong>Профинансировано.</strong> {statusHint} Остаток на счёте:{" "}
+              {formatMoney(application.account_balance)}.
+            </div>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setBusinessTab("home")}>
+              На главную · оплатить счёт
+            </button>
           </div>
         ) : (
           <div className="signing-card">
@@ -76,8 +81,12 @@ export function SigningPanel({ application }: { application: Application }) {
               </p>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {["MANUAL_REVIEW", "NEED_MORE_INFO"].includes(application.status) && (
-                  <button type="button" className="btn btn-ghost" onClick={() => goToScreen(3)}>
-                    Открыть Экран инспектора
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => setBankTab("applications")}
+                  >
+                    Открыть заявку в пилоте банка
                   </button>
                 )}
                 <button

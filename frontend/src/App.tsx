@@ -1,11 +1,21 @@
+import { AppSidebar } from "./components/AppSidebar";
 import { DemoControlBar } from "./components/DemoControlBar";
-import { ApplicationScreen } from "./screens/ApplicationScreen";
+import { BankApplicationsPanel } from "./components/BankApplicationsPanel";
+import { BankClientsPanel } from "./components/BankClientsPanel";
+import { CreditsScreen } from "./screens/CreditsScreen";
 import { DashboardScreen } from "./screens/DashboardScreen";
-import { InspectorScreen } from "./screens/InspectorScreen";
 import { useApp } from "./state/AppState";
 
 export default function App() {
-  const { isReady, screen, error, clearError, viewMode, isBusy } = useApp();
+  const {
+    isReady,
+    error,
+    clearError,
+    viewMode,
+    isBusy,
+    businessTab,
+    bankTab,
+  } = useApp();
 
   if (!isReady) {
     return (
@@ -32,11 +42,18 @@ export default function App() {
           <span>Выполняем расчёт…</span>
         </div>
       )}
-      <main className="page">
-        {screen === 1 && <DashboardScreen />}
-        {screen === 2 && <ApplicationScreen />}
-        {screen === 3 && <InspectorScreen />}
-      </main>
+      <div className="app-shell">
+        <AppSidebar />
+        <main className="page shell-page">
+          {viewMode === "bank" ? (
+            bankTab === "clients" ? <BankClientsPanel /> : <BankApplicationsPanel />
+          ) : businessTab === "home" ? (
+            <DashboardScreen />
+          ) : (
+            <CreditsScreen />
+          )}
+        </main>
+      </div>
       <footer className="footer">
         <span>
           <strong>Only_Alfa</strong> · хакатон «Альфа-Будущее»

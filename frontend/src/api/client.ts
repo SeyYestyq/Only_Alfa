@@ -2,6 +2,7 @@ import type {
   ActorRole,
   Application,
   ApplicationCreateInput,
+  ApplicationListResponse,
   CompanyBrief,
   CompanyDetail,
   Dashboard,
@@ -75,6 +76,10 @@ export const api = {
 
   getDashboard(companyId: string): Promise<Dashboard> {
     return request(`/companies/${companyId}/dashboard`);
+  },
+
+  getCompanyApplications(companyId: string): Promise<ApplicationListResponse> {
+    return request(`/companies/${companyId}/applications`);
   },
 
   smartSearch(companyId: string, query: string): Promise<SearchResult> {
