@@ -29,14 +29,8 @@ export function Profile360Screen() {
     <>
       <div className="bank-page-head">
         <div>
-          <div className="figma-eyebrow">Клиент · портрет 360°</div>
-          <h1 className="figma-h1">{company.name}</h1>
-          <p className="figma-lead">
-            ИНН {company.inn}
-            {isRosters
-              ? " · ОГРН 1217700412345 · кофейни и обжарка · клиент с июня 2021."
-              : ` · ${company.okved_cluster || company.okved_code} · ${company.city}${company.address ? `, ${company.address}` : ""}.`}
-          </p>
+          <h1 className="figma-h1">Карточка клиента</h1>
+          <p className="figma-lead">{company.name} · ИНН {company.inn}</p>
           <div className="bank-portrait-flags" style={{ marginTop: 12 }}>
             <span className={`pill ${company.is_egrul_active ? "pill-good" : "pill-risk"}`}>
               ЕГРЮЛ · {company.is_egrul_active ? "действует" : "стоп"}

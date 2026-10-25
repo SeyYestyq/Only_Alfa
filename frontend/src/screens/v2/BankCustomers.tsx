@@ -7,7 +7,6 @@ export function BankCustomers() {
   return (
     <>
       <h1 className="v2-h1">Клиенты</h1>
-      <p className="v2-lead">Пять демо-профилей. ИНН на экране — те же, что в сиде и в API.</p>
       <section className="v2-card" style={{ padding: 0 }}>
         <table className="v2-table">
           <thead>

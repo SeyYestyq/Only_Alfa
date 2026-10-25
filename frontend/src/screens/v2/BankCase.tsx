@@ -57,7 +57,8 @@ export function BankCase() {
   if (!application || !dashboard || !companyId) {
     return (
       <div className="v2-card">
-        <h1 className="v2-h1">Нет заявки в работе</h1>
+        <h1 className="v2-h1">Карточка клиента</h1>
+        <p className="v2-muted">Нет заявки в работе.</p>
         <button type="button" className="v2-btn primary" onClick={() => goToScreen("bank-queue")}>К очереди</button>
       </div>
     );
@@ -124,7 +125,10 @@ export function BankCase() {
     <>
       <div className="v2-crumb">Рабочий стол / Заявка {application.application_id.slice(-8)}</div>
       <div className="v2-row">
-        <h1 className="v2-h1">{company.name} · {formatMoney(application.requested_amount_rub)} на {application.term_months} мес.</h1>
+        <div>
+          <h1 className="v2-h1">Карточка клиента</h1>
+          <p className="v2-lead">{company.name} · {formatMoney(application.requested_amount_rub)} на {application.term_months} мес.</p>
+        </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" className="v2-btn" onClick={() => goToScreen("messages")}>Чат с клиентом</button>
           <button type="button" className="v2-btn" onClick={() => goToScreen("bank-queue")}>Следующая задача</button>
@@ -145,8 +149,8 @@ export function BankCase() {
       <div className="v2-split case">
         <div>
           <section className="v2-card">
-            <div className="v2-kicker">ИНН {company.inn}</div>
-            <h2>Клиент за 10 секунд</h2>
+            <h2>Клиент</h2>
+            <div className="v2-check"><span>ИНН</span><strong className="v2-num">{company.inn}</strong></div>
             <div className="v2-check"><span>В бизнесе</span><strong>{formatAge(company.age_months)}</strong></div>
             <div className="v2-check"><span>Адрес</span><strong>{company.address}</strong></div>
             <div className="v2-check"><span>Подписант</span><strong>{company.director_name}</strong></div>
@@ -201,7 +205,6 @@ export function BankCase() {
         </div>
         <div>
           <section className="v2-card">
-            <div className="v2-kicker">Система предлагает</div>
             <h2>Решение</h2>
             {ACTIONS.map((item) => (
               <label key={item.id} className={`v2-radio ${action === item.id ? "on" : ""}`}>
@@ -291,8 +294,8 @@ function SupplierDealCard({ invoice }: { invoice: Record<string, unknown> | null
   }
   return (
     <section className="v2-card" style={{ marginTop: 12 }}>
-      <div className="v2-kicker">Проверка поставщика по счёту</div>
-      <h2>{deal.supplier_name}</h2>
+      <h2>Проверка поставщика</h2>
+      <p className="v2-muted">{deal.supplier_name}</p>
       <div className="v2-check"><span>ИНН</span><strong className="v2-num">{deal.supplier_inn}</strong></div>
       <div className="v2-check"><span>Успех сделки</span><strong>{Math.round(deal.deal_success_probability_pct)}%</strong></div>
       <div className="v2-check"><span>Оценка</span><strong>{supplierRiskBandLabel(deal.risk_band)}</strong></div>

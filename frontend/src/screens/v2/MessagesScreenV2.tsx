@@ -12,8 +12,8 @@ export function MessagesScreenV2() {
   const bank = viewMode === "bank";
   return (
     <>
-      <h1 className="v2-h1">Сообщения</h1>
-      <p className="v2-lead">Чат привязан к компании и виден и клиенту, и инспектору. Ответ — в том же кабинете, без почты и SMS.</p>
+      <h1 className="v2-h1">{bank ? "Чат с клиентом" : "Чат с банком"}</h1>
+      <p className="v2-lead">Переписка по этой компании</p>
       <section className="v2-card">
         <h2>{bank ? shortPerson(user?.full_name) : INSPECTOR_NAME}</h2>
         <div style={{ marginTop: 12 }}>

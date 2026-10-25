@@ -72,7 +72,7 @@ export function BankMessagesScreen() {
     <div className="bank-messages-shell">
       <aside className="chat-list">
         <div className="chat-list-head">
-          <h1>Входящие</h1>
+          <h1>Чат с клиентом</h1>
           <div className="bank-filters" style={{ marginTop: 12 }}>
             {(
               [

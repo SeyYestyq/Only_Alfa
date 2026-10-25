@@ -70,9 +70,8 @@ export function ClientEdges() {
 
   return (
     <>
-      <div className="v2-kicker">Клиент · все состояния</div>
-      <h1 className="v2-h1">Что видит предприниматель, когда что-то идёт не так</h1>
-      <p className="v2-lead">Никаких тупиков: у каждого состояния есть кнопка «что делать дальше».</p>
+      <h1 className="v2-h1">Состояния</h1>
+      <p className="v2-lead">Что делать, если шаг не прошёл</p>
       {note ? <div className="v2-error"><span>{note}</span><button type="button" className="v2-text-btn" onClick={() => setNote(null)}>Скрыть</button></div> : null}
       <div className="v2-edge-grid">
         {EDGES.map((edge) => (

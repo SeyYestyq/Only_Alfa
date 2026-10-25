@@ -7,7 +7,8 @@ export function BankPayout() {
   if (!application) {
     return (
       <div className="v2-card">
-        <h1 className="v2-h1">Выдачи ещё нет</h1>
+        <h1 className="v2-h1">Выдача</h1>
+        <p className="v2-muted">Выдачи ещё нет.</p>
         <button type="button" className="v2-btn primary" onClick={() => goToScreen("bank-queue")}>К очереди</button>
       </div>
     );
@@ -20,9 +21,10 @@ export function BankPayout() {
     <>
       <div className="v2-crumb">Клиенты / {application.company.name}</div>
       <div className="v2-row">
-        <h1 className="v2-h1">
-          {funded ? `Выдано ${formatMoney(amount)}` : "Ждём подпись — деньги ещё не ушли"}
-        </h1>
+        <div>
+          <h1 className="v2-h1">Выдача</h1>
+          <p className="v2-lead">{funded ? `Выдано ${formatMoney(amount)}` : "Ждём подпись, деньги ещё не ушли"}</p>
+        </div>
         <button type="button" className="v2-btn" onClick={() => goToScreen("bank-clients")}>В портфель</button>
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>

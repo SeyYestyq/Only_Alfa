@@ -218,21 +218,8 @@ export function ApplyScreen() {
     <>
       <section className="home-hero">
         <div className="home-hero-main">
-          <div className="figma-eyebrow">
-            {company.name} · {isInvoiceFinancing ? "Invoice-to-Credit" : "Кредит"}
-          </div>
-          <h1 className="figma-h1">
-            {isInvoiceFinancing ? "Финансирование счёта" : "Проверьте условия кредита"}
-          </h1>
-          <p className="figma-lead">
-            Сумма, срок и данные компании уже подставлены
-            {isInvoiceFinancing
-              ? " из счёта (85%)"
-              : invoice
-                ? " из счёта и выписки"
-                : " из выписки"}
-            . Справа — нагрузка по платежу и безопасный вариант.
-          </p>
+          <h1 className="figma-h1">{isInvoiceFinancing ? "Счёт и финансирование" : "Заявка на кредит"}</h1>
+          <p className="figma-lead">Сумма, срок и платёж</p>
           {isInvoiceFinancing || invoice ? (
             <div className="home-hero-balance">
               <span>{isInvoiceFinancing ? "К финансированию" : "Сумма счёта"}</span>

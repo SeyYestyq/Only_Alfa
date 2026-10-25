@@ -40,14 +40,8 @@ export function SignalScreen() {
   return (
     <>
       <header className="signal-hero">
-        <div className="figma-eyebrow">
-          Сигналы · {company.name} · TRG_CAPEX_EXP
-        </div>
-        <h1 className="figma-h1">Клиент покупает оборудование</h1>
-        <p className="figma-lead">
-          За 15 дней — три платежа поставщику кофейного оборудования. Остаток на счёте снизился на
-          57%.
-        </p>
+        <h1 className="figma-h1">Сигнал</h1>
+        <p className="figma-lead">Три платежа за 15 дней, остаток −57%</p>
       </header>
 
       <BankCapexSignalPanel onSendOffer={() => goToScreen("bank-messages")} />

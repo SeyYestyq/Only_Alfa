@@ -2,18 +2,7 @@ import { OperationsTable } from "../components/OperationsTable";
 import { PeriodChart } from "../components/PeriodChart";
 import { useApp } from "../state/AppState";
 import { useDemoStore } from "../state/demoStore";
-import { formatMoney, formatPercent, givenName } from "../utils/format";
-
-function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) {
-    return "Доброе утро";
-  }
-  if (hour < 18) {
-    return "Добрый день";
-  }
-  return "Добрый вечер";
-}
+import { formatMoney, formatPercent } from "../utils/format";
 
 const ROSTERS_OBLIGATIONS = [
   { date: "25.10", title: "Зарплата, 2-я часть", amount: 410_000, accent: false },
@@ -25,7 +14,7 @@ const ROSTERS_OBLIGATIONS = [
 
 /** К1 — Главная: баланс крупно, KPI, внимание+оплаты, счёт. */
 export function DashboardScreen() {
-  const { dashboard, goToScreen, userRole } = useApp();
+  const { dashboard, goToScreen } = useApp();
   const setApplyIntent = useDemoStore((state) => state.setApplyIntent);
   const offersMuted = useDemoStore((state) => state.offersMuted);
   const setOffersMuted = useDemoStore((state) => state.setOffersMuted);
@@ -39,7 +28,6 @@ export function DashboardScreen() {
   }
 
   const company = dashboard.company;
-  const user = company.users.find((row) => row.role === userRole) ?? company.users[0];
   const isRosters = company.demo_key === "rosters";
   const important = dashboard.radar_triggers;
   const fcfDisplay = isRosters ? 260_000 : Math.max(0, Math.round(company.monthly_revenue_alfa * 0.12));
@@ -91,20 +79,8 @@ export function DashboardScreen() {
     <>
       <section className="home-hero clarity-rise">
         <div className="home-hero-main">
-          <div className="figma-eyebrow">
-            {company.name} ·{" "}
-            {new Date().toLocaleDateString("ru-RU", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-            })}
-          </div>
-          <h1 className="figma-h1">
-            {greeting()}, {givenName(user?.full_name)}
-          </h1>
-          <p className="figma-lead">
-            Счёт, ближайшие платежи и финансирование — без лишних экранов.
-          </p>
+          <h1 className="figma-h1">Обзор</h1>
+          <p className="figma-lead">Касса, кредиты и следующий шаг</p>
           <div className="home-hero-balance">
             <span>На счёте сейчас</span>
             <strong>{formatMoney(dashboard.account_balance)}</strong>

@@ -16,11 +16,8 @@ export function EffectScreen() {
     <>
       <div className="bank-page-head">
         <div>
-          <div className="figma-eyebrow">Показатели · МСП · демо BRD</div>
-          <h1 className="figma-h1">Показатели банка</h1>
-          <p className="figma-lead">
-            Time-to-Yes, спасённые заявки и время инспектора — то, что жюри смотрит на защите.
-          </p>
+          <h1 className="figma-h1">Эффект</h1>
+          <p className="figma-lead">Замеры демо-прогона</p>
         </div>
         <div className="bank-filters">
           <button

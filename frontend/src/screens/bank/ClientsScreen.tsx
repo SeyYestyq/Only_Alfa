@@ -92,11 +92,8 @@ export function ClientsScreen() {
     <>
       <div className="bank-page-head">
         <div>
-          <div className="figma-eyebrow">Портфель · малый бизнес</div>
-          <h1 className="figma-h1">Портфель компаний</h1>
-          <p className="figma-lead">
-            Один список · сверху исключения. В демо {companies.length} эталонных профиля.
-          </p>
+          <h1 className="figma-h1">Портфель</h1>
+          <p className="figma-lead">Кредиты и ранние сигналы</p>
         </div>
       </div>
 

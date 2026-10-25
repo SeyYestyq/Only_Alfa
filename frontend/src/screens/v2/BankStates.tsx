@@ -28,9 +28,8 @@ export function BankStates() {
 
   return (
     <>
-      <div className="v2-kicker">Банк · все состояния</div>
-      <h1 className="v2-h1">Что видит инспектор, когда что-то идёт не так</h1>
-      <p className="v2-lead">Каждое состояние — с понятным следующим действием.</p>
+      <h1 className="v2-h1">Состояния</h1>
+      <p className="v2-lead">Что делать, если шаг не прошёл</p>
       {note ? <div className="v2-error"><span>{note}</span></div> : null}
       <div className="v2-edge-grid">
         {cards.map((card) => (

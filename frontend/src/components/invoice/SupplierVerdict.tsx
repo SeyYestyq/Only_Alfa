@@ -14,7 +14,7 @@ export function SupplierVerdict({ risk, isLoading, error, onRetry }: SupplierVer
   if (isLoading) {
     return (
       <section className="v2-card" aria-busy="true">
-        <div className="v2-kicker">Проверка поставщика</div>
+        <h2>Проверка поставщика</h2>
         <SkeletonLines lines={3} />
       </section>
     );
@@ -39,9 +39,8 @@ export function SupplierVerdict({ risk, isLoading, error, onRetry }: SupplierVer
     <section className="v2-card">
       <div className="v2-row v2-inv-verdict">
         <div>
-          <div className="v2-kicker">Проверка поставщика</div>
-          <h2>{risk.supplier_name}</h2>
-          <p className="v2-muted">ИНН {risk.supplier_inn} · {risk.okved_cluster}</p>
+          <h2>Проверка поставщика</h2>
+          <p className="v2-muted">{risk.supplier_name} · ИНН {risk.supplier_inn} · {risk.okved_cluster}</p>
         </div>
         <div style={{ textAlign: "right" }}>
           <div className="v2-score-num">{Math.round(risk.deal_success_probability_pct)}%</div>
@@ -50,13 +49,13 @@ export function SupplierVerdict({ risk, isLoading, error, onRetry }: SupplierVer
       </div>
       <div className="v2-inv-pros">
         <div>
-          <div className="v2-kicker">Плюсы</div>
+          <h3>Плюсы</h3>
           {pros.length === 0 ? <p className="v2-muted">Явных плюсов нет</p> : pros.map((signal) => (
             <p key={signal.code} className="v2-inv-signal">{signal.label} · {signal.value_label}</p>
           ))}
         </div>
         <div>
-          <div className="v2-kicker">Минусы</div>
+          <h3>Минусы</h3>
           {cons.length === 0 ? <p className="v2-muted">Критичных минусов нет</p> : cons.map((signal) => (
             <p key={signal.code} className="v2-inv-signal">{signal.label} · {signal.value_label}</p>
           ))}

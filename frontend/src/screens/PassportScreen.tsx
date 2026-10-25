@@ -59,13 +59,8 @@ export function PassportScreen() {
 
   return (
     <>
-      <div className="figma-eyebrow">
-        Заявка № {application.application_id.slice(-8).toUpperCase()} · {application.status_label}
-      </div>
-      <h1 className="figma-h1">Паспорт готовности</h1>
-      <p className="figma-lead">
-        Четыре группы проверок. Всё, что требует внимания, видно здесь — без звонков и визитов в офис.
-      </p>
+      <h1 className="figma-h1">Паспорт заявки</h1>
+      <p className="figma-lead">Четыре группы проверок</p>
 
       <FlowStepper active={stepFromStatus(application.status, "passport")} />
 

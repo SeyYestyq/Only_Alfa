@@ -6,12 +6,8 @@ export function SearchScreen() {
     <>
       <div className="page-header">
         <div>
-          <div className="figma-eyebrow">Сервис · умный поиск</div>
-          <h1 className="figma-h1">Что ищете?</h1>
-          <p className="figma-lead">
-            Покупка или сервис — если подойдёт кредит, условия перенесутся в заявку. Решение банка
-            считается уже там.
-          </p>
+          <h1 className="figma-h1">Умный поиск</h1>
+          <p className="figma-lead">Найдите товар или услугу и сразу подберите финансирование</p>
         </div>
       </div>
       <SmartSearchPanel />

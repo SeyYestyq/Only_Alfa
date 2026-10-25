@@ -4,7 +4,7 @@ export function BankEffect() {
       <div className="v2-row">
         <div>
           <h1 className="v2-h1">Эффект</h1>
-          <p className="v2-lead">Денежных оценок эффекта в кейсе нет — не выдумываем. Ниже то, что измерили в демо-прогоне, и то, что измерим в пилоте.</p>
+          <p className="v2-lead">Замеры демо-прогона</p>
         </div>
         <span className="v2-pill demo">демо-данные / прогноз</span>
       </div>

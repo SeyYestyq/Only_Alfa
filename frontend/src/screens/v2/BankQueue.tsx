@@ -204,8 +204,8 @@ export function BankQueue() {
     <>
       <div className="v2-row">
         <div>
-          <h1 className="v2-h1">Очередь задач</h1>
-          <p className="v2-lead">Всё, что ждёт вашего действия, — в одном списке, срочное сверху.</p>
+          <h1 className="v2-h1">Очередь заявок</h1>
+          <p className="v2-lead">Срочные задачи сверху</p>
         </div>
         <button type="button" className="v2-btn primary" onClick={() => visible[0] && void open(visible[0])}>
           Взять следующую <Kbd>N</Kbd>

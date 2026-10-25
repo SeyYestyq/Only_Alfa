@@ -69,7 +69,6 @@ export function DecisionScoreCard({ application, onInspect, next }: DecisionScor
       {next ? (
         <div className="v2-score-next">
           <div>
-            <div className="v2-kicker">Следующий шаг</div>
             <strong>{next.title}</strong>
           </div>
           {next.actionLabel && next.onAction ? (

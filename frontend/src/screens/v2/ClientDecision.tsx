@@ -18,7 +18,7 @@ export function ClientDecision() {
   if (!application || !companyId) {
     return (
       <div className="v2-card">
-        <h1 className="v2-h1">Решения ещё нет</h1>
+        <h1 className="v2-h1">Решение</h1>
         <p className="v2-muted">Сначала отправьте заявку.</p>
         <button type="button" className="v2-btn primary" onClick={() => goToScreen("apply")}>К заявке</button>
       </div>
@@ -28,15 +28,15 @@ export function ClientDecision() {
   const user = application.company.users.find((row) => row.role === userRole);
   const waiting = application.status === "COUNTER_OFFER" && !released;
   const showOffers = application.status === "COUNTER_OFFER" && released;
-  const title = waiting
+  const subtitle = waiting
     ? "Заявка на проверке"
     : application.status === "REJECTED"
-      ? "Сейчас выдать не можем"
+      ? "Сейчас выдать эту сумму нельзя"
       : application.status === "NEED_MORE_INFO"
-        ? "Банк просит документ"
+        ? "Нужен документ от вас"
         : application.status === "MANUAL_REVIEW" || application.status === "ANOMALY_VERIFICATION"
           ? "Инспектор смотрит заявку"
-          : "Банк предлагает другие условия";
+          : "Есть другие условия";
 
   const primary = application.counter_offers.filter((_, index) => index !== 1).slice(0, 3);
   const revenue = application.counter_offers[1];
@@ -45,13 +45,15 @@ export function ClientDecision() {
     <>
       <div className="v2-crumb">Кредиты / Заявка {application.application_id.slice(-8)}</div>
       <div className="v2-row">
-        <h1 className="v2-h1">{title}</h1>
+        <div>
+          <h1 className="v2-h1">Решение</h1>
+          <p className="v2-lead">{subtitle}</p>
+        </div>
       </div>
       <Stepper active={stepForStatus(application.status, released)} />
 
       {waiting ? (
         <section className="v2-score-card">
-          <div className="v2-kicker">Следующий шаг</div>
           <strong>Ждём инспектора</strong>
           <p className="v2-score-reason">Когда решение уйдёт вам, здесь появятся балл, лимит и варианты.</p>
         </section>
@@ -108,9 +110,7 @@ export function ClientDecision() {
 
       <div className="v2-split" style={{ marginTop: 12 }}>
         <section className="v2-card" id="decision-why">
-          <div className="v2-kicker">Объяснение решения</div>
-          <h2>Почему не {formatMoney(application.requested_amount_rub)}</h2>
-          <p className="v2-muted">Решение принял инспектор, расчёты сделала система — по вашим операциям в банке.</p>
+          <h2 title="Решение принял инспектор, расчёты — по операциям в банке">Почему не {formatMoney(application.requested_amount_rub)}</h2>
           <div className="v2-check">
             <span>Платёж по запросу</span>
             <strong>≈ {formatMoney(application.monthly_payment_rub)} при безопасном {formatMoney(application.max_payment_rub)}</strong>
@@ -152,7 +152,7 @@ export function ClientDecision() {
             </button>
           ) : null}
           <div style={{ marginTop: 12 }}>
-            <div className="v2-kicker">Если не согласны</div>
+            <h3>Возражение</h3>
             <div className="v2-composer">
               <input value={contest} placeholder="Обороты во втором банке не учтены…" onChange={(event) => setContest(event.target.value)} />
               <button

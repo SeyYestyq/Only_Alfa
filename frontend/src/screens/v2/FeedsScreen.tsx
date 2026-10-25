@@ -34,10 +34,8 @@ export function FeedsScreen() {
     <>
       <div className="v2-row">
         <div>
-          <h1 className="v2-h1">3 клиента — 3 ленты</h1>
-          <p className="v2-lead">
-            Одна механика. Лента собирается из отрасли, адреса, операций и роли. Переключатель компании меняет ленту на главной.
-          </p>
+          <h1 className="v2-h1">Ленты</h1>
+          <p className="v2-lead">Три компании, разное содержание</p>
         </div>
         <span className="v2-pill demo">демо-данные</span>
       </div>

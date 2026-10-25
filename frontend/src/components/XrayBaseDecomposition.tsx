@@ -87,10 +87,7 @@ export function XrayBaseDecomposition({
     <section className="figma-panel figma-panel-sm xray-base" aria-label="Декомпозиция базы 500">
       <div className="xray-base-head">
         <div>
-          <div className="figma-panel-title">Декомпозиция базы 500</div>
-          <div className="figma-panel-heading">
-            Эталон модели → фильтр по плюсам (выручка, стаж) и минусам (иски, нагрузка)
-          </div>
+          <div className="figma-panel-title" title="Эталон модели, плюсы по выручке и стажу, минусы по искам и нагрузке">База 500</div>
         </div>
         <div className="xray-base-hero">
           <strong>{model.cohortPct}%</strong>

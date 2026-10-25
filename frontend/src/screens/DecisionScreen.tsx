@@ -72,28 +72,9 @@ export function DecisionScreen() {
 
   return (
     <>
-      <div className="figma-eyebrow" style={{ marginBottom: 8 }}>
-        ЗАЯВКА № {application.application_id.slice(-8).toUpperCase()} · {application.status_label}
-      </div>
-      <h1 className="figma-h1">
-        {application.status === "APPROVED"
-          ? "Банк готов выдать деньги"
-          : application.status === "REJECTED"
-            ? "Отказ с планом на 90 дней"
-            : application.status === "ANOMALY_VERIFICATION"
-              ? "Нужна сверка выручки"
-              : application.status === "NEED_MORE_INFO"
-                ? "Нужны документы"
-                : application.status === "AWAITING_CEO_APPROVAL"
-                  ? "Ожидает гендиректора"
-                  : application.status === "MANUAL_REVIEW"
-                    ? "Заявка на ручной проверке"
-                    : "Банк готов дать деньги на других условиях"}
-      </h1>
+      <h1 className="figma-h1">Решение</h1>
       <p className="figma-lead" style={{ marginBottom: 28 }}>
-        {application.status === "COUNTER_OFFER"
-          ? `${formatMoney(application.requested_amount_rub)} на ${application.term_months} мес. — платёж выше комфортного в низкий сезон. Выберите вариант ниже.`
-          : `${application.product_label} · ${formatMoney(application.requested_amount_rub)} на ${application.term_months} мес.`}
+        {formatMoney(application.requested_amount_rub)} на {application.term_months} мес.
       </p>
       <FlowStepper active={stepFromStatus(application.status, "decision")} />
 

@@ -14,7 +14,7 @@ export function DocumentsScreen() {
 
   return (
     <div className="loading">
-      <span className="spinner" /> Открываем документы в кредите…
+        <span className="spinner" /> Документы
     </div>
   );
 }

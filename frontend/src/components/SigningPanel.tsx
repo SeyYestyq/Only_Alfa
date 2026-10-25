@@ -93,7 +93,7 @@ export function SigningPanel({ application }: { application: Application }) {
         </section>
 
         <section className="figma-panel figma-panel-sm">
-          <div className="figma-panel-title">Простая электронная подпись</div>
+          <div className="figma-panel-title" title="Код в демо показан на экране">Подпись</div>
           {isBusy ? (
             <>
               <h2 style={{ fontSize: 22, fontWeight: 650, margin: "8px 0" }}>Подписываем договор</h2>

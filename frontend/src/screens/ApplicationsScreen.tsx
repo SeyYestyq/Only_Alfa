@@ -95,11 +95,8 @@ export function ApplicationsScreen() {
     <>
       <div className="page-header">
         <div>
-          <div className="figma-eyebrow">Кредитный кабинет · заявки</div>
-          <h1 className="figma-h1">Кредит</h1>
-          <p className="figma-lead">
-            Статус, ответы банка и документы — в одном списке, без лишних вкладок.
-          </p>
+          <h1 className="figma-h1">Заявки</h1>
+          <p className="figma-lead">Статус и документы по кредиту</p>
         </div>
         <button type="button" className="btn btn-primary primary-cta" onClick={() => goToScreen("invoice")}>
           Счета → финансирование

@@ -216,12 +216,8 @@ export function QueueScreen() {
     <>
       <div className="bank-page-head">
         <div>
-          <div className="figma-eyebrow">Кредитный конвейер · заявки МСП</div>
-          <h1 className="figma-h1">Заявки на разборе</h1>
-          <p className="figma-lead">
-            {openCount} в работе · откройте строку → один стол заявки (решение, аналитика, чат). Сводка
-            банка — в «Эффект».
-          </p>
+          <h1 className="figma-h1">Очередь заявок</h1>
+          <p className="figma-lead">{openCount} в работе</p>
           {urgentCount > 0 ? (
             <div className="bank-next-hint">
               Сначала: <span>{urgentCount} срочных</span>

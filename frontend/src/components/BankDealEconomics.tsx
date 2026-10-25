@@ -16,10 +16,7 @@ export function BankDealEconomics({ xray, productLabel }: BankDealEconomicsProps
     <section className="bank-deal-econ">
       <div className="bank-deal-econ-head">
         <div>
-          <div className="figma-panel-title">Экономика сделки для банка</div>
-          <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>
-            {productLabel} · доход, риск и маржа до выдачи (модель демо)
-          </p>
+          <div className="figma-panel-title" title={`${productLabel} · доход, риск и маржа до выдачи`}>Экономика сделки</div>
         </div>
         {pnl ? (
           <span className={`status-tag ${pnl.margin_pct >= 8 ? "is-good" : pnl.margin_pct >= 4 ? "is-warn" : "is-risk"}`}>

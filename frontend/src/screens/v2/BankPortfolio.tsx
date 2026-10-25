@@ -19,7 +19,7 @@ export function BankPortfolio() {
       <div className="v2-row">
         <div>
           <h1 className="v2-h1">Портфель</h1>
-          <p className="v2-lead">Предлагаем решение до просрочки, а не после.</p>
+          <p className="v2-lead">Кредиты и ранние сигналы</p>
         </div>
         <span className="v2-pill demo">демо-данные</span>
       </div>

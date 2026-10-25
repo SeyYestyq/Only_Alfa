@@ -104,14 +104,8 @@ export function ApplicationDeskScreen() {
     <div className="app-desk">
       <header className="app-desk-bar">
         <div className="app-desk-bar-main">
-          <div className="figma-eyebrow">Заявка · стол инспектора · клиент видит меньше деталей</div>
-          <h1 className="app-desk-title">
-            {companyName}
-            <span className="muted">
-              {" "}
-              · № {application.application_id.slice(-8).toUpperCase()}
-            </span>
-          </h1>
+          <h1 className="app-desk-title">Карточка клиента</h1>
+          <p className="figma-lead">{companyName} · № {application.application_id.slice(-8).toUpperCase()}</p>
           <div className="bank-case-facts">
             <span>
               Сумма <b>{formatMoney(application.requested_amount_rub)}</b>
@@ -212,13 +206,9 @@ export function ApplicationDeskScreen() {
       </section>
 
       <section className="app-desk-block" id="desk-evidence">
-        <div className="figma-panel-title" style={{ marginBottom: 8 }}>
-          Шаг 2 · доказательства (сигнал в платежах)
+        <div className="figma-panel-title" style={{ marginBottom: 8 }} title="Клиент видит только итоговое предложение">
+          Доказательства
         </div>
-        <p className="muted" style={{ margin: "0 0 16px", fontSize: 13 }}>
-          Клиент этого разреза не видит — только итоговое предложение. Макет Figma: платежи и рекомендация
-          системы.
-        </p>
         {isRosters ? (
           <BankCapexSignalPanel
             showStatuses
@@ -243,7 +233,7 @@ export function ApplicationDeskScreen() {
 
       <section className="app-desk-block" id="desk-analytics">
         <div className="figma-panel-title" style={{ marginBottom: 12 }}>
-          Шаг 3 · аналитика для выдачи
+          Аналитика
         </div>
         <BankDealEconomics xray={xray} productLabel={application.product_label} />
         {waitingXray ? <XrayRecalcPanel /> : null}
@@ -299,10 +289,7 @@ export function ApplicationDeskScreen() {
       </section>
 
       <section className="figma-panel figma-panel-sm app-desk-block" id="desk-chat">
-        <div className="figma-panel-title">Шаг 4 · переписка с клиентом</div>
-        <p className="muted" style={{ margin: "6px 0 12px", fontSize: 13 }}>
-          Часть кейса, не отдельный раздел. Документы клиента видны здесь и в журнале.
-        </p>
+        <div className="figma-panel-title" title="Документы клиента видны здесь и в журнале">Переписка</div>
         <div className="desk-chat-stream">
           <div className="chat-bubble in">
             <div className="chat-bubble-meta">
@@ -363,10 +350,7 @@ export function ApplicationDeskScreen() {
       </section>
 
       <section className="figma-panel figma-panel-sm app-desk-block" id="desk-audit">
-        <div className="figma-panel-title">Шаг 5 · журнал аудита</div>
-        <p className="muted" style={{ margin: "6px 0 12px", fontSize: 13 }}>
-          Неизменяемый лог application_events — для банка и жюри.
-        </p>
+        <div className="figma-panel-title" title="Неизменяемый журнал событий заявки">Журнал</div>
         {xray ? <EventLog events={xray.events} /> : <div className="muted">Журнал подтянется с рентгеном…</div>}
       </section>
     </div>

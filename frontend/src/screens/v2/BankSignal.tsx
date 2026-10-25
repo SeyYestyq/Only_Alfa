@@ -56,7 +56,10 @@ export function BankSignal() {
     <>
       <div className="v2-crumb">Рабочий стол / Сигнал {signal.code}</div>
       <div className="v2-row">
-        <h1 className="v2-h1">{company.name} {signal.title}</h1>
+        <div>
+          <h1 className="v2-h1">Сигнал</h1>
+          <p className="v2-lead">{company.name}</p>
+        </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" className="v2-btn ghost" onClick={() => goToScreen("bank-queue")}>Не предлагать <Kbd>X</Kbd></button>
           <button
@@ -77,8 +80,7 @@ export function BankSignal() {
       </div>
       <div className="v2-grid-3">
         <section className="v2-card">
-          <div className="v2-kicker">Выписка</div>
-          <h2>Что увидела система</h2>
+          <h2>Выписка</h2>
           {equipment.length > 0 ? equipment.map((row) => (
             <div key={row.id} className="v2-check">
               <span>{row.description}</span>
@@ -96,21 +98,18 @@ export function BankSignal() {
           ) : null}
         </section>
         <section className="v2-card">
-          <div className="v2-kicker">Можно поправить перед отправкой</div>
-          <h2>{signal.quiet ? "Предложение не готовим" : "Предложение подготовлено автоматически"}</h2>
+          <h2 title="Сумму можно поправить перед отправкой">{signal.quiet ? "Без предложения" : "Предложение"}</h2>
           {signal.offerAmount ? (
             <>
               <div className="v2-amount">{formatMoney(signal.offerAmount)}</div>
               <p className="v2-muted">{signal.offerTerm} мес.{payment ? ` · ориентир ${formatMoney(payment)} / мес` : ""}</p>
-              <p className="v2-note">Ставка посчитается движком в момент заявки. Здесь только черновик сигнала.</p>
             </>
           ) : (
             <p className="v2-muted">{signal.lines.join(" ")}</p>
           )}
         </section>
         <section className="v2-card">
-          <div className="v2-kicker">Главная кабинета</div>
-          <h2>Клиент увидит</h2>
+          <h2>У клиента</h2>
           {sent ? (
             <p>Карточка предложения уже на главной. Задача ушла в очередь «ждёт клиента».</p>
           ) : signal.quiet ? (

@@ -14,9 +14,7 @@ const ROWS: Array<[string, string]> = [
 export function HotkeyCard() {
   return (
     <section className="v2-hotkey-card">
-      <div className="v2-kicker">Клавиатура</div>
-      <h2>Всё — без мыши</h2>
-      <p className="v2-muted">Горячие клавиши не срабатывают, пока курсор в поле ввода.</p>
+      <h2 title="Не срабатывают, пока курсор в поле ввода">Клавиатура</h2>
       <div className="v2-hotkey-grid">
         {ROWS.map(([key, label]) => (
           <span key={key} style={{ display: "contents" }}>

@@ -41,7 +41,7 @@ function decisionTitle(status: string): string {
 
 /** Б3 — Рентген: решение сверху, аналитика свёрнута ниже. */
 export function XrayScreen() {
-  const { application, xray, cbrRate, dashboard, goToScreen, isBusy } = useApp();
+  const { application, xray, dashboard, goToScreen, isBusy } = useApp();
 
   if (isBusy && !application) {
     return <XraySkeleton />;
@@ -77,16 +77,8 @@ export function XrayScreen() {
     <>
       <div className="bank-page-head">
         <div>
-          <div className="figma-eyebrow">
-            Рентген инспектора · клиент этого не видит · {application.product_label}
-            {cbrRate !== null ? ` · КС ${formatPercent(cbrRate, 1)}` : ""}
-          </div>
           <h1 className="figma-h1">Разбор заявки</h1>
-          <p className="figma-lead">
-            RiskScore, экономика сделки и журнал аудита. Клиент на своей стороне видит только решение и
-            документы.
-            {application.company.demo_key === "rosters" ? " · ростер Giesen W15A." : ""}
-          </p>
+          <p className="figma-lead">Балл, экономика и журнал</p>
         </div>
       </div>
 

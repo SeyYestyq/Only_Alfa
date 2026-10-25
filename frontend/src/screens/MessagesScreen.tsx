@@ -61,7 +61,7 @@ export function MessagesScreen() {
     <div className="chat-shell">
       <aside className="chat-list">
         <div className="chat-list-head">
-          <h1>Сообщения</h1>
+          <h1>Чат с банком</h1>
         </div>
         {threads.map((thread) => (
           <button

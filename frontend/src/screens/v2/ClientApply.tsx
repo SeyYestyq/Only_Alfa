@@ -31,15 +31,14 @@ export function ClientApply() {
 
   return (
     <>
-      <div className="v2-crumb">Кредиты / Заявка на предложение</div>
-      <h1 className="v2-h1">Кредит на оборудование</h1>
+      <div className="v2-crumb">Кредиты / Заявка на кредит</div>
+      <h1 className="v2-h1">Заявка на кредит</h1>
+      <p className="v2-lead">Сумма, срок и платёж</p>
       <Stepper active={1} />
       <div className="v2-split case">
         <div>
           <section className="v2-card">
-            <div className="v2-kicker">Шаг 1 из 1 · всё на одном экране</div>
-            <h2>Сумма и срок</h2>
-            <p className="v2-muted">Данные компании, обороты и цель уже заполнены из ваших операций.</p>
+            <h2 title="Данные компании, обороты и цель уже заполнены из операций">Сумма и срок</h2>
             <div className="v2-row" style={{ marginTop: 16 }}>
               <div>
                 <div className="v2-kpi-label">Сумма</div>
@@ -69,13 +68,14 @@ export function ClientApply() {
 
           <section className="v2-card" style={{ marginTop: 12 }}>
             <div className="v2-row">
-              <h2>Потянет ли бизнес платёж</h2>
+              <h2>Платёж</h2>
               {hot ? <span className="v2-pill warn">платёж выше безопасного в {ratio?.toFixed(1).replace(".", ",")} раза</span> : <span className="v2-pill good">ориентир</span>}
             </div>
-            <p className="v2-muted">
-              Ориентир аннуитета до ответа банка. Точный платёж и лимит придут в решении.
-              {safe ? ` Безопасный платёж сейчас ${formatMoney(safe)}, летом ${formatMoney(ROSTERS_SUMMER_SAFE)}.` : ""}
-            </p>
+            {safe ? (
+              <p className="v2-muted" title="Ориентир до ответа банка. Точный платёж придёт в решении">
+                Безопасный платёж сейчас {formatMoney(safe)}, летом {formatMoney(ROSTERS_SUMMER_SAFE)}.
+              </p>
+            ) : null}
             <div className="v2-row" style={{ marginTop: 10 }}>
               <span>Ваш платёж · {formatPercent(18, 0)}</span>
               <strong>≈ {formatMoney(payment)} / мес</strong>
@@ -100,7 +100,7 @@ export function ClientApply() {
         <div>
           <section className="v2-card">
             <div className="v2-row">
-              <h2>Готовность к отправке</h2>
+              <h2>Готовность</h2>
               <span className="v2-pill">{consent ? "4 из 5" : "3 из 5"}</span>
             </div>
             <div className="v2-check"><span>Данные компании</span><strong>ЕГРЮЛ, {formatAge(company.age_months)}</strong></div>

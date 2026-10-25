@@ -2,7 +2,7 @@ import { COLLATERAL_LABELS, COLLATERAL_STATUS_LABELS } from "../api/client";
 import { FlowStepper, stepFromStatus } from "../components/FlowStepper";
 import { SigningPanel } from "../components/SigningPanel";
 import { useApp } from "../state/AppState";
-import { formatMoney, formatPercent } from "../utils/format";
+import { formatMoney } from "../utils/format";
 
 /** К5 — Подписание ПЭП и выдача (макет Figma 56:1009). */
 export function SigningScreen() {
@@ -22,15 +22,9 @@ export function SigningScreen() {
 
   return (
     <>
-      <div className="figma-eyebrow">
-        Заявка № {application.application_id.slice(-8).toUpperCase()} · {application.status_label}
-      </div>
-      <h1 className="figma-h1">
-        {application.status === "FUNDED" ? "Деньги зачислены" : "Подпишите договор"}
-      </h1>
+      <h1 className="figma-h1">Подпись</h1>
       <p className="figma-lead">
-        {application.product_label} · {formatMoney(application.approved_amount_rub || application.requested_amount_rub)}{" "}
-        · {formatPercent(application.final_rate_pct)}. Деньги поступят на расчётный счёт после подписи.
+        {application.status === "FUNDED" ? "Деньги зачислены" : "Деньги придут сразу после подписи"}
       </p>
       <FlowStepper active={stepFromStatus(application.status, "signing")} />
 

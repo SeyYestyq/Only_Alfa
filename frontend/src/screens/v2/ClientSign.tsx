@@ -48,7 +48,7 @@ export function ClientSign() {
   if (!application || !companyId) {
     return (
       <div className="v2-card">
-        <h1 className="v2-h1">Нечего подписывать</h1>
+        <h1 className="v2-h1">Подпись</h1>
         <button type="button" className="v2-btn primary" onClick={() => goToScreen("decision")}>К решению</button>
       </div>
     );
@@ -162,13 +162,16 @@ export function ClientSign() {
     <>
       <div className="v2-crumb">Кредиты / Подпись</div>
       <div className="v2-row">
-        <h1 className="v2-h1">
-          {canSign
-            ? "Подпишите договор — деньги придут сразу"
-            : legalForm === "OOO"
-              ? "Ждёт подписи гендиректора"
-              : "Ждёт подписи предпринимателя"}
-        </h1>
+        <div>
+          <h1 className="v2-h1">Подпись</h1>
+          <p className="v2-lead">
+            {canSign
+              ? "Деньги придут сразу после подписи"
+              : legalForm === "OOO"
+                ? "Ждёт подписи гендиректора"
+                : "Ждёт подписи предпринимателя"}
+          </p>
+        </div>
         <span className={`v2-pill ${canSign ? "warn" : "good"}`}>
           {canSign ? "Ждёт вашей подписи" : "Уведомление отправлено"}
         </span>
@@ -177,7 +180,7 @@ export function ClientSign() {
       <div className="v2-split case">
         <div>
           <section className="v2-card">
-            <div className="v2-kicker">Что вы подписываете</div>
+            <h2>Договор</h2>
             <div className="v2-row">
               <div>
                 <div className="v2-kpi-label">Сумма</div>
@@ -207,9 +210,7 @@ export function ClientSign() {
         <div>
           {canSign ? (
             <section className="v2-card">
-              <div className="v2-kicker">Простая электронная подпись</div>
-              <h2>Подпись ПЭП</h2>
-              <p className="v2-muted">Код показан здесь: в рабочей версии его присылает удостоверяющий центр. Эмуляция.</p>
+              <h2 title="Код показан здесь: в рабочей версии его присылает удостоверяющий центр">Подпись ПЭП</h2>
               {notifiedAt ? <p className="v2-note">Уведомление пришло в {notifiedAt}.</p> : null}
               <CodeCells
                 digits={digits}
@@ -251,8 +252,7 @@ export function ClientSign() {
             </section>
           ) : (
             <section className="v2-card">
-              <div className="v2-kicker">Подпись</div>
-              <h2 style={{ marginTop: 8 }}>
+              <h2>
                 Ждёт подписи {legalForm === "OOO" ? "гендиректора" : "предпринимателя"} · {familyName(director?.full_name)} получил уведомление
               </h2>
               <p className="v2-muted" style={{ marginTop: 8 }}>

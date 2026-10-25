@@ -15,7 +15,7 @@ import {
 } from "../../domain-ui/caseScript";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
-import { familyName, formatMoney, formatPercent, givenName, roughAnnuity } from "../../utils/format";
+import { familyName, formatMoney, formatPercent, roughAnnuity } from "../../utils/format";
 
 function fcfFromDna(value: string | undefined): number | null {
   if (!value) {
@@ -41,7 +41,6 @@ export function ClientHome() {
   }
 
   const company = dashboard.company;
-  const user = company.users.find((row) => row.role === userRole) ?? company.users[0];
   const isRosters = company.demo_key === "rosters";
   const offerVisible = Boolean(offerSent) || Boolean(application);
   const fcf = fcfFromDna(dashboard.business_dna.blocks.find((block) => block.code === "CASHFLOW")?.value);
@@ -143,10 +142,9 @@ export function ClientHome() {
     <>
       <div className="v2-row">
         <div>
-          <h1 className="v2-h1">{greeting()}, {givenName(user?.full_name)}</h1>
+          <h1 className="v2-h1">Обзор</h1>
           <p className="v2-lead">
-            {company.name} · ИНН {company.inn}
-            {season ? " · данные на 22.06.2027, 10:15" : ""}
+            {season ? "Данные на 22.06.2027, 10:15" : "Касса, кредиты и следующий шаг"}
           </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -157,7 +155,6 @@ export function ClientHome() {
 
       <section className="v2-next">
         <div>
-          <div className="kicker">Следующий шаг</div>
           <strong>{nextTitle}</strong>
           <p>{nextText}</p>
         </div>
@@ -234,8 +231,7 @@ export function ClientHome() {
         <article className="v2-card">
           <div className="v2-row">
             <div>
-              <div className="v2-kicker">Касса · прогноз</div>
-              <h2>Прогноз остатка на 60 дней</h2>
+              <h2 title="Минимум кассы отмечен на графике">Прогноз кассы</h2>
             </div>
             <span className="v2-pill demo">прогноз</span>
           </div>
@@ -262,7 +258,7 @@ export function ClientHome() {
           </article>
         ) : (
           <article className="v2-card">
-            <h2>{quiet ? "Режим тишины" : "Что дальше"}</h2>
+            <h2>{quiet ? "Тишина" : "Предложение"}</h2>
             <p className="v2-muted" style={{ marginTop: 8 }}>
               {quiet
                 ? "Предложений кредита на главной нет. Лента ниже — про кассу, налоги и поставщиков."
@@ -278,7 +274,7 @@ export function ClientHome() {
       <section className="v2-grid-3" style={{ marginTop: 12 }}>
         <article className="v2-card">
           <div className="v2-row">
-            <h2>{season ? "Лента сменилась вместе с сезоном" : "Что важно сейчас"}</h2>
+            <h2 title={season ? "Лента сменилась вместе с сезоном" : undefined}>Лента</h2>
             <button type="button" className="v2-link" onClick={() => goToScreen("feeds")}>3 ленты</button>
           </div>
           <div className="v2-feed" style={{ marginTop: 12 }}>
@@ -299,9 +295,7 @@ export function ClientHome() {
           </div>
         </article>
         <article className="v2-card">
-          <div className="v2-kicker">12 месяцев</div>
-          <h2>Сезонность выручки</h2>
-          <p className="v2-muted">Лето ниже октября. Это прогноз, не факт.</p>
+          <h2 title="Лето ниже октября. Это прогноз, не факт">Сезонность</h2>
           <div className="v2-bars" style={{ marginTop: 16 }}>
             {[40, 55, 70, 80, 90, 85, 48, 42, 60, 100, 78, 66].map((height, index) => (
               <i key={index} className={index === 6 || index === 7 ? "hot" : ""} style={{ height: `${height}%` }} />
@@ -342,17 +336,6 @@ export function ClientHome() {
       </section>
     </>
   );
-}
-
-function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) {
-    return "Доброе утро";
-  }
-  if (hour < 18) {
-    return "Добрый день";
-  }
-  return "Добрый вечер";
 }
 
 function seasonNews(): NewsItem[] {

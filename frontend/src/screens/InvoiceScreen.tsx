@@ -167,7 +167,7 @@ export function InvoiceScreen() {
       <div className="v2-row v2-inv-head">
         <div>
           <h1 className="v2-h1">Счёт и финансирование</h1>
-          <p className="v2-lead">Загрузите счёт — банк оплатит поставщику напрямую</p>
+          <p className="v2-lead">Загрузите счёт — банк оплатит поставщику</p>
         </div>
         <div className="v2-steps" aria-label="Шаги">
           {STEPS.map((label, index) => (
@@ -195,8 +195,7 @@ export function InvoiceScreen() {
                 />
               ) : (
                 <>
-                  <div className="v2-kicker">Счёт</div>
-                  <h2>{isDragActive ? "Отпустите PDF" : "Перетащите PDF-счёт"}</h2>
+                  <h2>{isDragActive ? "Отпустите PDF" : "Загрузка"}</h2>
                   <p className="v2-muted">или выберите демо-счёт ниже. Файл до 10 МБ.</p>
                   <div className="v2-inv-picks">
                     {rows.map((row) => (
@@ -212,8 +211,7 @@ export function InvoiceScreen() {
             <section className="v2-card">
               <div className="v2-row">
                 <div>
-                  <div className="v2-kicker">Распознанный счёт</div>
-                  <h2>Проверьте поля</h2>
+                  <h2 title="Проверьте поля перед оформлением">Распознанный счёт</h2>
                 </div>
                 <button type="button" className="v2-btn ghost" onClick={() => setInvoice(null)}>Другой счёт</button>
               </div>
@@ -253,8 +251,7 @@ export function InvoiceScreen() {
 
           {invoice && !riskLoading && !riskError ? (
             <section className="v2-card">
-              <div className="v2-kicker">Финансирование</div>
-              <h2>Банк платит поставщику {pct}% счёта</h2>
+              <h2 title={`Банк платит поставщику ${pct}% счёта`}>Финансирование</h2>
               <div className="v2-check"><span>К финансированию</span><strong className="v2-num">{formatMoney(financing)}</strong></div>
               <div className="v2-check"><span>Срок</span><strong>{INVOICE_FINANCING_TERM_MONTHS} мес.</strong></div>
               <div className="v2-check"><span>Ставка до решения</span><strong>{INVOICE_RATE_LABEL}</strong></div>
@@ -277,8 +274,7 @@ export function InvoiceScreen() {
         </div>
 
         <aside className="v2-card v2-inv-history">
-          <div className="v2-kicker">История счетов</div>
-          <h2>Статусы</h2>
+          <h2>История счетов</h2>
           {rows.length === 0 ? (
             <p className="v2-muted">Список пуст.</p>
           ) : rows.map((row) => (

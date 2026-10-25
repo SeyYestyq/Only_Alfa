@@ -39,14 +39,8 @@ export function PaymentsScreen() {
     <>
       <div className="page-header">
         <div>
-          <div className="figma-eyebrow">
-            Счёт ·{" "}
-            {new Date().toLocaleDateString("ru-RU", { month: "long", year: "numeric" })}
-          </div>
-          <h1 className="figma-h1">Операции</h1>
-          <p className="figma-lead">
-            Движения по счёту. Крупный расход можно разложить в рассрочку — оплата счёта с главной.
-          </p>
+          <h1 className="figma-h1">Деньги</h1>
+          <p className="figma-lead">Операции по счёту и рассрочка</p>
         </div>
         <button type="button" className="btn btn-ghost" onClick={() => goToScreen("home")}>
           ← На главную
@@ -118,7 +112,7 @@ export function PaymentsScreen() {
           >
             <header className="sheet-head">
               <div>
-                <div className="figma-panel-title">Рассрочка на оплаченный расход</div>
+                <div className="figma-panel-title">Рассрочка</div>
                 <h2 id="installment-title">Вернуть {formatMoney(Math.abs(selected.amount_rub))} в оборот</h2>
               </div>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>
