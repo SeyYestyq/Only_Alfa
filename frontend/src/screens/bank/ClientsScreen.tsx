@@ -1,102 +1,63 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { AccountsStrip } from "../../components/AccountsStrip";
+import { CashForecastChart } from "../../components/CashForecastChart";
+import { DnaPanel } from "../../components/DnaPanel";
+import { RadarPanel } from "../../components/RadarPanel";
 import { BankEmptyState, ClientsSkeleton } from "../../components/Skeleton";
+import { TransactionsPanel } from "../../components/TransactionsPanel";
 import { useApp } from "../../state/AppState";
-import { formatMoney } from "../../utils/format";
-import { Profile360Screen } from "./Profile360Screen";
+import { formatMoney, formatPercent } from "../../utils/format";
+import "../../styles/bank-clients.css";
 
 /**
- * Б6–Б7 — Портфель клиентов + 360° как master-detail.
- * ScreenId bank-profile остаётся для deep-link.
+ * Б6 — Клиенты банка (Master-Detail 360° по макету Figma).
+ * Слева — выбор компании из портфеля с балансом.
+ * Справа — 360°-аналитика бизнеса: счета, ДНК, прогноз кассы 60 дней, радар и выписка.
  */
 export function ClientsScreen() {
-  const { companies, selectCompany, isBusy, isReady, screen, goToScreen } = useApp();
+  const {
+    companies,
+    companyId,
+    dashboard,
+    selectCompany,
+    isBusy,
+    isReady,
+    application,
+    applications,
+    openApplication,
+    goToScreen,
+  } = useApp();
+
   const [query, setQuery] = useState("");
   const showSkeleton = !isReady || (isBusy && companies.length === 0);
 
-  const rows = useMemo(() => {
-    const extra: Record<string, { revenue: string; score: number; products: string; signal: string }> = {
-      rosters: {
-        revenue: "2,1 млн ₽",
-        score: 610,
-        products: "РКО · эквайринг · зарплата",
-        signal: "CAPEX оборудование",
-      },
-      tekhnostroy: {
-        revenue: "1,8 млн ₽",
-        score: 760,
-        products: "РКО · ВКЛ",
-        signal: "Аномалия выручки",
-      },
-      kovalev: {
-        revenue: "0,9 млн ₽",
-        score: 495,
-        products: "РКО · бизнес-карта",
-        signal: "Нужны документы",
-      },
-      smirnov: {
-        revenue: "1,2 млн ₽",
-        score: 815,
-        products: "РКО · кредит",
-        signal: "—",
-      },
-      bodrost: {
-        revenue: "0,7 млн ₽",
-        score: 0,
-        products: "РКО",
-        signal: "Стоп-фактор",
-      },
-    };
-    const mapped = companies.map((company) => ({
-      ...company,
-      ...(extra[company.demo_key ?? ""] ?? {
-        revenue: formatMoney(company.account_balance),
-        score: 600,
-        products: "РКО",
-        signal: "—",
-      }),
-    }));
-    return [...mapped].sort((a, b) => {
-      const aExc = a.signal !== "—" || (a.score > 0 && a.score < 520) || a.score === 0 ? 0 : 1;
-      const bExc = b.signal !== "—" || (b.score > 0 && b.score < 520) || b.score === 0 ? 0 : 1;
-      if (aExc !== bExc) {
-        return aExc - bExc;
-      }
-      return a.score - b.score;
-    });
-  }, [companies]);
-
-  const visibleRows = useMemo(() => {
+  const filteredCompanies = companies.filter((c) => {
     const q = query.trim().toLowerCase();
-    if (!q) {
-      return rows;
-    }
-    return rows.filter((row) => `${row.name} ${row.inn} ${row.okved_code}`.toLowerCase().includes(q));
-  }, [rows, query]);
+    if (!q) return true;
+    return `${c.name} ${c.inn} ${c.okved_code} ${c.okved_cluster}`.toLowerCase().includes(q);
+  });
 
-  if (screen === "bank-profile") {
-    return (
-      <>
-        <button
-          type="button"
-          className="bank-back-link"
-          onClick={() => goToScreen("bank-clients")}
-        >
-          ← К списку клиентов
-        </button>
-        <Profile360Screen />
-      </>
-    );
-  }
+  // Найти заявку текущей выбранной компании, если есть
+  const currentApp = application?.company?.id === companyId ? application : null;
 
   return (
-    <>
+    <div className="bank-clients-page">
       <div className="bank-page-head">
         <div>
-          <div className="figma-eyebrow">Портфель · малый бизнес</div>
-          <h1 className="figma-h1">Портфель компаний</h1>
+          <div className="figma-eyebrow">Пилот банка · Клиенты и заявки</div>
+          <h1 className="figma-h1">Клиенты банка</h1>
           <p className="figma-lead">
-            Один список · сверху исключения. В демо {companies.length} эталонных профиля.
+            Портфель демо-компаний · откройте клиента, чтобы увидеть аналитику
           </p>
+        </div>
+        <div className="bank-toolbar">
+          <input
+            className="bank-search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Поиск по названию или ИНН"
+            aria-label="Поиск по клиентам"
+          />
         </div>
       </div>
 
@@ -104,90 +65,143 @@ export function ClientsScreen() {
         <ClientsSkeleton />
       ) : companies.length === 0 ? (
         <BankEmptyState
-          title="У вас пока нет клиентов"
-          text="Портфель назначит руководитель группы. До этого доступна общая очередь."
+          title="В портфеле нет клиентов"
+          text="Подключите демо-компании или выполните поиск по ИНН."
         />
       ) : (
-        <>
-          <div className="bank-toolbar">
-            <input
-              className="bank-search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Название, ИНН или ОКВЭД"
-              aria-label="Поиск по клиентам"
-            />
-          </div>
+        <div className="bank-split">
+          {/* Левая колонка: список клиентов */}
+          <aside className="bank-clients-sidebar">
+            <div className="card-header">
+              <div>
+                <h2 className="card-title">Все клиенты</h2>
+                <div className="card-subtitle">{filteredCompanies.length} в портфеле</div>
+              </div>
+            </div>
+            <ul className="client-list">
+              {filteredCompanies.map((company) => {
+                const isSelected = companyId === company.id;
+                const hasApp = Boolean(application?.company?.id === company.id);
 
-          {visibleRows.length === 0 ? (
-            <BankEmptyState
-              title="Ничего не найдено"
-              text={`По запросу «${query.trim()}» клиентов нет.`}
-            />
-          ) : (
-            <div className="ops-list" role="list">
-              {visibleRows.map((row, index) => {
-                const action =
-                  row.signal === "Стоп-фактор"
-                    ? "Смотреть отказ"
-                    : row.signal !== "—"
-                      ? "Открыть сигнал"
-                      : "Карточка 360°";
-                const rowClass =
-                  row.score === 0 || row.signal === "Стоп-фактор"
-                    ? "is-risk"
-                    : row.score < 520 || row.signal !== "—"
-                      ? "is-warn"
-                      : "";
-                const scoreTag =
-                  row.score === 0
-                    ? { label: "Стоп", cls: "is-risk" }
-                    : row.score < 520
-                      ? { label: `Риск ${row.score}`, cls: "is-warn" }
-                      : row.score >= 750
-                        ? { label: `Риск ${row.score}`, cls: "is-good" }
-                        : { label: `Риск ${row.score}`, cls: "is-info" };
                 return (
-                  <div
-                    key={row.id}
-                    className={`ops-row ${rowClass}`}
-                    role="listitem"
-                    style={{ animationDelay: `${Math.min(index, 8) * 30}ms` }}
-                  >
-                    <div className="ops-row-main">
-                      <div className="ops-row-title">{row.name}</div>
-                      <div className="ops-row-sub">
-                        ИНН {row.inn} · {row.okved_code} {row.okved_cluster} · {row.products}
-                      </div>
-                    </div>
-                    <div className="ops-row-amount">{row.revenue}</div>
-                    <div className="ops-row-meta">
-                      <span className={`status-tag ${scoreTag.cls}`}>{scoreTag.label}</span>
-                      {row.signal !== "—" ? (
-                        <span
-                          className={`status-tag ${row.signal.includes("Стоп") ? "is-risk" : "is-warn"}`}
-                        >
-                          {row.signal}
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="ops-row-do">{action}</div>
+                  <li key={company.id}>
                     <button
                       type="button"
-                      className="btn btn-sm btn-primary"
-                      onClick={() => {
-                        void selectCompany(row.id, { nextScreen: "bank-profile" });
-                      }}
+                      className={`client-row ${isSelected ? "active" : ""}`}
+                      disabled={isBusy}
+                      onClick={() => void selectCompany(company.id)}
                     >
-                      Открыть
+                      <div className="client-info">
+                        <strong>{company.name}</strong>
+                        <div className="client-meta">
+                          ИНН {company.inn} · {company.legal_form === "IP" ? "ИП" : "ООО"}
+                          {hasApp && <span style={{ color: "var(--accent, #ef3124)", marginLeft: 6 }}>● заявка</span>}
+                        </div>
+                      </div>
+                      <div className="client-balance">
+                        {formatMoney(company.account_balance)}
+                      </div>
                     </button>
-                  </div>
+                  </li>
                 );
               })}
-            </div>
-          )}
-        </>
+            </ul>
+          </aside>
+
+          {/* Правая колонка: 360° досье выбранного клиента */}
+          <main className="bank-client-detail">
+            {!dashboard ? (
+              <div className="card" style={{ padding: 32, textAlign: "center" }}>
+                <h3>Выберите клиента слева</h3>
+                <p className="v2-muted">
+                  Здесь откроется детальное 360°-досье, прогноз кассы на 60 дней и финансовый радар.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Шапка клиента */}
+                <div className="bank-detail-head">
+                  <div>
+                    <h2 className="bank-detail-title">{dashboard.company.name}</h2>
+                    <p className="bank-detail-sub">
+                      {dashboard.company.director_name} · выручка{" "}
+                      {formatMoney(dashboard.company.monthly_revenue_alfa)}/мес. · рост{" "}
+                      {formatPercent(dashboard.company.revenue_growth_pct, 0)} · гео{" "}
+                      {dashboard.company.geo_score}
+                    </p>
+                  </div>
+                  {currentApp && (
+                    <button
+                      type="button"
+                      className="bank-btn-action"
+                      onClick={() => {
+                        void openApplication(currentApp.application_id);
+                        goToScreen("bank-xray");
+                      }}
+                    >
+                      К заявке →
+                    </button>
+                  )}
+                </div>
+
+                {/* Баннер активной заявки, если есть */}
+                {currentApp && (
+                  <div className="bank-active-app-banner">
+                    <div className="banner-text">
+                      <strong>
+                        Активная кредитная заявка №{currentApp.application_id.slice(-6).toUpperCase()}
+                      </strong>
+                      <span>
+                        Статус: {currentApp.status_label} · Запрошено: {formatMoney(currentApp.requested_amount_rub)} · Срок: {currentApp.term_months} мес.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="bank-btn-action"
+                      onClick={() => {
+                        void openApplication(currentApp.application_id);
+                        goToScreen("bank-xray");
+                      }}
+                    >
+                      Разбор заявки
+                    </button>
+                  </div>
+                )}
+
+                {/* 3 карточки счетов */}
+                <AccountsStrip dashboard={dashboard} />
+
+                {/* 360°-ДНК бизнеса */}
+                <DnaPanel dashboard={dashboard} />
+
+                {/* Прогноз кассы на 60 дней */}
+                <section className="card">
+                  <div className="card-header">
+                    <div>
+                      <h2 className="card-title">Прогноз кассы</h2>
+                      <p className="card-subtitle">Риск разрыва глазами банка</p>
+                    </div>
+                    <div className="card-actions">
+                      <span className={`pill ${dashboard.cash_forecast.has_gap ? "pill-risk" : "pill-good"}`}>
+                        {dashboard.cash_forecast.has_gap ? "Кассовый разрыв" : "Разрыва нет"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="card-body">
+                    <CashForecastChart forecast={dashboard.cash_forecast} />
+                  </div>
+                </section>
+
+                {/* Финансовый радар */}
+                <RadarPanel triggers={dashboard.radar_triggers} />
+
+                {/* Все операции выписки */}
+                <TransactionsPanel transactions={dashboard.transactions} />
+              </>
+            )}
+          </main>
+        </div>
       )}
-    </>
+    </div>
   );
 }

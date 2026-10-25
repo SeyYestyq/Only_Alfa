@@ -36,7 +36,7 @@ function initials(name: string): string {
 }
 
 export function AppNav() {
-  const { screen, goToScreen, viewMode, dashboard, userRole, application, companies } = useApp();
+  const { screen, goToScreen, viewMode, dashboard, userRole, application, applications, companies } = useApp();
   const company = dashboard?.company;
   const user = company?.users.find((row) => row.role === userRole) ?? company?.users[0];
   const displayName =
@@ -57,9 +57,14 @@ export function AppNav() {
   /** Подписи как у кредитного конвейера, не «красивые абстракции». */
   const bankLinks: NavLink[] = [
     {
-      id: "bank-queue",
-      label: "Очередь",
+      id: "bank-clients",
+      label: "Клиенты",
       badge: companies.length > 0 ? companies.length : undefined,
+    },
+    {
+      id: "bank-queue",
+      label: "Заявки",
+      badge: applications.length > 0 ? applications.length : undefined,
     },
     {
       id: "bank-xray",
@@ -68,7 +73,6 @@ export function AppNav() {
         : "Разбор",
     },
     { id: "bank-effect", label: "Портфель" },
-    { id: "bank-clients", label: "Клиенты" },
   ];
   const links = viewMode === "bank" ? bankLinks : CLIENT_LINKS;
 

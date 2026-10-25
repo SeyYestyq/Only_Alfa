@@ -1,0 +1,241 @@
+/* Стили для Split Master-Detail экрана «Клиенты банка» */
+
+.bank-split {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  width: 100%;
+  margin-top: 14px;
+}
+
+.bank-clients-sidebar {
+  background: var(--surface-1, #141418);
+  border: 1px solid var(--border, #26262c);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.bank-clients-sidebar .card-header {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border, #26262c);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bank-clients-sidebar .card-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary, #f5f5f6);
+}
+
+.bank-clients-sidebar .card-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary, #a3a3ad);
+  margin-top: 2px;
+}
+
+.client-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.client-list li {
+  border-bottom: 1px solid var(--border, #202026);
+}
+
+.client-list li:last-child {
+  border-bottom: 0;
+}
+
+.client-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: inherit;
+}
+
+.client-row:hover {
+  background: var(--surface-2, #1c1c24);
+}
+
+.client-row.active {
+  background: rgba(239, 49, 36, 0.12);
+  border-left: 3px solid var(--accent, #ef3124);
+}
+
+.client-info strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #f5f5f6);
+  line-height: 18px;
+}
+
+.client-meta {
+  font-size: 12px;
+  color: var(--text-secondary, #a3a3ad);
+  margin-top: 3px;
+}
+
+.client-balance {
+  font-family: var(--mono, "JetBrains Mono", monospace);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary, #f5f5f6);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.bank-client-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* Шапка детального профиля */
+.bank-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--surface-1, #141418);
+  border: 1px solid var(--border, #26262c);
+  border-radius: 16px;
+}
+
+.bank-detail-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: var(--text-primary, #f5f5f6);
+}
+
+.bank-detail-sub {
+  font-size: 13px;
+  color: var(--text-secondary, #a3a3ad);
+  margin: 0;
+}
+
+/* Баннер активной заявки */
+.bank-active-app-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: rgba(239, 49, 36, 0.1);
+  border: 1px solid rgba(239, 49, 36, 0.28);
+}
+
+.bank-active-app-banner .banner-text strong {
+  display: block;
+  font-size: 14px;
+  color: #ff7568;
+}
+
+.bank-active-app-banner .banner-text span {
+  font-size: 12px;
+  color: var(--text-secondary, #a3a3ad);
+}
+
+.bank-btn-action {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--accent, #ef3124);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+
+.bank-btn-action:hover {
+  opacity: 0.9;
+}
+
+/* 3 плашки счетов */
+.accounts-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.account-card {
+  background: var(--surface-1, #141418);
+  border: 1px solid var(--border, #26262c);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.account-card.tone-primary {
+  background: linear-gradient(135deg, #1e1e26 0%, #2a2a38 100%);
+  border-color: #383848;
+}
+
+.account-card-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #a3a3ad);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.account-card.tone-primary .account-card-label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.account-card-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--mono, "JetBrains Mono", monospace);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary, #f5f5f6);
+}
+
+.account-card.tone-good .account-card-value {
+  color: var(--status-success, #34c759);
+}
+
+.account-card.tone-risk .account-card-value {
+  color: var(--red-text, #ef3124);
+}
+
+.account-card-sub {
+  font-size: 12px;
+  color: var(--text-faint, #6e6e7c);
+  margin-top: 2px;
+}
+
+.account-card.tone-primary .account-card-sub {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+@media (max-width: 960px) {
+  .bank-split {
+    grid-template-columns: 1fr;
+  }
+  .accounts-strip {
+    grid-template-columns: 1fr;
+  }
+}

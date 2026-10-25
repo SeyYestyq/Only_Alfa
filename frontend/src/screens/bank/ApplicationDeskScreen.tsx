@@ -130,9 +130,14 @@ export function ApplicationDeskScreen() {
             {cbrRate !== null ? <span className="muted">КС {formatPercent(cbrRate, 1)}</span> : null}
           </div>
         </div>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("bank-queue")}>
-          ← Очередь
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("bank-clients")}>
+            ← К клиенту
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("bank-queue")}>
+            ← Заявки
+          </button>
+        </div>
       </header>
 
       <nav className="app-desk-sections" aria-label="Шаги разбора">

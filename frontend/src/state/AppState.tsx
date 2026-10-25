@@ -265,7 +265,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setViewMode = useCallback((mode: ViewMode) => {
     setViewModeStore(mode);
-    setScreen(mode === "bank" ? "bank-queue" : application ? screenForApplication(application) : "home");
+    setScreen(mode === "bank" ? "bank-clients" : application ? screenForApplication(application) : "home");
     if (mode === "bank" && application) {
       loadXray(application.application_id).catch(handleError);
     }

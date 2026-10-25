@@ -11,17 +11,17 @@ import { SignalScreen } from "./bank/SignalScreen";
  */
 export function BankHubScreen() {
   const { screen } = useApp();
-  const active: ScreenId = screen.startsWith("bank-") ? screen : "bank-queue";
+  const active: ScreenId = screen.startsWith("bank-") ? screen : "bank-clients";
   const isDesk = active === "bank-xray" || active === "bank-messages";
   const isClients = active === "bank-clients" || active === "bank-profile";
 
   return (
     <>
+      {isClients && <ClientsScreen />}
       {active === "bank-queue" && <QueueScreen />}
       {active === "bank-signal" && <SignalScreen />}
       {isDesk && <ApplicationDeskScreen />}
       {active === "bank-effect" && <BankPortfolioScreen />}
-      {isClients && <ClientsScreen />}
     </>
   );
 }
