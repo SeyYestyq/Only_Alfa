@@ -3892,6 +3892,287 @@ button.figma-offer:disabled {
   margin-top: 20px;
 }
 
+/* ── B2B Installment Modal & Counter-Offer styles ──────────────────── */
+.bank-modal-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+
+.bank-rate-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.bank-rate-chips {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.bank-rate-chip {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--figma-border);
+  background: var(--control-bg);
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.16s ease;
+}
+
+.bank-rate-chip:hover {
+  border-color: rgba(239, 49, 36, 0.4);
+}
+
+.bank-rate-chip.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--badge-accent-text);
+}
+
+.bank-rate-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--control-bg);
+  border: 1px solid var(--figma-border);
+  padding: 8px 14px;
+  border-radius: 12px;
+}
+
+.bank-rate-slider-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.bank-rate-val {
+  font-weight: 700;
+  font-size: 14px;
+  min-width: 52px;
+  text-align: right;
+  color: var(--accent);
+}
+
+.bank-installment-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.bank-calc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--control-bg);
+  border: 1px solid var(--figma-border);
+  padding: 12px 14px;
+  border-radius: 14px;
+}
+
+.bank-calc-label {
+  font-size: 11px;
+  color: var(--figma-muted);
+}
+
+.bank-calc-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.bank-calc-val.good {
+  color: #2bb673;
+}
+
+.bank-calc-val.accent {
+  color: var(--accent);
+}
+
+.bank-calc-sub {
+  font-size: 11px;
+  color: var(--figma-muted);
+}
+
+/* Alert when client submitted a counter-offer */
+.bank-counter-alert {
+  background: rgba(245, 166, 35, 0.1);
+  border: 1px solid rgba(245, 166, 35, 0.35);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: 14px;
+}
+
+.bank-counter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.badge-warning {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(245, 166, 35, 0.2);
+  color: #f5a623;
+}
+
+.bank-counter-time {
+  font-size: 11px;
+  color: var(--figma-muted);
+}
+
+.bank-counter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.bank-counter-lbl {
+  display: block;
+  font-size: 11px;
+  color: var(--figma-muted);
+}
+
+.bank-counter-comment {
+  font-size: 12px;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.bank-counter-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Client modal tabs */
+.client-modal-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--control-bg);
+  border: 1px solid var(--figma-border);
+  padding: 4px;
+  border-radius: 14px;
+  margin: 14px 0 16px;
+}
+
+.client-modal-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--figma-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.client-modal-tab.active {
+  background: var(--control-bg-active, #222);
+  color: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.client-offer-hero {
+  background: var(--control-bg);
+  border: 1px solid var(--figma-border);
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.counter-compare-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--control-bg);
+  border: 1px solid var(--figma-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: 14px;
+}
+
+.counter-compare-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.counter-compare-col.active {
+  background: rgba(43, 182, 115, 0.08);
+  border: 1px solid rgba(43, 182, 115, 0.25);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.counter-compare-arrow {
+  font-size: 18px;
+  color: var(--figma-muted);
+}
+
+.counter-comment-box {
+  width: 100%;
+  border: 1px solid var(--figma-border);
+  background: var(--control-bg);
+  color: var(--text-primary);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 13px;
+  margin-top: 6px;
+  resize: vertical;
+}
+
+.counter-comment-box:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.dyn-offer-btn {
+  background: var(--accent-soft) !important;
+  color: var(--badge-accent-text) !important;
+  border-color: rgba(239, 49, 36, 0.35) !important;
+}
+
+.dyn-counter-btn {
+  background: rgba(245, 166, 35, 0.15) !important;
+  color: #f5a623 !important;
+  border-color: rgba(245, 166, 35, 0.4) !important;
+  animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(245, 166, 35, 0);
+  }
+}
+
 /* ── Bank hub · inspector desk ───────────────────────────────────────── */
 .page-bank {
   --bank-sticky-z: 12;

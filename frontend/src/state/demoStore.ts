@@ -95,6 +95,36 @@ const INITIAL_BANK_NOTICES: BankNotice[] = [
   },
 ];
 
+export interface InstallmentOffer {
+  txId: string;
+  txDescription: string;
+  amountRub: number;
+  months: number;
+  ratePct: number;
+  monthlyPayment: number;
+  totalInterest: number;
+  status: "OFFERED" | "COUNTER_OFFERED" | "ACCEPTED";
+  offeredAt: string;
+  clientCounterMonths?: number;
+  clientCounterRatePct?: number;
+  clientCounterMonthlyPayment?: number;
+  clientComment?: string;
+}
+
+const INITIAL_INSTALLMENT_OFFERS: Record<string, InstallmentOffer> = {
+  trn_rosters_1: {
+    txId: "trn_rosters_1",
+    txDescription: "Оплата ООО «РестоОборудование»",
+    amountRub: 235_000,
+    months: 6,
+    ratePct: 16.5,
+    monthlyPayment: 41_080,
+    totalInterest: 11_480,
+    status: "OFFERED",
+    offeredAt: "Сегодня 10:15",
+  },
+};
+
 interface DemoStore {
   screen: ScreenId;
   viewMode: ViewMode;
@@ -124,6 +154,9 @@ interface DemoStore {
   dismissBankNotice: (id: string) => void;
   clearBankNotices: () => void;
   setNoticesOpen: (open: boolean) => void;
+  installmentOffers: Record<string, InstallmentOffer>;
+  setInstallmentOffer: (offer: InstallmentOffer) => void;
+  removeInstallmentOffer: (txId: string) => void;
   resetAll: () => void;
 }
 
@@ -265,6 +298,20 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
     set({ bankNotices: get().bankNotices.filter((row) => row.id !== id) }),
   clearBankNotices: () => set({ bankNotices: [], noticesOpen: false }),
   setNoticesOpen: (noticesOpen) => set({ noticesOpen }),
+  installmentOffers: INITIAL_INSTALLMENT_OFFERS,
+  setInstallmentOffer: (offer) =>
+    set((state) => ({
+      installmentOffers: {
+        ...state.installmentOffers,
+        [offer.txId]: offer,
+      },
+    })),
+  removeInstallmentOffer: (txId) =>
+    set((state) => {
+      const copy = { ...state.installmentOffers };
+      delete copy[txId];
+      return { installmentOffers: copy };
+    }),
   resetAll: () =>
     set({
       screen: "home",
@@ -277,6 +324,7 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
       creditDocs: [],
       clientNotices: [],
       bankNotices: INITIAL_BANK_NOTICES,
+      installmentOffers: INITIAL_INSTALLMENT_OFFERS,
       noticesOpen: false,
     }),
 }));
