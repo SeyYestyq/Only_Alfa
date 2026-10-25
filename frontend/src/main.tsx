@@ -6,6 +6,7 @@ import { AppProvider } from "./state/AppState";
 import "./styles/global.css";
 import "./styles/figma-layout.css";
 import "./styles/clarity.css";
+import "./styles/bank-bento-cockpit.css";
 
 initTheme();
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { COLLATERAL_LABELS } from "../../api/client";
+import { BankBentoCockpit } from "../../components/BankBentoCockpit";
 import { BankCapexSignalPanel } from "../../components/BankCapexSignalPanel";
 import { BankDealEconomics } from "../../components/BankDealEconomics";
 import { EventLog } from "../../components/EventLog";
@@ -12,13 +13,13 @@ import { useApp } from "../../state/AppState";
 import { useBankMessagesStore } from "../../state/bankMessagesStore";
 import { formatMoney, formatPercent } from "../../utils/format";
 
-type DeskSection = "decision" | "evidence" | "analytics" | "audit";
+type DeskSection = "decision" | "evidence" | "analytics" | "audit" | "cockpit" | "collateral";
 
 const SECTIONS: Array<{ id: DeskSection; label: string; icon: string }> = [
-  { id: "decision", label: "1. Решение андеррайтера", icon: "⚡" },
-  { id: "evidence", label: "2. CAPEX & Выписка", icon: "🔍" },
-  { id: "analytics", label: "3. X-Ray & Экономика", icon: "📊" },
-  { id: "audit", label: "4. Журнал аудита", icon: "🛡️" },
+  { id: "cockpit", label: "0. Кокпит (Bento)", icon: "⚡" },
+  { id: "evidence", label: "1. CAPEX & Выписка", icon: "🔍" },
+  { id: "analytics", label: "2. X-Ray & Экономика", icon: "📊" },
+  { id: "audit", label: "3. Журнал аудита", icon: "🛡️" },
 ];
 
 function decisionTone(status: string): "good" | "warn" | "risk" {
@@ -47,8 +48,9 @@ function decisionTitle(status: string): string {
   return "Решение по заявке (ручной разбор)";
 }
 
-function scrollToSection(id: DeskSection) {
-  document.getElementById(`desk-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+function scrollToSection(id: string) {
+  const targetId = id.startsWith("desk-") ? id : `desk-${id}`;
+  document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function getInitials(name: string): string {
@@ -108,129 +110,52 @@ export function ApplicationDeskScreen() {
 
   return (
     <div className="app-desk">
-      {/* ── 1. Высокотехнологичный Cockpit HUD Header ── */}
-      <header className="app-desk-hud">
-        <div className="app-desk-hud-top">
-          <div className="app-desk-company-badge">
-            <div className="app-desk-avatar">{initials}</div>
-            <div className="app-desk-company-meta">
-              <div className="app-desk-company-eyebrow">
-                <span>Кредитный конвейер МСП</span>
-                <span>·</span>
-                <span>Заявка № {application.application_id.slice(-8).toUpperCase()}</span>
-                <span>·</span>
-                <span className="pill pill-outline" style={{ fontSize: 10, padding: "1px 6px" }}>
-                  ИНН {inn}
-                </span>
-              </div>
-              <h1 className="app-desk-company-name">{companyName}</h1>
-            </div>
-          </div>
-
-          <div className="app-desk-hud-actions">
-            <span className={`status-tag is-${tone}`} style={{ fontSize: 12, padding: "6px 12px", fontWeight: 700 }}>
-              ● {application.status_label}
-            </span>
-            <div
-              className="pill pill-warning"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: 12,
-                padding: "6px 12px",
-                fontWeight: 650,
-                background: "rgba(245, 166, 35, 0.12)",
-                border: "1px solid rgba(245, 166, 35, 0.3)",
-                color: "#ffb020",
-              }}
-            >
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ffb020", display: "inline-block" }} />
-              ⏱ SLA: 14 мин
-            </div>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-              onClick={openChatWithClient}
-            >
-              💬 Чат с клиентом
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => goToScreen("bank-clients")}
-            >
-              ← Портфель клиентов
-            </button>
-          </div>
-        </div>
-
-        {/* Сводные показатели кейса в шапке */}
-        <div className="app-desk-hud-metrics">
-          <div className="app-desk-hud-chip">
-            <span className="app-desk-hud-chip-label">Сумма и срок</span>
-            <span className="app-desk-hud-chip-value">
-              {formatMoney(application.requested_amount_rub)} · {application.term_months} мес.
-            </span>
-          </div>
-          <div className="app-desk-hud-chip">
-            <span className="app-desk-hud-chip-label">RiskScore скоринг</span>
-            <span
-              className="app-desk-hud-chip-value"
-              style={{
-                color: score === 0 || score < 520 ? "#ff4d4f" : score >= 750 ? "#00e599" : "#ffb020",
-              }}
-            >
-              {score ? `${score} / 1000` : "Стоп-фактор"}
-              <small style={{ color: "#8c93a4", fontSize: 11, fontWeight: 500 }}>
-                ({score >= 750 ? "Зелёный" : score >= 600 ? "Жёлтый" : "Красный"})
-              </small>
-            </span>
-          </div>
-          <div className="app-desk-hud-chip">
-            <span className="app-desk-hud-chip-label">Лимит платежа</span>
-            <span className="app-desk-hud-chip-value">{limitLabel} / мес.</span>
-          </div>
-          <div className="app-desk-hud-chip">
-            <span className="app-desk-hud-chip-label">Обеспечение сделки</span>
-            <span className="app-desk-hud-chip-value">
-              {application.collateral_type !== "NONE"
-                ? `${COLLATERAL_LABELS[application.collateral_type]} (50%)`
-                : "Бланковый (без залога)"}
-            </span>
-          </div>
-        </div>
-      </header>
-
-      {/* ── 2. Sticky Навигация по секциям стола разбора ── */}
-      <nav className="app-desk-sections" aria-label="Шаги разбора">
-        {SECTIONS.map((section) => (
+      {/* ── 0. Top Bar Actions: Return to client list & Chat ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+          onClick={() => goToScreen("bank-clients")}
+        >
+          ← К списку клиентов
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span className="pill pill-outline" style={{ fontSize: 11, padding: "3px 8px" }}>
+            Заявка № {application.application_id.slice(-8).toUpperCase()}
+          </span>
           <button
-            key={section.id}
             type="button"
-            className={`app-desk-section ${activeSection === section.id ? "active" : ""}`}
-            onClick={() => {
-              setActiveSection(section.id);
-              scrollToSection(section.id);
-            }}
+            className="btn btn-secondary btn-sm"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            onClick={openChatWithClient}
           >
-            <span style={{ marginRight: 6 }}>{section.icon}</span>
-            {section.label}
+            💬 Чат с клиентом
           </button>
-        ))}
-      </nav>
+        </div>
+      </div>
+
+      {/* ── 1. Bento Command Cockpit (Hero Radar + 2x2 Vitals + 3 Modular Cards) ── */}
+      <BankBentoCockpit
+        onNavigateSection={(id) => {
+          setActiveSection(id.replace("desk-", "") as DeskSection);
+          scrollToSection(id);
+        }}
+        activeSection={activeSection}
+      />
 
       {/* Баннер залогового покрытия, если есть */}
       {application.collateral_type !== "NONE" && (
-        <div
+        <section
+          id="desk-collateral"
           className="alert alert-good"
           style={{
             marginBottom: 20,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            borderRadius: 14,
+            borderRadius: 18,
+            padding: "16px 20px",
           }}
         >
           <span>
@@ -238,142 +163,8 @@ export function ApplicationDeskScreen() {
             <strong>{formatMoney(application.collateral_value_rub)}</strong> · Статус: {application.collateral_status}
           </span>
           <span className="pill pill-good">Покрытие ≥ 50%</span>
-        </div>
+        </section>
       )}
-
-      {/* ── 3. ШАГ 1: Bento Decision Cockpit (Решение системы & Пульт андеррайтера) ── */}
-      <section className="app-desk-block" id="desk-decision">
-        <div className="desk-split-grid">
-          {/* Левая колонка (60%): Рекомендация конвейера + Bento KPI + Радар проверок */}
-          <div className={`desk-recommendation-card is-${tone}`}>
-            <div className="desk-recommendation-header">
-              <div>
-                <span className="desk-recommendation-kicker">
-                  Шаг 1 · Рекомендация конвейера ({application.product_label})
-                </span>
-                <h2 className="desk-recommendation-title">{decisionTitle(application.status)}</h2>
-              </div>
-              <span className={`status-tag is-${tone}`} style={{ fontWeight: 700 }}>
-                {application.status_label}
-              </span>
-            </div>
-
-            <p style={{ color: "#d2d8e4", fontSize: 14, lineHeight: 1.5, margin: 0 }}>
-              {counter ? (
-                <>
-                  Конвейер сформировал встречный оффер:{" "}
-                  <strong style={{ color: "#ffffff" }}>{formatMoney(counter.amount_rub)}</strong> на{" "}
-                  <strong>{counter.term_months} мес.</strong> под{" "}
-                  <strong style={{ color: "#ffb020" }}>{formatPercent(counter.rate_pct)}</strong>. Аннуитетный
-                  платёж составит <strong>≈ {formatMoney(counter.monthly_payment_rub)} / мес.</strong>
-                </>
-              ) : (
-                <>
-                  Рекомендуемый лимит безопасного ежемесячного платежа: <strong>{limitLabel}</strong>. Базовая
-                  ставка предложения: <strong>{formatPercent(application.final_rate_pct)}</strong>.
-                </>
-              )}
-            </p>
-
-            {/* 4-Bento KPI Grid */}
-            <div className="desk-kpi-quad">
-              <div className="desk-kpi-quad-cell">
-                <span className="kpi-lbl">Выручка за 30 дней</span>
-                <span className="kpi-val">{formatMoney(application.monthly_revenue_alfa)}</span>
-                <span className="kpi-sub">↑ +11% год к году</span>
-              </div>
-              <div className="desk-kpi-quad-cell">
-                <span className="kpi-lbl">Безопасный лимит кассы</span>
-                <span className="kpi-val">{limitLabel}</span>
-                <span className="kpi-sub" style={{ color: "#8c93a4" }}>
-                  DTI 28% от чистого потока
-                </span>
-              </div>
-              <div className="desk-kpi-quad-cell">
-                <span className="kpi-lbl">Ставка / КС ЦБ</span>
-                <span className="kpi-val">{formatPercent(application.final_rate_pct)}</span>
-                <span className="kpi-sub" style={{ color: "#8c93a4" }}>
-                  КС ЦБ {cbrRate !== null ? formatPercent(cbrRate, 1) : "—"} + маржа
-                </span>
-              </div>
-              <div className="desk-kpi-quad-cell">
-                <span className="kpi-lbl">Залоговая масса</span>
-                <span className="kpi-val">
-                  {application.collateral_type !== "NONE"
-                    ? formatMoney(application.collateral_value_rub)
-                    : "Без залога"}
-                </span>
-                <span className="kpi-sub" style={{ color: "#00e599" }}>
-                  {application.collateral_type !== "NONE" ? "Ликвидное имущество" : "Бланковый риск"}
-                </span>
-              </div>
-            </div>
-
-            {/* Радар автоматических проверок реестров */}
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#8c93a4", textTransform: "uppercase", marginBottom: 8 }}>
-                Автоматические реестровые проверки (100% симулятор)
-              </div>
-              <div className="desk-verification-radar">
-                <div className="desk-radar-row">
-                  <span className="desk-radar-icon-pass">✓</span>
-                  <span>
-                    <strong>ЕГРЮЛ:</strong> Действует, {Math.floor(ageMonths / 12)} г. {ageMonths % 12} мес.
-                  </span>
-                </div>
-                <div className="desk-radar-row">
-                  <span className="desk-radar-icon-pass">✓</span>
-                  <span>
-                    <strong>БКИ:</strong> Чистая КИ, просрочек нет
-                  </span>
-                </div>
-                <div className="desk-radar-row">
-                  <span className="desk-radar-icon-pass">✓</span>
-                  <span>
-                    <strong>ФССП:</strong> Исполнительных производств 0
-                  </span>
-                </div>
-                <div className="desk-radar-row">
-                  <span className="desk-radar-icon-pass">✓</span>
-                  <span>
-                    <strong>Гео-скоринг:</strong> {xray ? `${xray.geo.geo_score}/100 (конкурентов ${xray.geo.competitors_count})` : "84/100"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Правая колонка (40%): Пульт инспектора (Underwriter Action Console) */}
-          <div className="desk-console-card">
-            <div className="desk-console-head">
-              <div className="desk-console-avatar">ЕО</div>
-              <div className="desk-console-meta">
-                <span className="desk-console-inspector">Елена Орлова</span>
-                <span className="desk-console-role">Кредитный аналитик · Роль: Maker</span>
-              </div>
-            </div>
-
-            <div
-              style={{
-                fontSize: 12,
-                color: "#9aa1b2",
-                lineHeight: 1.45,
-                background: "rgba(255, 255, 255, 0.02)",
-                padding: "10px 14px",
-                borderRadius: 12,
-                border: "1px solid rgba(255, 255, 255, 0.05)",
-              }}
-            >
-              🛡️ <strong>Maker-Checker контроль:</strong> Любое действие подписывается ПЭП сотрудника банка и
-              фиксируется в неизменяемом аудит-логе. Решения на сумму &gt; 3 млн ₽ передаются на валидацию Checker
-              (Ольга Урсул).
-            </div>
-
-            {/* Панель кнопок и форма принятия решения */}
-            <UnderwriterActions />
-          </div>
-        </div>
-      </section>
 
       {/* ── 4. ШАГ 2: Доказательства целевого расходования (CAPEX-сигналы) ── */}
       <section className="figma-panel app-desk-block" id="desk-evidence" style={{ borderRadius: 20 }}>

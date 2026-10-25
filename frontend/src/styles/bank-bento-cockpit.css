@@ -1,0 +1,599 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   BANK BENTO COCKPIT — High-tech Fintech Command Station
+   Inspired by Juice Lab / Minimalist Bento Wireframe (@bee_ui.ux)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.bank-bento-shell {
+  position: relative;
+  background: radial-gradient(circle at 50% 0%, rgba(32, 38, 52, 0.45) 0%, rgba(12, 14, 18, 0.95) 70%, #0a0c10 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  padding: 24px;
+  box-shadow: 
+    0 24px 64px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 40px rgba(255, 255, 255, 0.015);
+  margin-bottom: 28px;
+  overflow: hidden;
+}
+
+/* ── 1. Top Dynamic Island (Status & Multi-Step Capsule) ── */
+.bento-island-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.bento-island-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(18, 22, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  padding: 6px 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.bento-island-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bento-island-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.25s ease;
+}
+
+.bento-island-dot.done {
+  background: #00e599;
+  box-shadow: 0 0 8px rgba(0, 229, 153, 0.6);
+}
+
+.bento-island-dot.active {
+  background: #ffb020;
+  box-shadow: 0 0 10px rgba(255, 176, 32, 0.8);
+  transform: scale(1.3);
+}
+
+.bento-island-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #c4cad4;
+}
+
+/* ── Top Header Controls on the Hero Frame ── */
+.bento-hero-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.bento-hero-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bento-hero-badge-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(239, 49, 36, 0.2), rgba(239, 49, 36, 0.05));
+  border: 1px solid rgba(239, 49, 36, 0.35);
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  color: #ff5247;
+}
+
+.bento-hero-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.bento-hero-subtitle {
+  font-size: 12px;
+  color: #8c93a4;
+  margin: 2px 0 0;
+}
+
+.bento-hero-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bento-segmented-pill {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.bento-segment-btn {
+  background: transparent;
+  border: none;
+  color: #8c93a4;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bento-segment-btn:hover {
+  color: #ffffff;
+}
+
+.bento-segment-btn.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.bento-stress-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #8c93a4;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bento-stress-toggle.active {
+  background: rgba(255, 77, 79, 0.15);
+  border-color: rgba(255, 77, 79, 0.4);
+  color: #ff7875;
+}
+
+/* ── 2. Main Hero Canvas (Huge Interactive Viewport) ── */
+.bento-hero-canvas {
+  background: linear-gradient(180deg, rgba(16, 19, 26, 0.85) 0%, rgba(11, 13, 17, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.bento-chart-container {
+  width: 100%;
+  height: 220px;
+  position: relative;
+}
+
+.bento-chart-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.bento-hero-chips {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.bento-hero-chip {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #cfd4dc;
+}
+
+.bento-hero-chip strong {
+  color: #ffffff;
+  font-weight: 750;
+}
+
+/* ── 3. Bottom Row: 2x2 Grid (Left) + 3 Bento Modules (Right) ── */
+.bento-lower-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+@media (max-width: 1100px) {
+  .bento-lower-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Left Column: 2x2 Bento Micro-Cards ── */
+.bento-vitals-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bento-vitals-quad {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.bento-vital-card {
+  background: linear-gradient(145deg, rgba(22, 26, 36, 0.9), rgba(15, 17, 24, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 108px;
+  position: relative;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.bento-vital-card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.bento-vital-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bento-vital-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+}
+
+.bento-vital-badge {
+  font-size: 10px;
+  font-weight: 750;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bento-vital-badge.good {
+  background: rgba(0, 229, 153, 0.12);
+  color: #00e599;
+  border: 1px solid rgba(0, 229, 153, 0.25);
+}
+
+.bento-vital-badge.warn {
+  background: rgba(255, 176, 32, 0.12);
+  color: #ffb020;
+  border: 1px solid rgba(255, 176, 32, 0.25);
+}
+
+.bento-vital-badge.risk {
+  background: rgba(255, 77, 79, 0.15);
+  color: #ff4d4f;
+  border: 1px solid rgba(255, 77, 79, 0.3);
+}
+
+.bento-vital-val {
+  font-size: 18px;
+  font-weight: 850;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  margin: 6px 0 2px;
+}
+
+.bento-vital-lbl {
+  font-size: 11px;
+  color: #8c93a4;
+  font-weight: 600;
+}
+
+.bento-verified-strip {
+  background: rgba(0, 229, 153, 0.05);
+  border: 1px solid rgba(0, 229, 153, 0.18);
+  border-radius: 12px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #bbf7d0;
+  font-weight: 600;
+}
+
+/* ── Right Column: 3 Bento Modular Cards ── */
+.bento-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .bento-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bento-action-card {
+  background: linear-gradient(145deg, rgba(22, 26, 36, 0.9), rgba(15, 17, 24, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s ease;
+}
+
+.bento-action-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Card 1: Interactive Loan Slider */
+.bento-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.bento-card-kicker {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffb020;
+}
+
+.bento-card-title {
+  font-size: 14px;
+  font-weight: 750;
+  color: #ffffff;
+  margin: 2px 0 0;
+}
+
+.bento-slider-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bento-slider-val-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.bento-slider-val {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.bento-slider-sub {
+  font-size: 11px;
+  color: #8c93a4;
+  font-weight: 600;
+}
+
+.bento-range-input {
+  width: 100%;
+  accent-color: #ef3124;
+  cursor: pointer;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bento-calc-details {
+  background: rgba(255, 255, 255, 0.025);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #cfd4dc;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Card 2: CAPEX Installment */
+.bento-capex-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.bento-capex-img-placeholder {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1f2533, #151821);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.bento-capex-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bento-capex-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.bento-capex-cost {
+  font-size: 11px;
+  color: #00e599;
+  font-weight: 600;
+}
+
+/* Card 3: Underwriter Action Console */
+.bento-resolution-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bento-resolution-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #d1d5db;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bento-resolution-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.bento-resolution-btn.active-approve {
+  background: rgba(0, 229, 153, 0.15);
+  border-color: rgba(0, 229, 153, 0.4);
+  color: #00e599;
+}
+
+.bento-resolution-btn.active-counter {
+  background: rgba(255, 176, 32, 0.15);
+  border-color: rgba(255, 176, 32, 0.4);
+  color: #ffb020;
+}
+
+.bento-resolution-btn.active-reject {
+  background: rgba(255, 77, 79, 0.15);
+  border-color: rgba(255, 77, 79, 0.4);
+  color: #ff4d4f;
+}
+
+.bento-cta-btn {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.bento-cta-btn.primary {
+  background: linear-gradient(135deg, #ef3124, #b31408);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(239, 49, 36, 0.4);
+}
+
+.bento-cta-btn.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(239, 49, 36, 0.55);
+}
+
+.bento-cta-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── 4. Bottom Floating Dock (5-Tab Navigation Capsule) ── */
+.bento-bottom-dock-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.bento-bottom-dock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(18, 22, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  padding: 5px 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.bento-dock-item {
+  background: transparent;
+  border: none;
+  color: #9aa1b2;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.bento-dock-item:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.bento-dock-item.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
