@@ -1,4 +1,4 @@
-import { OperationsTable } from "../components/OperationsTable";
+import { TransactionsPanel } from "../components/TransactionsPanel";
 import { PeriodChart } from "../components/PeriodChart";
 import { useApp } from "../state/AppState";
 import { useDemoStore } from "../state/demoStore";
@@ -216,20 +216,7 @@ export function DashboardScreen() {
         </div>
       )}
 
-      <section className="figma-panel home-section clarity-rise clarity-rise-d5">
-        <div className="ops-head">
-          <div>
-            <div className="figma-panel-title">Движения по счёту</div>
-            <div className="figma-panel-heading" style={{ marginTop: 4, fontSize: 18 }}>
-              Последние операции
-            </div>
-          </div>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("payments")}>
-            Все →
-          </button>
-        </div>
-        <OperationsTable rows={dashboard.transactions} />
-      </section>
+      <TransactionsPanel transactions={dashboard.transactions} variant="figma" />
     </>
   );
 }

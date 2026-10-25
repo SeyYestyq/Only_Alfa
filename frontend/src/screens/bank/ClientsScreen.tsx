@@ -379,7 +379,7 @@ export function ClientsScreen() {
                 <RadarPanel triggers={dashboard.radar_triggers} />
 
                 {/* Все операции выписки */}
-                <TransactionsPanel transactions={dashboard.transactions} />
+                <TransactionsPanel transactions={dashboard.transactions} variant="bank" />
               </>
             )}
           </main>

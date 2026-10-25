@@ -40,7 +40,15 @@ function calculatePayment(amount: number, months: number, ratePct: number) {
  *    и отправить в банк — банку поступит уведомление на рассмотрение.
  * 4. Пилот банка со своей стороны может настраивать оба варианта оффера, а также согласовывать условия заёмщика.
  */
-export function TransactionsPanel({ transactions }: { transactions: Transaction[] }) {
+export function TransactionsPanel({
+  transactions,
+  variant = "figma",
+  initialLimit = 6,
+}: {
+  transactions: Transaction[];
+  variant?: "figma" | "bank";
+  initialLimit?: number;
+}) {
   const { runInstallment, isBusy, dashboard, viewMode } = useApp();
   const sendChatMessage = useBankMessagesStore((state) => state.sendMessage);
   const setActiveThread = useBankMessagesStore((state) => state.setActiveThread);
@@ -50,6 +58,7 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
   const pushClientNotice = useDemoStore((state) => state.pushClientNotice);
   const pushBankNotice = useDemoStore((state) => state.pushBankNotice);
 
+  const [showAll, setShowAll] = useState<boolean>(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<1 | 2>(2);
   const [isCustomMode, setIsCustomMode] = useState<boolean>(false);
@@ -73,6 +82,14 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
   const currentOffer: InstallmentOffer | undefined = selectedTx
     ? installmentOffers[selectedTx.id]
     : undefined;
+
+  const sortedTransactions = [...transactions].sort((a, b) =>
+    b.occurred_at.localeCompare(a.occurred_at),
+  );
+  const visibleTransactions =
+    variant === "figma" && !showAll
+      ? sortedTransactions.slice(0, initialLimit)
+      : sortedTransactions;
 
   const demoKey = (dashboard?.company.demo_key || dashboard?.company.id || "rosters").replace("cmp_", "");
 
@@ -307,6 +324,182 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
     }
   }
 
+  function renderActionCell(transaction: Transaction, offer?: InstallmentOffer) {
+    if (transaction.installment_taken || offer?.status === "ACCEPTED") {
+      return <span className="pill pill-good">Оформлена</span>;
+    }
+    if (isBank) {
+      if (offer) {
+        if (offer.status === "COUNTER_OFFERED") {
+          return (
+            <button
+              type="button"
+              className="btn btn-warning btn-sm dyn-counter-btn"
+              title="Клиент направил свои условия на рассмотрение"
+              onClick={() => handleOpenModal(transaction)}
+            >
+              Свои условия ⚠️
+            </button>
+          );
+        }
+        return (
+          <button
+            type="button"
+            className="btn btn-primary btn-sm dyn-offer-btn"
+            title="Оффер с 2 вариантами отправлен клиенту"
+            onClick={() => handleOpenModal(transaction)}
+          >
+            Оффер отправлен ✓
+          </button>
+        );
+      }
+      if (transaction.can_installment) {
+        return (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            title="Предложить 2 варианта рассрочки клиенту"
+            onClick={() => handleOpenModal(transaction)}
+          >
+            + Рассрочка
+          </button>
+        );
+      }
+      return null;
+    }
+
+    /* ДЛЯ КЛИЕНТА (ПРЕДПРИНИМАТЕЛЯ): видит кнопку ТОЛЬКО когда банк оставил предложение! */
+    if (offer) {
+      if (offer.status === "COUNTER_OFFERED") {
+        return (
+          <button
+            type="button"
+            className="btn btn-warning btn-sm dyn-counter-btn"
+            title="Ваши условия на рассмотрении в банке"
+            onClick={() => handleOpenModal(transaction)}
+          >
+            На рассмотрении ⏳
+          </button>
+        );
+      }
+      return (
+        <button
+          type="button"
+          className="btn btn-primary btn-sm dyn-offer-btn"
+          title="Банк одобрил рассрочку! Выберите вариант"
+          onClick={() => handleOpenModal(transaction)}
+        >
+          Рассрочка
+        </button>
+      );
+    }
+    return null;
+  }
+
+  if (variant === "figma") {
+    return (
+      <section className="figma-panel home-section clarity-rise clarity-rise-d5">
+        <div className="ops-head">
+          <div>
+            <div className="figma-panel-title">Движения по счёту</div>
+            <div className="figma-panel-heading" style={{ marginTop: 4, fontSize: 18 }}>
+              {isBank ? "Операции компании (рассрочка)" : "Последние операции"}
+            </div>
+          </div>
+          {transactions.length > initialLimit && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => setShowAll((prev) => !prev)}
+            >
+              {showAll ? `Свернуть (${initialLimit}) ↑` : `Все (${transactions.length}) →`}
+            </button>
+          )}
+        </div>
+
+        {toastAlert && (
+          <div className={`alert alert-${toastAlert.kind}`} style={{ marginTop: 12, marginBottom: 12 }}>
+            <span>{toastAlert.text}</span>
+            <button
+              type="button"
+              className="banner-close"
+              onClick={() => setToastAlert(null)}
+              style={{ float: "right", border: "none", background: "none", cursor: "pointer", color: "inherit" }}
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {result && (
+          <div className="alert alert-good" style={{ marginTop: 12, marginBottom: 12 }}>
+            ✅ <strong>Рассрочка оформлена:</strong> {formatMoney(result.restored_amount_rub)} возвращены на счёт,
+            платёж {formatMoney(result.monthly_payment_rub)}/мес. Новый баланс счёта:{" "}
+            <strong>{formatMoney(result.account_balance)}</strong>.
+          </div>
+        )}
+
+        <table className="ops-table" style={{ marginTop: 8 }}>
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Операция</th>
+              <th>Категория</th>
+              <th className="ops-amount">Сумма</th>
+              <th style={{ textAlign: "right" }}>Рассрочка</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibleTransactions.map((transaction) => {
+              const offer = installmentOffers[transaction.id];
+              return (
+                <tr key={transaction.id}>
+                  <td className="muted" style={{ whiteSpace: "nowrap" }}>
+                    {formatDate(transaction.occurred_at)}
+                  </td>
+                  <td>
+                    <strong>{transaction.description}</strong>
+                  </td>
+                  <td>
+                    <span className={`cat-pill ${transaction.direction === "IN" ? "in" : ""}`}>
+                      <i />
+                      {transaction.category}
+                    </span>
+                  </td>
+                  <td className={`ops-amount ${transaction.direction === "IN" ? "in" : ""}`}>
+                    {transaction.direction === "IN" ? "+" : "−"}
+                    {formatMoney(Math.abs(transaction.amount_rub))}
+                  </td>
+                  <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                    {renderActionCell(transaction, offer)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {/* Модальное окно B2B-рассрочки по эталонному макету */}
+        {selectedTx && (
+          <div
+            className="sheet-backdrop"
+            role="presentation"
+            onClick={() => setSelectedTx(null)}
+          >
+            <div
+              className="sheet-card installment-modal-card"
+              role="dialog"
+              aria-labelledby="installment-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {renderModalContent()}
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  }
+
   return (
     <section className="card">
       <div className="card-header">
@@ -354,7 +547,7 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
             </tr>
           </thead>
           <tbody>
-            {transactions.map((transaction) => {
+            {visibleTransactions.map((transaction) => {
               const offer = installmentOffers[transaction.id];
               return (
                 <tr key={transaction.id}>
@@ -370,64 +563,7 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
                     {formatMoney(transaction.amount_rub)}
                   </td>
                   <td style={{ textAlign: "right" }}>
-                    {transaction.installment_taken || offer?.status === "ACCEPTED" ? (
-                      <span className="pill pill-good">Оформлена</span>
-                    ) : isBank ? (
-                      /* ДЛЯ ПИЛОТА БАНКА: видит возможность предложить рассрочку или статус отправленного оффера */
-                      offer ? (
-                        offer.status === "COUNTER_OFFERED" ? (
-                          <button
-                            type="button"
-                            className="btn btn-warning btn-sm dyn-counter-btn"
-                            title="Клиент направил свои условия на рассмотрение"
-                            onClick={() => handleOpenModal(transaction)}
-                          >
-                            Свои условия ⚠️
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-sm dyn-offer-btn"
-                            title="Оффер с 2 вариантами отправлен клиенту"
-                            onClick={() => handleOpenModal(transaction)}
-                          >
-                            Оффер отправлен ✓
-                          </button>
-                        )
-                      ) : transaction.can_installment ? (
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          title="Предложить 2 варианта рассрочки клиенту"
-                          onClick={() => handleOpenModal(transaction)}
-                        >
-                          + Рассрочка
-                        </button>
-                      ) : null
-                    ) : (
-                      /* ДЛЯ КЛИЕНТА (ПРЕДПРИНИМАТЕЛЯ): видит кнопку ТОЛЬКО когда банк оставил предложение! */
-                      offer ? (
-                        offer.status === "COUNTER_OFFERED" ? (
-                          <button
-                            type="button"
-                            className="btn btn-warning btn-sm dyn-counter-btn"
-                            title="Ваши условия на рассмотрении в банке"
-                            onClick={() => handleOpenModal(transaction)}
-                          >
-                            На рассмотрении ⏳
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-sm dyn-offer-btn"
-                            title="Банк одобрил рассрочку! Выберите вариант"
-                            onClick={() => handleOpenModal(transaction)}
-                          >
-                            Рассрочка
-                          </button>
-                        )
-                      ) : null
-                    )}
+                    {renderActionCell(transaction, offer)}
                   </td>
                 </tr>
               );
@@ -449,10 +585,21 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
             aria-labelledby="installment-title"
             onClick={(event) => event.stopPropagation()}
           >
-            {/* 1. Header */}
-            <header className="installment-modal-header">
-              <div>
-                <span className="installment-modal-badge">
+            {renderModalContent()}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+
+  function renderModalContent() {
+    if (!selectedTx) return null;
+    return (
+      <>
+        {/* 1. Header */}
+        <header className="installment-modal-header">
+          <div>
+            <span className="installment-modal-badge">
                   {isBank ? "ПИЛОТ БАНКА · НАСТРОЙКА И ОДОБРЕНИЕ" : "РАССРОЧКА НА ОПЛАЧЕННЫЙ РАСХОД"}
                 </span>
                 <h2 id="installment-title" className="installment-modal-title">
@@ -809,9 +956,9 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
-    </section>
-  );
+
+      </>
+    );
+  }
 }
+
