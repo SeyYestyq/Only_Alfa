@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { InstallmentResult, Transaction } from "../api/types";
 import { useApp } from "../state/AppState";
 import { useBankMessagesStore } from "../state/bankMessagesStore";
-import { useDemoStore, type InstallmentOffer } from "../state/demoStore";
+import { useDemoStore, type BankInstallmentVariant, type InstallmentOffer } from "../state/demoStore";
 import { formatDate, formatMoney } from "../utils/format";
 
 const TERM_OPTIONS = [3, 4, 5, 6] as const;
@@ -17,8 +17,8 @@ const BANK_RATE_PRESETS = [
 const CLIENT_COUNTER_RATES = [
   { label: "12,0% · Льготная", rate: 12.0 },
   { label: "14,0% · Комфортная", rate: 14.0 },
-  { label: "15,0% · Оптимальная", rate: 15.0 },
-  { label: "16,0% · Рыночная", rate: 16.0 },
+  { label: "16,0% · Оптимальная", rate: 16.0 },
+  { label: "18,0% · Рыночная", rate: 18.0 },
 ];
 
 /** Расчет аннуитетного платежа */
@@ -33,11 +33,12 @@ function calculatePayment(amount: number, months: number, ratePct: number) {
 
 /**
  * Панель операций и выписки по счёту.
- * Реализует двухсторонний сценарий B2B-рассрочки:
- * 1. Пилот банка настраивает и одобряет условия (ставка и срок), отправляя оффер клиенту.
- * 2. Клиент в личном кабинете видит условия банка, может принять их в один клик
- *    или отправить встречное предложение (контр-оффер с желаемым сроком/ставкой/комментарием).
- * 3. Пилот банка видит встречное предложение и может согласовать его.
+ * Реализует утверждённый дизайн и сценарий:
+ * 1. Клиент видит модальное окно рассрочки с двумя вариантами от банка (например, 3 мес. и 6 мес.).
+ * 2. Клиент может выбрать один из вариантов банка и нажать «Оформить рассрочку» (деньги сразу вернутся на счёт).
+ * 3. Клиент может включить «Настроить свои условия» (встречное предложение): выбрать желаемый срок, ставку, комментарий,
+ *    и отправить в банк — банку поступит уведомление на рассмотрение.
+ * 4. Пилот банка со своей стороны может настраивать оба варианта оффера, а также согласовывать условия заёмщика.
  */
 export function TransactionsPanel({ transactions }: { transactions: Transaction[] }) {
   const { runInstallment, isBusy, dashboard, viewMode } = useApp();
@@ -50,121 +51,101 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
   const pushBankNotice = useDemoStore((state) => state.pushBankNotice);
 
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-  const [months, setMonths] = useState<number>(6);
-  const [ratePct, setRatePct] = useState<number>(16.5);
-  const [counterMonths, setCounterMonths] = useState<number>(6);
-  const [counterRate, setCounterRate] = useState<number>(14.0);
+  const [selectedVariant, setSelectedVariant] = useState<1 | 2>(2);
+  const [isCustomMode, setIsCustomMode] = useState<boolean>(false);
+
+  // Состояние вариантов банка (для пилота)
+  const [bankVar1Months, setBankVar1Months] = useState<number>(3);
+  const [bankVar1Rate, setBankVar1Rate] = useState<number>(18.0);
+  const [bankVar2Months, setBankVar2Months] = useState<number>(6);
+  const [bankVar2Rate, setBankVar2Rate] = useState<number>(18.0);
+
+  // Состояние встречного предложения клиента
+  const [customMonths, setCustomMonths] = useState<number>(6);
+  const [customRate, setCustomRate] = useState<number>(14.0);
   const [clientComment, setClientComment] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"bank_offer" | "counter_offer">("bank_offer");
+
   const [result, setResult] = useState<InstallmentResult | null>(null);
   const [toastAlert, setToastAlert] = useState<{ kind: "good" | "info"; text: string } | null>(null);
 
   const isBank = viewMode === "bank";
-  const monthlyRevenue = dashboard?.company.monthly_revenue_alfa ?? 1_800_000;
   const currentAmount = selectedTx ? Math.abs(selectedTx.amount_rub) : 0;
-
   const currentOffer: InstallmentOffer | undefined = selectedTx
     ? installmentOffers[selectedTx.id]
     : undefined;
 
-  const monthlyPayment = calculatePayment(currentAmount, months, ratePct);
-  const totalPayment = monthlyPayment * months;
-  const totalInterest = Math.max(0, totalPayment - currentAmount);
-  const revenueLoadPct = monthlyRevenue > 0
-    ? Math.min(100, Math.round((monthlyPayment / monthlyRevenue) * 1000) / 10)
-    : 0;
-
-  const counterMonthlyPayment = calculatePayment(currentAmount, counterMonths, counterRate);
   const demoKey = (dashboard?.company.demo_key || dashboard?.company.id || "rosters").replace("cmp_", "");
+
+  // Вычисляемые варианты банка
+  const variant1: BankInstallmentVariant = currentOffer?.variant1 || {
+    months: bankVar1Months,
+    ratePct: bankVar1Rate,
+    monthlyPayment: calculatePayment(currentAmount, bankVar1Months, bankVar1Rate),
+    totalInterest: Math.max(0, calculatePayment(currentAmount, bankVar1Months, bankVar1Rate) * bankVar1Months - currentAmount),
+  };
+
+  const variant2: BankInstallmentVariant = currentOffer?.variant2 || {
+    months: bankVar2Months,
+    ratePct: bankVar2Rate,
+    monthlyPayment: calculatePayment(currentAmount, bankVar2Months, bankVar2Rate),
+    totalInterest: Math.max(0, calculatePayment(currentAmount, bankVar2Months, bankVar2Rate) * bankVar2Months - currentAmount),
+  };
+
+  const activeVariant = selectedVariant === 1 ? variant1 : variant2;
+
+  // Вычисляемые параметры встречного предложения заёмщика
+  const customPayment = calculatePayment(currentAmount, customMonths, customRate);
+  const customInterest = Math.max(0, customPayment * customMonths - currentAmount);
 
   function handleOpenModal(tx: Transaction) {
     setSelectedTx(tx);
     const existing = installmentOffers[tx.id];
     if (existing) {
-      setMonths(existing.months);
-      setRatePct(existing.ratePct);
-      setCounterMonths(existing.clientCounterMonths ?? (existing.months === 6 ? 4 : 6));
-      setCounterRate(existing.clientCounterRatePct ?? 14.0);
+      setBankVar1Months(existing.variant1.months);
+      setBankVar1Rate(existing.variant1.ratePct);
+      setBankVar2Months(existing.variant2.months);
+      setBankVar2Rate(existing.variant2.ratePct);
+      setSelectedVariant(existing.selectedVariantIndex ?? 2);
+      setCustomMonths(existing.clientCounterMonths ?? 6);
+      setCustomRate(existing.clientCounterRatePct ?? 14.0);
       setClientComment(existing.clientComment ?? "");
-      setActiveTab(existing.status === "COUNTER_OFFERED" && !isBank ? "counter_offer" : "bank_offer");
+      setIsCustomMode(existing.status === "COUNTER_OFFERED" && !isBank);
     } else {
-      setMonths(6);
-      setRatePct(16.5);
-      setCounterMonths(6);
-      setCounterRate(14.0);
+      setBankVar1Months(3);
+      setBankVar1Rate(18.0);
+      setBankVar2Months(6);
+      setBankVar2Rate(18.0);
+      setSelectedVariant(2);
+      setCustomMonths(6);
+      setCustomRate(14.0);
       setClientComment("");
-      setActiveTab("bank_offer");
+      setIsCustomMode(false);
     }
   }
 
-  // 1. Пилот банка отправляет предложение клиенту
-  function handleBankSendOffer() {
-    if (!selectedTx) return;
-    const payment = calculatePayment(currentAmount, months, ratePct);
-    const interest = Math.max(0, payment * months - currentAmount);
-
-    const newOffer: InstallmentOffer = {
-      txId: selectedTx.id,
-      txDescription: selectedTx.description,
-      amountRub: currentAmount,
-      months,
-      ratePct,
-      monthlyPayment: payment,
-      totalInterest: interest,
-      status: "OFFERED",
-      offeredAt: "Только что",
-    };
-
-    setInstallmentOffer(newOffer);
-    setActiveThread(demoKey);
-
-    sendChatMessage(
-      `Банк сформировал персональные условия B2B-рассрочки по операции «${selectedTx.description}» ` +
-      `на сумму ${formatMoney(currentAmount)}: срок ${months} мес., ставка ${ratePct.toFixed(1)}% годовых, ` +
-      `платёж ${formatMoney(payment)}/мес. Условия доступны к принятию в личном кабинете.`
-    );
-
-    pushClientNotice({
-      kind: "approved",
-      title: `Одобрена рассрочка: ${formatMoney(currentAmount)}`,
-      text: `Срок ${months} мес. под ${ratePct.toFixed(1)}% годовых. Нажмите «Рассрочка», чтобы принять или предложить свои условия.`,
-      applicationId: selectedTx.id,
-      targetScreen: "home",
-      primaryLabel: "Посмотреть условия",
-      secondaryLabel: "Позже",
-    });
-
-    setToastAlert({
-      kind: "good",
-      text: `Условия рассрочки (${months} мес., ${ratePct.toFixed(1)}%) направлены клиенту. Ожидаем решения заёмщика.`,
-    });
-    setSelectedTx(null);
-  }
-
-  // 2. Клиент принимает предложение банка
-  async function handleClientAcceptBankOffer() {
+  // 1. Клиент принимает один из двух вариантов банка
+  async function handleClientAcceptVariant(variantIndex: 1 | 2) {
     if (!selectedTx) return;
     try {
-      const effMonths = currentOffer ? currentOffer.months : months;
-      const effRate = currentOffer ? currentOffer.ratePct : ratePct;
-      const response = await runInstallment(selectedTx.id, effMonths);
+      const chosen = variantIndex === 1 ? variant1 : variant2;
+      const response = await runInstallment(selectedTx.id, chosen.months);
       setResult(response);
 
       if (currentOffer) {
-        setInstallmentOffer({ ...currentOffer, status: "ACCEPTED" });
+        setInstallmentOffer({ ...currentOffer, selectedVariantIndex: variantIndex, status: "ACCEPTED" });
       }
 
       setActiveThread(demoKey);
       sendChatMessage(
-        `Клиент принял предложение банка по рассрочке «${selectedTx.description}» ` +
-        `на ${effMonths} мес. под ${effRate.toFixed(1)}%. ` +
-        `Средства в размере ${formatMoney(currentAmount)} возвращены на расчётный счёт.`
+        `Клиент оформил B2B-рассрочку по операции «${selectedTx.description}» на ${chosen.months} мес. ` +
+        `под ${chosen.ratePct.toFixed(1)}% годовых (платёж ${formatMoney(chosen.monthlyPayment)}/мес). ` +
+        `${formatMoney(currentAmount)} возвращены на расчётный счёт.`
       );
 
       pushBankNotice({
         kind: "new_app",
         title: `Рассрочка оформлена: ${formatMoney(currentAmount)}`,
-        text: `${dashboard?.company.name ?? "Клиент"} принял условия на ${effMonths} мес. под ${effRate.toFixed(1)}%`,
+        text: `${dashboard?.company.name ?? "Клиент"} выбрал вариант на ${chosen.months} мес. под ${chosen.ratePct.toFixed(1)}%`,
         companyId: dashboard?.company.id ?? "cmp_rosters",
         companyName: dashboard?.company.name ?? "ООО «Ростерс Кафе»",
         demoKey,
@@ -176,71 +157,128 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
 
       setSelectedTx(null);
     } catch {
-      // ошибка всплывает на глобальном баннере
+      // ошибка всплывает в глобальном баннере
     }
   }
 
-  // 3. Клиент отправляет встречное предложение (Контр-оффер)
-  function handleClientSendCounterOffer() {
+  // 2. Клиент настраивает свои условия и отправляет в банк на рассмотрение
+  function handleClientSendCustomConditions() {
     if (!selectedTx) return;
-    const payment = calculatePayment(currentAmount, counterMonths, counterRate);
+    const payment = calculatePayment(currentAmount, customMonths, customRate);
 
-    const baseOffer = currentOffer || {
+    const baseOffer: InstallmentOffer = currentOffer || {
       txId: selectedTx.id,
       txDescription: selectedTx.description,
       amountRub: currentAmount,
-      months,
-      ratePct,
-      monthlyPayment,
-      totalInterest,
+      variant1,
+      variant2,
+      status: "OFFERED",
       offeredAt: "Только что",
     };
 
-    const updated: InstallmentOffer = {
+    const updatedOffer: InstallmentOffer = {
       ...baseOffer,
       status: "COUNTER_OFFERED",
-      clientCounterMonths: counterMonths,
-      clientCounterRatePct: counterRate,
+      clientCounterMonths: customMonths,
+      clientCounterRatePct: customRate,
       clientCounterMonthlyPayment: payment,
-      clientComment: clientComment.trim() || "Просим пересмотреть условия для снижения финансовой нагрузки на кассу.",
+      clientComment: clientComment.trim() || "Просим предоставить индивидуальные условия для снижения нагрузки на кассу.",
     };
 
-    setInstallmentOffer(updated);
+    setInstallmentOffer(updatedOffer);
     setActiveThread(demoKey);
 
     sendChatMessage(
-      `Встречное предложение от клиента по рассрочке «${selectedTx.description}» (${formatMoney(currentAmount)}): ` +
-      `заёмщик просит срок ${counterMonths} мес. и ставку ${counterRate.toFixed(1)}% годовых ` +
+      `Клиент настроил свои условия по рассрочке «${selectedTx.description}» (${formatMoney(currentAmount)}): ` +
+      `запрошен срок ${customMonths} мес. и ставка ${customRate.toFixed(1)}% годовых ` +
       `(желаемый платёж ${formatMoney(payment)}/мес). ` +
-      `Комментарий: «${clientComment.trim() || "Просим пересмотреть условия"}»`
+      `Комментарий заёмщика: «${clientComment.trim() || "Просим пересмотреть условия"}». ` +
+      `Запрос передан на рассмотрение кредитному инспектору.`
     );
 
     pushBankNotice({
       kind: "manual_review",
-      title: `Встречное предложение: ${formatMoney(currentAmount)}`,
-      text: `${dashboard?.company.name ?? "Клиент"} просит ${counterMonths} мес. под ${counterRate.toFixed(1)}% (комментарий в чате)`,
+      title: `Запрос на свои условия: ${formatMoney(currentAmount)}`,
+      text: `${dashboard?.company.name ?? "Клиент"} настроил свои условия: ${customMonths} мес. под ${customRate.toFixed(1)}% (на рассмотрении)`,
       companyId: dashboard?.company.id ?? "cmp_rosters",
       companyName: dashboard?.company.name ?? "ООО «Ростерс Кафе»",
       demoKey,
       amountLabel: formatMoney(currentAmount),
       targetScreen: "bank-messages",
-      primaryLabel: "В чат",
+      primaryLabel: "Рассмотреть",
       time: "Только что",
     });
 
     setToastAlert({
       kind: "info",
-      text: "Встречное предложение направлено вашему кредитному менеджеру. Ответ поступит в чат в течение 5 минут.",
+      text: "Ваши условия рассрочки направлены кредитному инспектору банка на рассмотрение. Ответ поступит в чат в течение 5 минут.",
     });
     setSelectedTx(null);
   }
 
-  // 4. Пилот банка одобряет встречные условия клиента
-  async function handleBankAcceptCounterOffer() {
+  // 3. Пилот банка направляет два варианта клиенту
+  function handleBankSendTwoVariants() {
+    if (!selectedTx) return;
+    const v1Payment = calculatePayment(currentAmount, bankVar1Months, bankVar1Rate);
+    const v1Interest = Math.max(0, v1Payment * bankVar1Months - currentAmount);
+
+    const v2Payment = calculatePayment(currentAmount, bankVar2Months, bankVar2Rate);
+    const v2Interest = Math.max(0, v2Payment * bankVar2Months - currentAmount);
+
+    const offer: InstallmentOffer = {
+      txId: selectedTx.id,
+      txDescription: selectedTx.description,
+      amountRub: currentAmount,
+      variant1: {
+        months: bankVar1Months,
+        ratePct: bankVar1Rate,
+        monthlyPayment: v1Payment,
+        totalInterest: v1Interest,
+      },
+      variant2: {
+        months: bankVar2Months,
+        ratePct: bankVar2Rate,
+        monthlyPayment: v2Payment,
+        totalInterest: v2Interest,
+      },
+      selectedVariantIndex: 2,
+      status: "OFFERED",
+      offeredAt: "Только что",
+    };
+
+    setInstallmentOffer(offer);
+    setActiveThread(demoKey);
+
+    sendChatMessage(
+      `Банк сформировал 2 варианта B2B-рассрочки по расходу «${selectedTx.description}» на сумму ${formatMoney(currentAmount)}: ` +
+      `Вариант 1 — ${bankVar1Months} мес. под ${bankVar1Rate.toFixed(1)}% (${formatMoney(v1Payment)}/мес); ` +
+      `Вариант 2 — ${bankVar2Months} мес. под ${bankVar2Rate.toFixed(1)}% (${formatMoney(v2Payment)}/мес). ` +
+      `Вы можете выбрать подходящий вариант в кабинете или настроить свои условия.`
+    );
+
+    pushClientNotice({
+      kind: "approved",
+      title: `Вам предложено 2 варианта рассрочки: ${formatMoney(currentAmount)}`,
+      text: `На 3 или 6 месяцев от ${Math.min(bankVar1Rate, bankVar2Rate).toFixed(1)}% годовых. Нажмите «Рассрочка», чтобы выбрать или настроить свои параметры.`,
+      applicationId: selectedTx.id,
+      targetScreen: "home",
+      primaryLabel: "Открыть варианты",
+      secondaryLabel: "Позже",
+    });
+
+    setToastAlert({
+      kind: "good",
+      text: `Банк успешно направил 2 варианта рассрочки клиенту (${bankVar1Months} мес. и ${bankVar2Months} мес.).`,
+    });
+    setSelectedTx(null);
+  }
+
+  // 4. Пилот банка одобряет встречные условия заёмщика
+  async function handleBankAcceptCustomConditions() {
     if (!selectedTx || !currentOffer) return;
     try {
-      const term = currentOffer.clientCounterMonths ?? months;
-      const rate = currentOffer.clientCounterRatePct ?? ratePct;
+      const term = currentOffer.clientCounterMonths ?? 6;
+      const rate = currentOffer.clientCounterRatePct ?? 14.0;
       const response = await runInstallment(selectedTx.id, term);
       setResult(response);
 
@@ -248,15 +286,15 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
       setActiveThread(demoKey);
 
       sendChatMessage(
-        `Банк согласовал ваши встречные условия по рассрочке «${selectedTx.description}»: ` +
+        `Банк рассмотрел и согласовал ваши индивидуальные условия по рассрочке «${selectedTx.description}»: ` +
         `срок ${term} мес., ставка ${rate.toFixed(1)}% годовых. ` +
-        `${formatMoney(currentAmount)} зачислены на ваш расчётный счёт!`
+        `Сумма ${formatMoney(currentAmount)} перечислена на ваш расчётный счёт!`
       );
 
       pushClientNotice({
         kind: "approved",
-        title: "Встречные условия согласованы банком!",
-        text: `Банк утвердил рассрочку на ${term} мес. под ${rate.toFixed(1)}%. ${formatMoney(currentAmount)} зачислены на счёт.`,
+        title: "Индивидуальные условия согласованы банком!",
+        text: `Банк утвердил рассрочку на ${term} мес. под ${rate.toFixed(1)}%. Деньги возвращены на счёт компании.`,
         applicationId: selectedTx.id,
         targetScreen: "home",
         primaryLabel: "В кабинет",
@@ -276,8 +314,8 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
           <h2 className="card-title">Выписка по счёту</h2>
           <p className="card-subtitle">
             {isBank
-              ? "Пост-транзакционная B2B-рассрочка · настройка условий и согласование контр-офферов"
-              : "Пост-транзакционная рассрочка · возможность принять условия банка или предложить свои"}
+              ? "Пост-транзакционная рассрочка · банк может предлагать 2 варианта и рассматривать запросы клиента"
+              : "Пост-транзакционная рассрочка · выбор из 2 вариантов банка или настройка своих условий"}
           </p>
         </div>
         <span className="pill pill-outline">{transactions.length} операции</span>
@@ -339,19 +377,19 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
                         <button
                           type="button"
                           className="btn btn-warning btn-sm dyn-counter-btn"
-                          title="Клиент направил встречное предложение"
+                          title="Клиент направил свои условия на рассмотрение"
                           onClick={() => handleOpenModal(transaction)}
                         >
-                          Контр-оффер ⚠️
+                          Свои условия ⚠️
                         </button>
                       ) : (
                         <button
                           type="button"
                           className="btn btn-primary btn-sm dyn-offer-btn"
-                          title={`Одобрено банком: ${offer.ratePct}% годовых`}
+                          title="Банк предлагает 2 варианта рассрочки"
                           onClick={() => handleOpenModal(transaction)}
                         >
-                          Оффер {offer.ratePct}%
+                          2 варианта банка
                         </button>
                       )
                     ) : transaction.can_installment ? (
@@ -371,7 +409,7 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
         </table>
       </div>
 
-      {/* Модальное окно настройки / принятия / встречного предложения рассрочки */}
+      {/* Модальное окно B2B-рассрочки по эталонному макету */}
       {selectedTx && (
         <div
           className="sheet-backdrop"
@@ -379,30 +417,24 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
           onClick={() => setSelectedTx(null)}
         >
           <div
-            className="sheet-card"
+            className="sheet-card installment-modal-card"
             role="dialog"
-            aria-labelledby="bank-installment-title"
+            aria-labelledby="installment-title"
             onClick={(event) => event.stopPropagation()}
-            style={{ width: "min(640px, 100%)" }}
           >
-            <header className="sheet-head">
+            {/* 1. Header */}
+            <header className="installment-modal-header">
               <div>
-                <span className="bank-modal-badge">
-                  {isBank
-                    ? currentOffer?.status === "COUNTER_OFFERED"
-                      ? "Пилот банка · Встречное предложение клиента"
-                      : "Пилот банка · Настройка и одобрение условий"
-                    : currentOffer
-                    ? "Условия B2B-рассрочки от Альфа-Банка"
-                    : "B2B-Рассрочка по операции"}
+                <span className="installment-modal-badge">
+                  {isBank ? "ПИЛОТ БАНКА · НАСТРОЙКА И ОДОБРЕНИЕ" : "РАССРОЧКА НА ОПЛАЧЕННЫЙ РАСХОД"}
                 </span>
-                <h2 id="bank-installment-title" style={{ marginTop: 2 }}>
+                <h2 id="installment-title" className="installment-modal-title">
                   Вернуть {formatMoney(currentAmount)} в оборот
                 </h2>
               </div>
               <button
                 type="button"
-                className="btn btn-ghost btn-sm"
+                className="installment-close-btn"
                 aria-label="Закрыть"
                 onClick={() => setSelectedTx(null)}
               >
@@ -410,44 +442,44 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
               </button>
             </header>
 
-            {/* Карточка расхода */}
-            <div className="sheet-tx">
-              <div>
-                <strong>{selectedTx.description}</strong>
-                <div className="muted">
-                  {formatDate(selectedTx.occurred_at)} · {selectedTx.category}
+            {/* 2. Transaction Details Card */}
+            <div className="installment-expense-card">
+              <div className="installment-expense-info">
+                <div className="installment-expense-title">
+                  {formatDate(selectedTx.occurred_at).slice(0, 5)} · {selectedTx.description}
+                </div>
+                <div className="installment-expense-category">
+                  {selectedTx.category}
                 </div>
               </div>
-              <strong style={{ color: "var(--red-text, #ef3124)", fontSize: 16 }}>
-                −{formatMoney(currentAmount)}
-              </strong>
+              <div className="installment-expense-amount">
+                {formatMoney(currentAmount)}
+              </div>
             </div>
 
-            {/* ════════ РЕЖИМ ПИЛОТА БАНКА ════════ */}
+            {/* ═══════════ РЕЖИМ ПИЛОТА БАНКА ═══════════ */}
             {isBank ? (
-              <div className="bank-cockpit-flow">
-                {/* Если клиент прислал встречное предложение */}
+              <div className="bank-pilot-cockpit">
+                {/* Если клиент прислал свои условия на рассмотрение */}
                 {currentOffer?.status === "COUNTER_OFFERED" && (
-                  <div className="bank-counter-alert">
+                  <div className="bank-counter-alert" style={{ marginBottom: 16 }}>
                     <div className="bank-counter-head">
-                      <span className="badge-warning">Встречное предложение клиента ⚠️</span>
-                      <span className="bank-counter-time">Запрос на согласование</span>
+                      <span className="badge-warning">Запрос клиента на свои условия (на рассмотрении) ⚠️</span>
+                      <span className="bank-counter-time">Встречный оффер</span>
                     </div>
                     <div className="bank-counter-grid">
                       <div className="bank-counter-item">
-                        <span className="bank-counter-lbl">Запрошенный срок:</span>
+                        <span className="bank-counter-lbl">Срок заёмщика:</span>
                         <strong>{currentOffer.clientCounterMonths} мес.</strong>
-                        <small className="muted"> (банк предлагал {currentOffer.months} мес.)</small>
                       </div>
                       <div className="bank-counter-item">
-                        <span className="bank-counter-lbl">Запрошенная ставка:</span>
+                        <span className="bank-counter-lbl">Ставка заёмщика:</span>
                         <strong>{currentOffer.clientCounterRatePct}% годовых</strong>
-                        <small className="muted"> (банк предлагал {currentOffer.ratePct}%)</small>
                       </div>
                       <div className="bank-counter-item">
                         <span className="bank-counter-lbl">Желаемый платёж:</span>
                         <strong className="good">
-                          ≈ {formatMoney(currentOffer.clientCounterMonthlyPayment ?? 0)}/мес.
+                          ≈ {formatMoney(currentOffer.clientCounterMonthlyPayment ?? 0)} / мес.
                         </strong>
                       </div>
                     </div>
@@ -461,334 +493,293 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
                         type="button"
                         className="btn btn-primary btn-sm"
                         disabled={isBusy}
-                        onClick={() => void handleBankAcceptCounterOffer()}
+                        onClick={() => void handleBankAcceptCustomConditions()}
                       >
-                        ✓ Одобрить встречные условия клиента
+                        ✓ Одобрить условия клиента
                       </button>
                       <span className="muted" style={{ fontSize: 12 }}>
-                        или скорректируйте параметры ниже
+                        или перенастройте 2 варианта банка ниже
                       </span>
                     </div>
                   </div>
                 )}
 
-                {/* Выбор срока рассрочки банком */}
-                <div className="figma-panel-title" style={{ marginTop: 16 }}>
-                  Срок рассрочки: {months} мес.
-                </div>
-                <div className="term-cards" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
-                  {TERM_OPTIONS.map((option) => {
-                    const optPayment = calculatePayment(currentAmount, option, ratePct);
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        className={`term-card ${months === option ? "active" : ""}`}
-                        onClick={() => setMonths(option)}
-                        style={{ padding: "10px 12px" }}
-                      >
-                        <strong style={{ fontSize: 13 }}>{option} мес.</strong>
-                        <span style={{ fontSize: 11, color: "#fff" }}>
-                          ≈ {formatMoney(optPayment)}
-                        </span>
-                      </button>
-                    );
-                  })}
+                <div className="figma-panel-title" style={{ marginTop: 8 }}>
+                  2 Варианта оффера, предлагаемые клиенту:
                 </div>
 
-                {/* Выбор процентной ставки банком */}
-                <div className="figma-panel-title" style={{ marginTop: 16 }}>
-                  Процентная ставка банка: {ratePct.toFixed(1)}% годовых
-                </div>
-                <div className="bank-rate-picker">
-                  <div className="bank-rate-chips">
-                    {BANK_RATE_PRESETS.map((preset) => (
-                      <button
-                        key={preset.rate}
-                        type="button"
-                        className={`bank-rate-chip ${ratePct === preset.rate ? "active" : ""}`}
-                        onClick={() => setRatePct(preset.rate)}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
+                {/* Настройка Варианта 1 */}
+                <div className="bank-variant-config-box">
+                  <div className="bank-variant-config-head">
+                    <strong>Вариант 1 ({bankVar1Months} мес. · {bankVar1Rate}%):</strong>
+                    <span className="good">≈ {formatMoney(calculatePayment(currentAmount, bankVar1Months, bankVar1Rate))} / мес.</span>
                   </div>
-                  <div className="bank-rate-slider-row">
+                  <div className="bank-variant-config-row">
+                    <label>Срок:</label>
+                    <div className="bank-mini-chips">
+                      {TERM_OPTIONS.map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`bank-mini-chip ${bankVar1Months === m ? "active" : ""}`}
+                          onClick={() => setBankVar1Months(m)}
+                        >
+                          {m} мес.
+                        </button>
+                      ))}
+                    </div>
+                    <label style={{ marginLeft: 12 }}>Ставка:</label>
                     <input
                       type="range"
                       min="12.0"
-                      max="26.0"
+                      max="24.0"
                       step="0.5"
-                      value={ratePct}
-                      onChange={(e) => setRatePct(Number(e.target.value))}
-                      aria-label="Процентная ставка рассрочки"
+                      value={bankVar1Rate}
+                      onChange={(e) => setBankVar1Rate(Number(e.target.value))}
+                      style={{ flex: 1, accentColor: "var(--accent)" }}
                     />
-                    <span className="bank-rate-val">{ratePct.toFixed(1)}%</span>
+                    <span style={{ fontWeight: 700, minWidth: 46 }}>{bankVar1Rate.toFixed(1)}%</span>
                   </div>
                 </div>
 
-                {/* Финансовый расчет сделки */}
-                <div className="bank-installment-metrics">
-                  <div className="bank-calc-card">
-                    <span className="bank-calc-label">Вернётся на счёт</span>
-                    <span className="bank-calc-val good">+{formatMoney(currentAmount)}</span>
-                    <span className="bank-calc-sub">сразу после решения</span>
+                {/* Настройка Варианта 2 */}
+                <div className="bank-variant-config-box" style={{ marginTop: 10 }}>
+                  <div className="bank-variant-config-head">
+                    <strong>Вариант 2 ({bankVar2Months} мес. · {bankVar2Rate}%):</strong>
+                    <span className="good">≈ {formatMoney(calculatePayment(currentAmount, bankVar2Months, bankVar2Rate))} / мес.</span>
                   </div>
-                  <div className="bank-calc-card">
-                    <span className="bank-calc-label">Ежемесячный платёж</span>
-                    <span className="bank-calc-val">{formatMoney(monthlyPayment)}</span>
-                    <span className="bank-calc-sub">нагрузка {revenueLoadPct}% выручки</span>
-                  </div>
-                  <div className="bank-calc-card">
-                    <span className="bank-calc-label">Доход банка (проценты)</span>
-                    <span className="bank-calc-val accent">{formatMoney(totalInterest)}</span>
-                    <span className="bank-calc-sub">за {months} месяцев</span>
+                  <div className="bank-variant-config-row">
+                    <label>Срок:</label>
+                    <div className="bank-mini-chips">
+                      {TERM_OPTIONS.map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`bank-mini-chip ${bankVar2Months === m ? "active" : ""}`}
+                          onClick={() => setBankVar2Months(m)}
+                        >
+                          {m} мес.
+                        </button>
+                      ))}
+                    </div>
+                    <label style={{ marginLeft: 12 }}>Ставка:</label>
+                    <input
+                      type="range"
+                      min="12.0"
+                      max="24.0"
+                      step="0.5"
+                      value={bankVar2Rate}
+                      onChange={(e) => setBankVar2Rate(Number(e.target.value))}
+                      style={{ flex: 1, accentColor: "var(--accent)" }}
+                    />
+                    <span style={{ fontWeight: 700, minWidth: 46 }}>{bankVar2Rate.toFixed(1)}%</span>
                   </div>
                 </div>
 
-                {/* Кнопки действий пилота банка */}
-                <div className="sheet-actions">
+                {/* Кнопки пилота */}
+                <div className="installment-modal-actions">
                   <button
                     type="button"
-                    className="btn btn-ghost"
+                    className="installment-cancel-btn"
                     onClick={() => setSelectedTx(null)}
                   >
                     Отмена
                   </button>
                   <button
                     type="button"
-                    className="btn btn-primary"
+                    className="installment-submit-btn"
                     disabled={isBusy}
-                    onClick={handleBankSendOffer}
+                    onClick={handleBankSendTwoVariants}
                   >
-                    {currentOffer?.status === "COUNTER_OFFERED"
-                      ? `Отправить обновленный оффер клиенту →`
-                      : `Отправить предложение клиенту (${formatMoney(currentAmount)}) →`}
+                    Направить 2 варианта клиенту →
                   </button>
                 </div>
               </div>
             ) : (
-              /* ════════ РЕЖИМ КЛИЕНТА (ПРЕДПРИНИМАТЕЛЬ) ════════ */
-              <div className="client-flow">
-                {currentOffer ? (
-                  <>
-                    <div className="client-modal-tabs">
-                      <button
-                        type="button"
-                        className={`client-modal-tab ${activeTab === "bank_offer" ? "active" : ""}`}
-                        onClick={() => setActiveTab("bank_offer")}
-                      >
-                        1. Предложение банка ({currentOffer.ratePct}%)
-                      </button>
-                      <button
-                        type="button"
-                        className={`client-modal-tab ${activeTab === "counter_offer" ? "active" : ""}`}
-                        onClick={() => setActiveTab("counter_offer")}
-                      >
-                        2. Встречное предложение (Контр-оффер)
-                      </button>
+              /* ═══════════ РЕЖИМ ПРЕДПРИНИМАТЕЛЯ (КЛИЕНТ) ═══════════ */
+              <div className="client-installment-view">
+                {/* 3. Section: СРОК РАССРОЧКИ */}
+                <div className="installment-section-lbl">
+                  СРОК РАССРОЧКИ
+                </div>
+
+                {/* 4. Два варианта банка (карточки рядом как на макете) */}
+                <div className="installment-variant-cards">
+                  {/* Карточка 1 */}
+                  <button
+                    type="button"
+                    className={`installment-variant-card ${selectedVariant === 1 && !isCustomMode ? "selected" : ""}`}
+                    onClick={() => {
+                      setSelectedVariant(1);
+                      setIsCustomMode(false);
+                    }}
+                  >
+                    <div className="installment-variant-term">{variant1.months} месяца</div>
+                    <div className="installment-variant-payment">
+                      ≈ {formatMoney(variant1.monthlyPayment)} / мес.
                     </div>
+                    <div className="installment-variant-overpay">
+                      Переплата {formatMoney(variant1.totalInterest)} · ориентир
+                    </div>
+                  </button>
 
-                    {activeTab === "bank_offer" ? (
-                      <div className="client-offer-view">
-                        <div className="client-offer-hero">
-                          <span className="pill pill-good" style={{ display: "inline-block", marginBottom: 8 }}>
-                            Одобрено Альфа-Банком
-                          </span>
-                          <h3>Банк готов вернуть {formatMoney(currentAmount)} на ваш счёт</h3>
-                          <p className="muted" style={{ fontSize: 13, margin: "4px 0 16px" }}>
-                            Деньги зачислятся на расчётный счёт сразу после подтверждения. Погашение равными платежами.
-                          </p>
+                  {/* Карточка 2 */}
+                  <button
+                    type="button"
+                    className={`installment-variant-card ${selectedVariant === 2 && !isCustomMode ? "selected" : ""}`}
+                    onClick={() => {
+                      setSelectedVariant(2);
+                      setIsCustomMode(false);
+                    }}
+                  >
+                    <div className="installment-variant-term">{variant2.months} месяца</div>
+                    <div className="installment-variant-payment">
+                      ≈ {formatMoney(variant2.monthlyPayment)} / мес.
+                    </div>
+                    <div className="installment-variant-overpay">
+                      Переплата {formatMoney(variant2.totalInterest)} · ориентир
+                    </div>
+                  </button>
+                </div>
 
-                          <div className="bank-installment-metrics">
-                            <div className="bank-calc-card">
-                              <span className="bank-calc-label">Срок рассрочки</span>
-                              <span className="bank-calc-val">{currentOffer.months} мес.</span>
-                              <span className="bank-calc-sub">график платежей</span>
-                            </div>
-                            <div className="bank-calc-card">
-                              <span className="bank-calc-label">Ставка банка</span>
-                              <span className="bank-calc-val accent">{currentOffer.ratePct}%</span>
-                              <span className="bank-calc-sub">годовых</span>
-                            </div>
-                            <div className="bank-calc-card">
-                              <span className="bank-calc-label">Ежемесячный платёж</span>
-                              <span className="bank-calc-val good">{formatMoney(currentOffer.monthlyPayment)}</span>
-                              <span className="bank-calc-sub">переплата {formatMoney(currentOffer.totalInterest)}</span>
-                            </div>
-                          </div>
-                        </div>
+                {/* 5. Переключатель: Настроить свои условия */}
+                <div className="installment-custom-toggle-wrap">
+                  <button
+                    type="button"
+                    className={`installment-custom-toggle-btn ${isCustomMode ? "active" : ""}`}
+                    onClick={() => setIsCustomMode((v) => !v)}
+                  >
+                    <span>
+                      ⚙️ {isCustomMode
+                        ? "Вернуться к выбору вариантов банка"
+                        : "Настроить свои условия (если варианты банка не подходят)"}
+                    </span>
+                    <span className="toggle-chevron">{isCustomMode ? "▴" : "▾"}</span>
+                  </button>
+                </div>
 
-                        <div className="sheet-actions" style={{ marginTop: 24 }}>
-                          <button
-                            type="button"
-                            className="btn btn-ghost"
-                            onClick={() => setActiveTab("counter_offer")}
-                          >
-                            Условия не подходят? Предложить свои →
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            disabled={isBusy}
-                            onClick={() => void handleClientAcceptBankOffer()}
-                          >
-                            Принять условия и вернуть {formatMoney(currentAmount)} на счёт →
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      /* Вкладка встречного предложения клиента */
-                      <div className="client-counter-view">
-                        <p className="muted" style={{ fontSize: 13, margin: "6px 0 14px" }}>
-                          Не подходят ставка или срок? Выберите комфортные для вашего бизнеса параметры
-                          и отправьте запрос вашему кредитному менеджеру.
-                        </p>
-
-                        <div className="figma-panel-title">Желаемый срок рассрочки: {counterMonths} мес.</div>
-                        <div className="term-cards" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
-                          {TERM_OPTIONS.map((option) => (
-                            <button
-                              key={option}
-                              type="button"
-                              className={`term-card ${counterMonths === option ? "active" : ""}`}
-                              onClick={() => setCounterMonths(option)}
-                              style={{ padding: "10px 12px" }}
-                            >
-                              <strong style={{ fontSize: 13 }}>{option} мес.</strong>
-                            </button>
-                          ))}
-                        </div>
-
-                        <div className="figma-panel-title" style={{ marginTop: 16 }}>
-                          Желаемая процентная ставка: {counterRate.toFixed(1)}% годовых
-                        </div>
-                        <div className="bank-rate-picker">
-                          <div className="bank-rate-chips">
-                            {CLIENT_COUNTER_RATES.map((preset) => (
-                              <button
-                                key={preset.rate}
-                                type="button"
-                                className={`bank-rate-chip ${counterRate === preset.rate ? "active" : ""}`}
-                                onClick={() => setCounterRate(preset.rate)}
-                              >
-                                {preset.label}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="bank-rate-slider-row">
-                            <input
-                              type="range"
-                              min="10.0"
-                              max="20.0"
-                              step="0.5"
-                              value={counterRate}
-                              onChange={(e) => setCounterRate(Number(e.target.value))}
-                              aria-label="Желаемая процентная ставка"
-                            />
-                            <span className="bank-rate-val">{counterRate.toFixed(1)}%</span>
-                          </div>
-                        </div>
-
-                        {/* Сравнение предложения банка и встречного запроса */}
-                        <div className="counter-compare-card">
-                          <div className="counter-compare-col">
-                            <span className="muted" style={{ fontSize: 11 }}>Предложение банка</span>
-                            <div>
-                              <strong>{currentOffer.months} мес.</strong> под <strong>{currentOffer.ratePct}%</strong>
-                            </div>
-                            <span className="accent" style={{ fontWeight: 600 }}>
-                              {formatMoney(currentOffer.monthlyPayment)}/мес.
-                            </span>
-                          </div>
-                          <div className="counter-compare-arrow">→</div>
-                          <div className="counter-compare-col active">
-                            <span className="muted" style={{ fontSize: 11 }}>Ваше встречное предложение</span>
-                            <div>
-                              <strong>{counterMonths} мес.</strong> под <strong>{counterRate.toFixed(1)}%</strong>
-                            </div>
-                            <span className="good" style={{ fontWeight: 600 }}>
-                              {formatMoney(counterMonthlyPayment)}/мес.
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Поле комментария клиента */}
-                        <div style={{ marginTop: 14 }}>
-                          <label className="figma-panel-title" htmlFor="client-counter-comment">
-                            Пожелание банку (необязательно)
-                          </label>
-                          <textarea
-                            id="client-counter-comment"
-                            className="counter-comment-box"
-                            rows={2}
-                            placeholder="Например: Просим увеличить срок и снизить платёж в связи с закупкой партии сырья..."
-                            value={clientComment}
-                            onChange={(e) => setClientComment(e.target.value)}
-                          />
-                        </div>
-
-                        <div className="sheet-actions" style={{ marginTop: 20 }}>
-                          <button
-                            type="button"
-                            className="btn btn-ghost"
-                            onClick={() => setActiveTab("bank_offer")}
-                          >
-                            Назад к предложению банка
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            disabled={isBusy}
-                            onClick={handleClientSendCounterOffer}
-                          >
-                            Отправить встречное предложение в банк 📨
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  /* Если банк ещё не выставлял оффер по этому чеку */
-                  <div className="client-no-offer">
-                    <p className="muted" style={{ fontSize: 13, margin: "10px 0 16px" }}>
-                      По этой операции доступна B2B-рассрочка на 3–6 месяцев.
-                      Вы можете запросить индивидуальные условия у кредитного менеджера банка.
-                    </p>
-                    <div className="figma-panel-title">Желаемый срок рассрочки: {months} мес.</div>
-                    <div className="term-cards" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
-                      {TERM_OPTIONS.map((option) => (
+                {/* 6. Блок настройки своих условий (если включен) */}
+                {isCustomMode && (
+                  <div className="installment-custom-box">
+                    <div className="figma-panel-title" style={{ marginTop: 0 }}>
+                      Желаемый срок рассрочки: {customMonths} мес.
+                    </div>
+                    <div className="term-cards" style={{ gridTemplateColumns: "repeat(4, 1fr)", margin: "8px 0 12px" }}>
+                      {TERM_OPTIONS.map((m) => (
                         <button
-                          key={option}
+                          key={m}
                           type="button"
-                          className={`term-card ${months === option ? "active" : ""}`}
-                          onClick={() => setMonths(option)}
-                          style={{ padding: "10px 12px" }}
+                          className={`term-card ${customMonths === m ? "active" : ""}`}
+                          onClick={() => setCustomMonths(m)}
+                          style={{ padding: "8px 10px", textAlign: "center" }}
                         >
-                          <strong style={{ fontSize: 13 }}>{option} мес.</strong>
+                          <strong>{m} мес.</strong>
                         </button>
                       ))}
                     </div>
 
-                    <div className="sheet-actions" style={{ marginTop: 24 }}>
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        onClick={() => setSelectedTx(null)}
-                      >
-                        Отмена
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        disabled={isBusy}
-                        onClick={handleClientSendCounterOffer}
-                      >
-                        Запросить рассрочку у банка 📨
-                      </button>
+                    <div className="figma-panel-title">
+                      Желаемая процентная ставка: {customRate.toFixed(1)}% годовых
+                    </div>
+                    <div className="bank-rate-picker" style={{ margin: "6px 0 12px" }}>
+                      <div className="bank-rate-chips">
+                        {CLIENT_COUNTER_RATES.map((preset) => (
+                          <button
+                            key={preset.rate}
+                            type="button"
+                            className={`bank-rate-chip ${customRate === preset.rate ? "active" : ""}`}
+                            onClick={() => setCustomRate(preset.rate)}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="installment-custom-preview">
+                      <span>
+                        Ваш расчётный платёж: <strong>{formatMoney(customPayment)} / мес.</strong>
+                      </span>
+                      <span className="muted"> (переплата {formatMoney(customInterest)})</span>
+                    </div>
+
+                    <div style={{ marginTop: 10 }}>
+                      <label className="installment-field-lbl" htmlFor="custom-comment">
+                        Комментарий или пожелание для банка
+                      </label>
+                      <textarea
+                        id="custom-comment"
+                        className="counter-comment-box"
+                        rows={2}
+                        placeholder="Например: просим снизить платёж до 15 000 ₽/мес в связи с закупкой партии сырья..."
+                        value={clientComment}
+                        onChange={(e) => setClientComment(e.target.value)}
+                      />
                     </div>
                   </div>
                 )}
+
+                {/* 7. Таблица метрик (строго как на фото) */}
+                <div className="installment-metrics-table">
+                  <div className="installment-metric-row">
+                    <div className="installment-metric-col">
+                      <span className="installment-metric-lbl">Вернётся на счёт</span>
+                      <span className="installment-metric-val">
+                        <strong>{formatMoney(currentAmount)}</strong> · сразу после подписи
+                      </span>
+                    </div>
+                    <div className="installment-metric-col" style={{ textAlign: "right" }}>
+                      <span className="installment-metric-lbl">Ставка</span>
+                      <span className="installment-metric-val">
+                        <strong>{(isCustomMode ? customRate : activeVariant.ratePct).toFixed(1)}%</strong> годовых
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="installment-metric-divider" />
+
+                  <div className="installment-metric-row">
+                    <div className="installment-metric-col">
+                      <span className="installment-metric-lbl">Платёж</span>
+                      <span className="installment-metric-val">
+                        {isCustomMode
+                          ? `≈ ${formatMoney(customPayment)} / мес. (запрос заёмщика)`
+                          : `≈ ${formatMoney(activeVariant.monthlyPayment)} / мес.`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 8. Кнопки действий (Отмена | Оформить рассрочку / Отправить в банк) */}
+                <div className="installment-modal-actions">
+                  <button
+                    type="button"
+                    className="installment-cancel-btn"
+                    onClick={() => setSelectedTx(null)}
+                  >
+                    Отмена
+                  </button>
+
+                  {isCustomMode ? (
+                    <button
+                      type="button"
+                      className="installment-submit-btn"
+                      disabled={isBusy}
+                      onClick={handleClientSendCustomConditions}
+                    >
+                      Отправить на рассмотрение в банк 📨
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="installment-submit-btn"
+                      disabled={isBusy}
+                      onClick={() => void handleClientAcceptVariant(selectedVariant)}
+                    >
+                      Оформить рассрочку
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>

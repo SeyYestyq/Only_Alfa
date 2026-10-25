@@ -95,14 +95,20 @@ const INITIAL_BANK_NOTICES: BankNotice[] = [
   },
 ];
 
-export interface InstallmentOffer {
-  txId: string;
-  txDescription: string;
-  amountRub: number;
+export interface BankInstallmentVariant {
   months: number;
   ratePct: number;
   monthlyPayment: number;
   totalInterest: number;
+}
+
+export interface InstallmentOffer {
+  txId: string;
+  txDescription: string;
+  amountRub: number;
+  variant1: BankInstallmentVariant;
+  variant2: BankInstallmentVariant;
+  selectedVariantIndex?: 1 | 2;
   status: "OFFERED" | "COUNTER_OFFERED" | "ACCEPTED";
   offeredAt: string;
   clientCounterMonths?: number;
@@ -116,10 +122,19 @@ const INITIAL_INSTALLMENT_OFFERS: Record<string, InstallmentOffer> = {
     txId: "trn_rosters_1",
     txDescription: "Оплата ООО «РестоОборудование»",
     amountRub: 235_000,
-    months: 6,
-    ratePct: 16.5,
-    monthlyPayment: 41_080,
-    totalInterest: 11_480,
+    variant1: {
+      months: 3,
+      ratePct: 18.0,
+      monthlyPayment: 80_737,
+      totalInterest: 7_211,
+    },
+    variant2: {
+      months: 6,
+      ratePct: 18.0,
+      monthlyPayment: 41_248,
+      totalInterest: 12_488,
+    },
+    selectedVariantIndex: 2,
     status: "OFFERED",
     offeredAt: "Сегодня 10:15",
   },
