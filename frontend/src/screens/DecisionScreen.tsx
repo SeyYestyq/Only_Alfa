@@ -4,7 +4,7 @@ import { CreditChatModal } from "../components/CreditChatModal";
 import { FlowStepper, stepFromStatus } from "../components/FlowStepper";
 import { MultibankPanel } from "../components/MultibankPanel";
 import { ProductOfferCards } from "../components/offers/ProductOfferCards";
-import { RiskScoreGauge } from "../components/RiskScoreGauge";
+import { DecisionScoreCard } from "../components/v2/DecisionScoreCard";
 import { StatusTrack } from "../components/StatusTrack";
 import { useApp } from "../state/AppState";
 import { useDemoStore } from "../state/demoStore";
@@ -97,24 +97,15 @@ export function DecisionScreen() {
       </p>
       <FlowStepper active={stepFromStatus(application.status, "decision")} />
 
-      {/* Проверки — только на Паспорте; здесь лишь итог скоринга и ссылка назад. */}
-      <div className="decision-score-bar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, padding: "16px 24px", background: "var(--surface-1)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-          <RiskScoreGauge score={application.risk_score} size="sm" showCorridors={false} />
-          <div>
-            <div className="figma-panel-title">Итог кредитной оценки</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", marginTop: 4 }}>
-              Лимит: {formatMoney(application.limit_rub)}
-            </div>
-            <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
-              Статус: {application.status_label} · {application.outcome_label}
-            </div>
-          </div>
-        </div>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("passport")}>
-          Что проверяли →
-        </button>
-      </div>
+      <DecisionScoreCard
+        application={application}
+        onInspect={() => goToScreen("passport")}
+        next={
+          application.status === "COUNTER_OFFER"
+            ? { title: "Выберите один из вариантов ниже", actionLabel: "К вариантам", onAction: focusOfferVariants }
+            : undefined
+        }
+      />
 
       {application.status === "ANOMALY_VERIFICATION" && (
         <div style={{ marginBottom: 24 }}>
@@ -122,9 +113,7 @@ export function DecisionScreen() {
         </div>
       )}
 
-      {(application.status === "NEED_MORE_INFO" ||
-        application.status === "APPROVED" ||
-        application.status === "COUNTER_OFFER") && (
+      {(application.status === "NEED_MORE_INFO" || application.status === "APPROVED") && (
         <section className="figma-panel figma-panel-sm decision-flags" style={{ marginBottom: 24 }}>
           <div className="figma-panel-title">Требует вашего внимания</div>
           <div className="decision-flag-list">
@@ -196,15 +185,6 @@ export function DecisionScreen() {
                       {confirmedFacts ? "Условия подтверждены" : "Подтвердить и перейти к подписи"}
                     </button>
                   </div>
-                </div>
-              </div>
-            )}
-            {application.status === "COUNTER_OFFER" && (
-              <div className="decision-flag">
-                <span className="decision-flag-mark">!</span>
-                <div>
-                  <strong>Выберите один из вариантов ниже</strong>
-                  <p>Банк не одобрил исходную сумму — условия пересчитаны под ваш сезон.</p>
                 </div>
               </div>
             )}
@@ -283,7 +263,7 @@ export function DecisionScreen() {
       )}
 
       {application.status === "COUNTER_OFFER" && application.counter_offers.length > 0 && (
-        <>
+        <div id="offer-variants">
           <ProductOfferCards
             offers={application.counter_offers}
             preferredProduct={application.product_type}
@@ -332,7 +312,7 @@ export function DecisionScreen() {
               )}
             </div>
           </div>
-        </>
+        </div>
       )}
 
       <div style={{ marginTop: 24 }}>
@@ -395,4 +375,13 @@ export function DecisionScreen() {
       )}
     </>
   );
+}
+
+function focusOfferVariants(): void {
+  const root = document.getElementById("offer-variants");
+  root?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const button = root?.querySelector("button");
+  if (button instanceof HTMLElement) {
+    button.focus();
+  }
 }

@@ -3,6 +3,7 @@ import { ChatThread } from "../../components/v2/ChatThread";
 import { Kbd } from "../../components/v2/Kbd";
 import { isTextField } from "../../components/v2/keys";
 import { RefuseDialog } from "../../components/v2/RefuseDialog";
+import { scoreCorridorLabel } from "../../components/RiskScoreGauge";
 import { INSPECTOR_NAME } from "../../domain-ui/caseScript";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
@@ -130,7 +131,7 @@ export function BankCase() {
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         <span className="v2-pill warn">{application.status_label}</span>
-        <span className="v2-pill">{application.risk_score} · {application.risk_score >= 650 ? "зелёный" : application.risk_score >= 520 ? "жёлтый" : "оранжевый"} коридор</span>
+        <span className="v2-pill">{scoreCorridorLabel(application.risk_score)}</span>
         {released ? <span className="v2-pill good">клиент уже видит решение</span> : <span className="v2-pill">клиент ещё видит «на проверке»</span>}
       </div>
       {lock ? (
@@ -150,6 +151,8 @@ export function BankCase() {
             <div className="v2-check"><span>Подписант</span><strong>{company.director_name}</strong></div>
             <div className="v2-check"><span>Выручка / мес.</span><strong>{formatMoney(company.monthly_revenue_alfa)} · {formatPercent(company.revenue_growth_pct, 0)}</strong></div>
             <div className="v2-check"><span>Свободный поток</span><strong>{formatMoney(application.fcf_rub)}</strong></div>
+            <div className="v2-check"><span>Балл</span><strong>{application.risk_score} из 1000</strong></div>
+            <div className="v2-check"><span>Лимит</span><strong>{formatMoney(application.limit_rub)}</strong></div>
             <div className="v2-check"><span>Кредиты в банках</span><strong>{company.bki_overdue_days > 0 ? `просрочка ${company.bki_overdue_days} дн.` : "нет просрочки"}</strong></div>
           </section>
           <section className="v2-card" style={{ marginTop: 12 }}>

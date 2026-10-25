@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChatThread } from "../../components/v2/ChatThread";
+import { DecisionScoreCard } from "../../components/v2/DecisionScoreCard";
 import { Stepper, stepForStatus } from "../../components/v2/Stepper";
 import { INSPECTOR_NAME, ROSTERS_SUMMER_SAFE } from "../../domain-ui/caseScript";
 import { useApp } from "../../state/AppState";
@@ -45,30 +46,33 @@ export function ClientDecision() {
       <div className="v2-crumb">Кредиты / Заявка {application.application_id.slice(-8)}</div>
       <div className="v2-row">
         <h1 className="v2-h1">{title}</h1>
-        <span className="v2-pill warn">{application.status_label}</span>
       </div>
       <Stepper active={stepForStatus(application.status, released)} />
 
-      <section className="v2-next">
-        <div>
-          <div className="kicker">Следующий шаг</div>
-          <strong>
-            {waiting
-              ? "Ждём инспектора. Когда решение уйдёт вам, здесь появятся варианты"
-              : showOffers
-                ? "Выберите вариант — затем заявка уйдёт гендиректору на подпись"
-                : application.status === "NEED_MORE_INFO"
-                  ? "Загрузите документ. Пока ждём вас, SLA банка на паузе"
-                  : application.status === "REJECTED"
-                    ? "Прочитайте, что изменить, и подайте заявку снова"
-                    : "Следите за статусом — банк напишет в этот чат"}
-          </strong>
-        </div>
-        {showOffers ? <span className="v2-pill">Сравнить варианты</span> : null}
-      </section>
+      {waiting ? (
+        <section className="v2-score-card">
+          <div className="v2-kicker">Следующий шаг</div>
+          <strong>Ждём инспектора</strong>
+          <p className="v2-score-reason">Когда решение уйдёт вам, здесь появятся балл, лимит и варианты.</p>
+        </section>
+      ) : (
+        <DecisionScoreCard
+          application={application}
+          onInspect={() => document.getElementById("decision-why")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          next={
+            showOffers
+              ? { title: "Выберите один из вариантов ниже", actionLabel: "К вариантам", onAction: focusVariants }
+              : application.status === "NEED_MORE_INFO"
+                ? { title: "Загрузите документ. Пока ждём вас, срок банка на паузе", actionLabel: "К документу", onAction: () => document.getElementById("decision-why")?.scrollIntoView({ behavior: "smooth", block: "start" }) }
+                : application.status === "REJECTED"
+                  ? { title: "Прочитайте, что изменить, и подайте заявку снова", actionLabel: "К объяснению", onAction: () => document.getElementById("decision-why")?.scrollIntoView({ behavior: "smooth", block: "start" }) }
+                  : { title: "Дальше — подпись. Писать руководителю не нужно.", actionLabel: "К подписи", onAction: () => goToScreen("signing") }
+          }
+        />
+      )}
 
       {showOffers ? (
-        <div className="v2-variants">
+        <div className="v2-variants" id="offer-variants">
           {primary.map((offer, index) => (
             <article key={offer.index} className={`v2-variant ${index === 0 ? "pick" : ""}`}>
               <span className={`v2-pill ${index === 0 ? "good" : "info"}`}>{index === 0 ? "Рекомендуем" : offer.label}</span>
@@ -103,7 +107,7 @@ export function ClientDecision() {
       ) : null}
 
       <div className="v2-split" style={{ marginTop: 12 }}>
-        <section className="v2-card">
+        <section className="v2-card" id="decision-why">
           <div className="v2-kicker">Объяснение решения</div>
           <h2>Почему не {formatMoney(application.requested_amount_rub)}</h2>
           <p className="v2-muted">Решение принял инспектор, расчёты сделала система — по вашим операциям в банке.</p>
@@ -188,4 +192,13 @@ export function ClientDecision() {
       </div>
     </>
   );
+}
+
+function focusVariants(): void {
+  const root = document.getElementById("offer-variants");
+  root?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const button = root?.querySelector("button");
+  if (button instanceof HTMLElement) {
+    button.focus();
+  }
 }

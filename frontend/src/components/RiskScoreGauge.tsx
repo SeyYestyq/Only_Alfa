@@ -25,6 +25,11 @@ export const SCORE_CORRIDORS: ScoreCorridor[] = [
   { name: "Зелёный", code: "GREEN", min: 650, max: 1000, color: "#34C77B", label: "Высокая надёжность" },
 ];
 
+/** Одна подпись балла для клиента и инспектора: «610 · жёлтый коридор». */
+export function scoreCorridorLabel(score: number): string {
+  return `${score} · ${getCorridor(score).name.toLowerCase()} коридор`;
+}
+
 export function getCorridor(score: number): ScoreCorridor {
   if (score >= 650) return SCORE_CORRIDORS[3];
   if (score >= 520) return SCORE_CORRIDORS[2];
