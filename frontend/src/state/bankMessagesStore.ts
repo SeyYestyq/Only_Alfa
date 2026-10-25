@@ -299,10 +299,11 @@ interface BankMessagesState {
   setFilter: (filter: "all" | "attention" | "with_app") => void;
   sendMessage: (text: string, attachment?: ChatAttachment) => void;
   sendQuickAction: (actionKey: string) => void;
+  resetAll: () => void;
 }
 
 export const useBankMessagesStore = create<BankMessagesState>((set, get) => ({
-  threads: INITIAL_THREADS,
+  threads: JSON.parse(JSON.stringify(INITIAL_THREADS)),
   activeThreadId: "rosters",
   isTyping: false,
   filter: "all",
@@ -424,5 +425,14 @@ export const useBankMessagesStore = create<BankMessagesState>((set, get) => ({
       default:
         break;
     }
+  },
+
+  resetAll: () => {
+    set({
+      threads: JSON.parse(JSON.stringify(INITIAL_THREADS)),
+      activeThreadId: "rosters",
+      isTyping: false,
+      filter: "all",
+    });
   },
 }));

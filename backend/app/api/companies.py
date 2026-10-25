@@ -30,6 +30,12 @@ def lookup_inn(body: LookupInnRequest, session: Session = Depends(get_session)) 
     return CompanyService(session).lookup_inn(body.inn)
 
 
+@router.post("/companies/reset-demo")
+def reset_demo(session: Session = Depends(get_session)) -> dict:
+    """Сброс всех демо-сценариев к исходному состоянию."""
+    return CompanyService(session).reset_demo()
+
+
 @router.get("/companies/{company_id}/dashboard", response_model=DashboardResponse)
 def company_dashboard(company_id: str, session: Session = Depends(get_session)) -> dict:
     """Данные Экрана 1: ДНК, прогноз кассы, радар, новости, выписка, чипсы."""

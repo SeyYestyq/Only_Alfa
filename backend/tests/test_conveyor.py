@@ -304,3 +304,26 @@ def test_seed_is_idempotent(client):
     with SessionLocal() as session:
         created = seed_database(session)
     assert created == {"companies": 0, "catalog_items": 0}
+
+
+def test_reset_demo_scenarios(client, companies):
+    company = companies["smirnov"]
+    create_application(
+        client,
+        company,
+        {
+            "product_type": "INVEST_LEASING",
+            "requested_amount_rub": 900_000,
+            "term_months": 24,
+            "declared_monthly_revenue": 1_200_000,
+        },
+    )
+    apps = client.get(f"/api/v1/companies/{company['id']}/applications").json()
+    assert len(apps["applications"]) >= 1
+
+    reset_res = client.post("/api/v1/companies/reset-demo")
+    assert reset_res.status_code == 200
+    assert reset_res.json()["ok"] is True
+
+    apps_after = client.get(f"/api/v1/companies/{company['id']}/applications").json()
+    assert len(apps_after["applications"]) == 0

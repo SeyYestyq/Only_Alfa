@@ -178,6 +178,10 @@ export const api = {
   installment(transactionId: string, months: number): Promise<InstallmentResult> {
     return request(`/transactions/${transactionId}/installment`, jsonInit({ months }));
   },
+
+  resetDemo(): Promise<{ ok: boolean; message: string }> {
+    return request("/companies/reset-demo", { method: "POST" });
+  },
 };
 
 export const PRODUCT_LABELS: Record<ProductType, string> = {

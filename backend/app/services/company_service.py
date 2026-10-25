@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import EntityNotFound
 from app.domain.types import CompanyProfile
 from app.infra.demo_content import SEARCH_CHIPS_BY_CLUSTER, SEARCH_CHIPS_BY_DEMO_KEY
+from app.infra.demo_profiles import DEMO_COMPANIES
+from app.infra.models import Application, ApplicationCheck, ApplicationEvent, Company, Transaction
 from app.infra.registry_simulator import simulate_company, validate_inn
 from app.repositories.catalog_repository import CatalogRepository
 from app.repositories.company_repository import CompanyRepository
@@ -63,3 +65,24 @@ class CompanyService:
             SEARCH_CHIPS_BY_CLUSTER["HORECA"],
         )
         return dashboard_payload(profile, transactions, news, chips)
+
+    def reset_demo(self) -> dict:
+        """Сброс всех сценариев к исходному состоянию (заявки, события, балансы, проверки)."""
+        self.session.query(ApplicationEvent).delete()
+        self.session.query(ApplicationCheck).delete()
+        self.session.query(Application).delete()
+
+        self.session.query(Transaction).update({"installment_taken": False})
+
+        for key, profile in DEMO_COMPANIES.items():
+            comp = self.session.query(Company).filter(Company.inn == profile.inn).first()
+            if comp:
+                comp.account_balance = profile.account_balance
+                comp.monthly_revenue_multibank = 0.0
+                comp.is_multibank_verified = False
+                comp.declared_monthly_revenue = profile.declared_monthly_revenue
+                self.companies.save_dna(comp.id, profile)
+
+        self.session.commit()
+        return {"ok": True, "message": "Все демо-сценарии успешно сброшены к исходному состоянию"}
+

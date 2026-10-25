@@ -124,6 +124,7 @@ interface DemoStore {
   dismissBankNotice: (id: string) => void;
   clearBankNotices: () => void;
   setNoticesOpen: (open: boolean) => void;
+  resetAll: () => void;
 }
 
 function noticeFromStatus(
@@ -264,6 +265,20 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
     set({ bankNotices: get().bankNotices.filter((row) => row.id !== id) }),
   clearBankNotices: () => set({ bankNotices: [], noticesOpen: false }),
   setNoticesOpen: (noticesOpen) => set({ noticesOpen }),
+  resetAll: () =>
+    set({
+      screen: "home",
+      viewMode: "business",
+      userRole: "CEO_OWNER",
+      applyIntent: "standard",
+      prefillCollateral: false,
+      applyPrefillAmount: null,
+      offersMuted: false,
+      creditDocs: [],
+      clientNotices: [],
+      bankNotices: INITIAL_BANK_NOTICES,
+      noticesOpen: false,
+    }),
 }));
 
 /** Хелпер: положить уведомление клиенту по статусу заявки. */

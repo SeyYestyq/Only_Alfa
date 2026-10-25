@@ -26,6 +26,7 @@ import type {
   Xray,
 } from "../api/types";
 import { notifyClientAboutStatus, useDemoStore } from "./demoStore";
+import { useBankMessagesStore } from "./bankMessagesStore";
 import { formatMoney } from "../utils/format";
 
 export interface MultibankResult {
@@ -85,6 +86,7 @@ interface AppContextValue {
   ) => Promise<void>;
   runInstallment: (transactionId: string, months: number) => Promise<InstallmentResult>;
   refresh: () => Promise<void>;
+  resetAllScenarios: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -661,6 +663,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [companyId, handleError, loadDashboard]);
 
+  const resetAllScenarios = useCallback(async () => {
+    setIsBusy(true);
+    setError(null);
+    try {
+      await api.resetDemo();
+      useDemoStore.getState().resetAll();
+      useBankMessagesStore.getState().resetAll();
+      setSearchResult(null);
+      setInvoiceResult(null);
+      setApplication(null);
+      setApplications([]);
+      setXray(null);
+      setMultibankResult(null);
+
+      const companyResponse = await api.getCompanies();
+      setCompanies(companyResponse.companies);
+
+      if (companyResponse.companies.length > 0) {
+        const first = companyResponse.companies[0];
+        companyRef.current = first.id;
+        setCompanyId(first.id);
+        const dash = await api.getDashboard(first.id);
+        setDashboard(dash);
+        setUserRole(ownerRole(dash.company));
+      }
+    } catch (cause) {
+      handleError(cause);
+      throw cause;
+    } finally {
+      setIsBusy(false);
+    }
+  }, [handleError, setUserRole]);
+
   const value = useMemo<AppContextValue>(() => ({
     companies,
     companyId,
@@ -699,11 +734,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     underwriterAction,
     runInstallment,
     refresh,
+    resetAllScenarios,
     clearError: () => setError(null),
   }), [
     acceptOffer, application, applications, cbrRate, companies, companyId, createApplication, dashboard,
     effectiveRole, error, goToScreen, invoiceResult, isBusy, isReady, loadApplications, lookupInn, multibankResult,
-    openApplication, openBankCase, parseFile, parseTemplate, refresh, runInstallment, runSearch, screen, searchResult,
+    openApplication, openBankCase, parseFile, parseTemplate, refresh, resetAllScenarios, runInstallment, runSearch, screen, searchResult,
     selectCompany, setViewMode, signApplication, submitDraft, templates, underwriterAction, userRole,
     verifyMultibank, viewMode, xray,
   ]);

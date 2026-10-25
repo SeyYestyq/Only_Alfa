@@ -88,6 +88,63 @@
   }
 }
 
+.dyn-island-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.dyn-island-header .dyn-island-pill {
+  flex: 1;
+  min-width: 0;
+}
+
+.dyn-island-quick-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: var(--figma-muted);
+  padding: 6px 12px 6px 8px;
+  margin-right: 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font: inherit;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+}
+
+.dyn-island-quick-reset:hover {
+  color: var(--accent);
+  background: var(--control-bg-hover, rgba(239, 49, 36, 0.08));
+  border-color: rgba(239, 49, 36, 0.2);
+}
+
+.dyn-island-quick-reset:active {
+  transform: scale(0.96);
+}
+
+.dyn-island-quick-reset:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dyn-reset-icon {
+  font-size: 13px;
+  line-height: 1;
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.dyn-island-quick-reset:hover .dyn-reset-icon,
+.dyn-island-reset-btn:hover .dyn-reset-icon {
+  transform: rotate(-180deg);
+}
+
 .dyn-island-pill {
   display: flex;
   align-items: center;
@@ -259,6 +316,56 @@
 .dyn-island-theme-toggle button.active {
   background: var(--control-bg-active);
   color: var(--text-primary);
+}
+
+.dyn-island-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--control-bg);
+  border: 1px solid var(--figma-border);
+  color: var(--figma-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font: inherit;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.dyn-island-reset-btn:hover {
+  background: rgba(239, 49, 36, 0.08);
+  border-color: rgba(239, 49, 36, 0.35);
+  color: var(--accent);
+  box-shadow: 0 2px 8px rgba(239, 49, 36, 0.12);
+}
+
+.dyn-island-reset-btn:active {
+  transform: scale(0.98);
+}
+
+.dyn-island-reset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dyn-island-toast {
+  left: 50% !important;
+  transform: translateX(-50%);
+  animation: dyn-toast-appear 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dyn-toast-appear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 /* popovers must paint above island chrome / nearby nav */

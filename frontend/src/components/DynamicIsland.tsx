@@ -52,6 +52,7 @@ export function DynamicIsland() {
     lookupInn,
     setUserRole,
     setViewMode,
+    resetAllScenarios,
   } = useApp();
 
   const noticeCount = useDemoStore((state) => state.clientNotices.length);
@@ -174,6 +175,25 @@ export function DynamicIsland() {
     }
   }
 
+  async function handleResetAll() {
+    if (isBusy) return;
+    try {
+      await resetAllScenarios();
+      setInn("");
+      setInnToast({
+        kind: "ok",
+        title: "Сценарии сброшены",
+        text: "Все заявки, балансы компаний и чаты возвращены в исходное состояние",
+      });
+    } catch {
+      setInnToast({
+        kind: "err",
+        title: "Ошибка сброса",
+        text: "Не удалось сбросить демо-сценарии",
+      });
+    }
+  }
+
   const islandClass = [
     "dyn-island",
     open ? "is-open" : "",
@@ -187,30 +207,46 @@ export function DynamicIsland() {
   return (
     <div className="dyn-island-anchor" aria-live="polite">
       <div className={islandClass} ref={islandRef}>
-        <button
-          type="button"
-          className="dyn-island-pill"
-          aria-expanded={open}
-          onClick={() => setOpen((value) => !value)}
-        >
-          <span className={`dyn-island-dot ${isBusy ? "pulse" : ""} ${error ? "alert" : ""}`} />
-          <span className="dyn-island-badge">ДЕМО</span>
-          <span className="dyn-island-mode">{viewMode === "bank" ? "Банк" : "Бизнес"}</span>
-          <span className="dyn-island-sep" aria-hidden>
-            ·
-          </span>
-          <span className="dyn-island-company">{companyShort}</span>
-          <span className="dyn-island-sep" aria-hidden>
-            ·
-          </span>
-          <span className="dyn-island-status">{statusLine}</span>
-          <span className="dyn-island-theme-cue" aria-hidden title={theme === "light" ? "Светлая" : "Тёмная"}>
-            {theme === "light" ? "☀" : "☾"}
-          </span>
-          <span className="dyn-island-chevron" aria-hidden>
-            {open ? "▴" : "▾"}
-          </span>
-        </button>
+        <div className="dyn-island-header">
+          <button
+            type="button"
+            className="dyn-island-pill"
+            aria-expanded={open}
+            onClick={() => setOpen((value) => !value)}
+          >
+            <span className={`dyn-island-dot ${isBusy ? "pulse" : ""} ${error ? "alert" : ""}`} />
+            <span className="dyn-island-badge">ДЕМО</span>
+            <span className="dyn-island-mode">{viewMode === "bank" ? "Банк" : "Бизнес"}</span>
+            <span className="dyn-island-sep" aria-hidden>
+              ·
+            </span>
+            <span className="dyn-island-company">{companyShort}</span>
+            <span className="dyn-island-sep" aria-hidden>
+              ·
+            </span>
+            <span className="dyn-island-status">{statusLine}</span>
+            <span className="dyn-island-theme-cue" aria-hidden title={theme === "light" ? "Светлая" : "Тёмная"}>
+              {theme === "light" ? "☀" : "☾"}
+            </span>
+            <span className="dyn-island-chevron" aria-hidden>
+              {open ? "▴" : "▾"}
+            </span>
+          </button>
+          <button
+            type="button"
+            className="dyn-island-quick-reset"
+            disabled={isBusy}
+            onClick={(e) => {
+              e.stopPropagation();
+              void handleResetAll();
+            }}
+            title="Сбросить все сценарии к исходному состоянию"
+            aria-label="Сброс всех сценариев"
+          >
+            <span className="dyn-reset-icon" aria-hidden>↺</span>
+            <span className="dyn-quick-reset-label">Сброс</span>
+          </button>
+        </div>
 
         {open ? (
           <div className="dyn-island-body">
@@ -428,6 +464,29 @@ export function DynamicIsland() {
                   Глазами банка
                 </button>
               </div>
+
+              <button
+                type="button"
+                className="dyn-island-reset-btn"
+                disabled={isBusy}
+                onClick={() => void handleResetAll()}
+                title="Сбросить все заявки, события, балансы компаний и чаты к исходному демо-состоянию"
+              >
+                <span className="dyn-reset-icon" aria-hidden>↺</span>
+                <span>Сброс всех сценариев</span>
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {innToast && !open ? (
+          <div className={`demo-inn-toast ${innToast.kind} dyn-island-toast`} role="status">
+            <span className="demo-inn-toast-ico" aria-hidden>
+              {innToast.kind === "ok" ? "✓" : "!"}
+            </span>
+            <div>
+              <strong>{innToast.title}</strong>
+              <span>{innToast.text}</span>
             </div>
           </div>
         ) : null}
