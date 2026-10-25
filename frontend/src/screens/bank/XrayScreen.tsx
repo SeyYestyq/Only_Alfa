@@ -67,7 +67,7 @@ export function XrayScreen() {
   const requestedPayment =
     application.requested_amount_rub > 0
       ? Math.round((application.requested_amount_rub / Math.max(application.term_months, 1)) * 1.05)
-      : 235_000;
+      : 229_200;
   const counter = application.counter_offers[0];
   const maxBar = Math.max(...CASH_FLOW_K, requestedPayment / 1000);
   const tone = decisionTone(application.status);

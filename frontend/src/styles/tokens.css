@@ -55,7 +55,7 @@
   --space: 8px;
 
   /* Satoshi (Fontshare) — grotesk like N26 / Linear clarity */
-  --font: "Satoshi", "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font: "Onest", "Satoshi", "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
   --font-num: "Satoshi", var(--mono);
 

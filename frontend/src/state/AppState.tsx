@@ -96,6 +96,13 @@ function ownerRole(company: CompanyBrief): ActorRole {
     ?? "ACCOUNTANT";
 }
 
+function preferredRole(company: CompanyBrief): ActorRole {
+  if (company.legal_form === "IP") {
+    return ownerRole(company);
+  }
+  return company.users.find((user) => user.role === "ACCOUNTANT")?.role ?? ownerRole(company);
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [companies, setCompanies] = useState<CompanyBrief[]>([]);
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -170,13 +177,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!payload || companyRef.current !== id) {
         return;
       }
-      setUserRole(ownerRole(payload.company));
+      setUserRole(preferredRole(payload.company));
+      const listed = await api.listApplications(id);
+      if (!listed || companyRef.current !== id) {
+        return;
+      }
+      setApplications(listed.applications);
+      const latest = listed.applications[0];
+      if (latest) {
+        const opened = await api.getApplication(latest.application_id);
+        if (companyRef.current === id) {
+          setApplication(opened);
+          if ((options?.nextScreen ?? "").startsWith("bank-")) {
+            await loadXray(opened.application_id);
+          }
+        }
+      }
     } catch (cause) {
       handleError(cause);
     } finally {
       setIsBusy(false);
     }
-  }, [handleError, loadDashboard, setScreen, setUserRole, viewMode]);
+  }, [handleError, loadDashboard, loadXray, setScreen, setUserRole, viewMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -194,14 +216,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setCompanies(companyResponse.companies);
         setTemplates(templateResponse);
         if (companyResponse.companies.length > 0) {
-          const first = companyResponse.companies[0];
+          const first = companyResponse.companies.find((company) => company.demo_key === "rosters")
+            ?? companyResponse.companies[0];
           companyRef.current = first.id;
           setCompanyId(first.id);
-          setUserRole(ownerRole(first));
+          setUserRole(preferredRole(first));
           const payload = await api.getDashboard(first.id);
           if (!cancelled && companyRef.current === first.id) {
             setDashboard(payload);
-            setUserRole(ownerRole(payload.company));
+            setUserRole(preferredRole(payload.company));
+            const listed = await api.listApplications(first.id).catch(() => null);
+            if (listed && companyRef.current === first.id) {
+              setApplications(listed.applications);
+              const latest = listed.applications[0];
+              if (latest) {
+                const opened = await api.getApplication(latest.application_id);
+                if (companyRef.current === first.id) {
+                  setApplication(opened);
+                }
+              }
+            }
           }
         }
       } catch (cause) {
@@ -240,7 +274,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setScreen(stayInBank ? "bank-queue" : "home");
       const payload = await api.getDashboard(company.id);
       setDashboard(payload);
-      setUserRole(ownerRole(payload.company));
+      setUserRole(preferredRole(payload.company));
       return { ok: true as const, name: company.name };
     } catch (cause) {
       const message =
@@ -252,29 +286,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [setScreen, setUserRole, viewMode]);
 
   const screenForApplication = useCallback((app: Application): ScreenId => {
-    if (app.status === "FUNDED" || app.status === "AWAITING_CEO_APPROVAL") {
+    if (app.status === "FUNDED" || app.status === "AWAITING_CEO_APPROVAL" || app.status === "APPROVED") {
       return "signing";
     }
     if (
-      ["COUNTER_OFFER", "APPROVED", "REJECTED", "NEED_MORE_INFO", "MANUAL_REVIEW"].includes(app.status)
+      ["COUNTER_OFFER", "REJECTED", "NEED_MORE_INFO", "MANUAL_REVIEW", "ANOMALY_VERIFICATION"].includes(app.status)
     ) {
       return "decision";
     }
-    return "passport";
+    return "apply";
   }, []);
 
   const setViewMode = useCallback((mode: ViewMode) => {
     setViewModeStore(mode);
-    setScreen(mode === "bank" ? "bank-queue" : application ? screenForApplication(application) : "home");
-    if (mode === "bank" && application) {
-      loadXray(application.application_id).catch(handleError);
+    const phase = companyId ? useDemoStore.getState().monitoring[companyId] ?? "none" : "none";
+    const offerIsSent = companyId ? Boolean(useDemoStore.getState().offerSent[companyId]) : false;
+    if (mode === "bank") {
+      if (application?.status === "FUNDED") {
+        setScreen(phase === "none" ? "bank-payout" : "bank-clients");
+      } else if (application) {
+        setScreen("bank-xray");
+      } else if (offerIsSent) {
+        setScreen("bank-queue");
+      } else {
+        setScreen("bank-signal");
+      }
+      if (application) {
+        loadXray(application.application_id).catch(handleError);
+      }
+      return;
     }
-  }, [application, handleError, loadXray, screenForApplication, setScreen, setViewModeStore]);
+    if (application?.status === "FUNDED" && (phase === "restructure" || phase === "limit")) {
+      setScreen("home");
+      return;
+    }
+    setScreen(application ? screenForApplication(application) : "home");
+  }, [application, companyId, handleError, loadXray, screenForApplication, setScreen, setViewModeStore]);
 
   const goToScreen = useCallback((next: ScreenId) => {
     setScreen(next);
     if (
-      (next === "bank-xray" || next === "bank-signal" || next === "bank-queue") &&
+      (next === "bank-xray" || next === "bank-signal" || next === "bank-queue" || next === "bank-payout") &&
       application
     ) {
       loadXray(application.application_id).catch(handleError);

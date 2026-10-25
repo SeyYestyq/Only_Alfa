@@ -16,13 +16,18 @@ export type ScreenId =
   | "messages"
   | "documents"
   | "applications"
+  | "edges"
+  | "feeds"
   | "bank-queue"
   | "bank-signal"
   | "bank-xray"
   | "bank-messages"
   | "bank-effect"
   | "bank-clients"
-  | "bank-profile";
+  | "bank-profile"
+  | "bank-payout"
+  | "bank-states"
+  | "bank-customers";
 
 export interface CompanyUser {
   id: string;

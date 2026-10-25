@@ -24,6 +24,51 @@ export interface ClientNotice {
   secondaryLabel: string;
 }
 
+export type MonitoringPhase = "none" | "early" | "restructure" | "limit";
+
+export interface ChatLine {
+  id: string;
+  author: string;
+  side: "client" | "bank";
+  text: string;
+  at: string;
+}
+
+interface StoryPersist {
+  offerSent: Record<string, boolean>;
+  released: Record<string, boolean>;
+  monitoring: Record<string, MonitoringPhase>;
+  restructureOn: Record<string, boolean>;
+  chat: Record<string, ChatLine[]>;
+  inspectorLock: boolean;
+}
+
+const STORY_KEY = "alfa-v2-story";
+
+function readStory(): StoryPersist {
+  const empty: StoryPersist = {
+    offerSent: {},
+    released: {},
+    monitoring: {},
+    restructureOn: {},
+    chat: {},
+    inspectorLock: false,
+  };
+  try {
+    const raw = sessionStorage.getItem(STORY_KEY);
+    if (!raw) {
+      return empty;
+    }
+    return { ...empty, ...(JSON.parse(raw) as Partial<StoryPersist>) };
+  } catch {
+    return empty;
+  }
+}
+
+function writeStory(story: StoryPersist): void {
+  sessionStorage.setItem(STORY_KEY, JSON.stringify(story));
+}
+
 interface DemoStore {
   screen: ScreenId;
   viewMode: ViewMode;
@@ -37,6 +82,12 @@ interface DemoStore {
   clientNotices: ClientNotice[];
   /** Панель списка уведомлений (колокольчик). */
   noticesOpen: boolean;
+  offerSent: Record<string, boolean>;
+  released: Record<string, boolean>;
+  monitoring: Record<string, MonitoringPhase>;
+  restructureOn: Record<string, boolean>;
+  chat: Record<string, ChatLine[]>;
+  inspectorLock: boolean;
   setScreen: (screen: ScreenId) => void;
   setViewMode: (mode: ViewMode) => void;
   setUserRole: (role: ActorRole) => void;
@@ -49,6 +100,13 @@ interface DemoStore {
   dismissClientNotice: (id: string) => void;
   clearClientNotices: () => void;
   setNoticesOpen: (open: boolean) => void;
+  markOfferSent: (companyId: string) => void;
+  releaseDecision: (applicationId: string) => void;
+  setMonitoring: (companyId: string, phase: MonitoringPhase) => void;
+  setRestructureOn: (companyId: string, on: boolean) => void;
+  pushChat: (companyId: string, line: Omit<ChatLine, "id" | "at">) => void;
+  setInspectorLock: (locked: boolean) => void;
+  resetStory: () => void;
 }
 
 function noticeFromStatus(
@@ -131,7 +189,7 @@ function noticeFromStatus(
 export const useDemoStore = create<DemoStore>((set, get) => ({
   screen: "home",
   viewMode: "business",
-  userRole: "CEO_OWNER",
+  userRole: "ACCOUNTANT",
   applyIntent: "standard",
   prefillCollateral: false,
   applyPrefillAmount: null,
@@ -139,6 +197,7 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
   creditDocs: [],
   clientNotices: [],
   noticesOpen: false,
+  ...readStory(),
   setScreen: (screen) => set({ screen }),
   setViewMode: (viewMode) => set({ viewMode }),
   setUserRole: (userRole) => set({ userRole }),
@@ -175,7 +234,73 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
     set({ clientNotices: get().clientNotices.filter((row) => row.id !== id) }),
   clearClientNotices: () => set({ clientNotices: [], noticesOpen: false }),
   setNoticesOpen: (noticesOpen) => set({ noticesOpen }),
+  markOfferSent: (companyId) => {
+    const offerSent = { ...get().offerSent, [companyId]: true };
+    set({ offerSent });
+    persist(get());
+  },
+  releaseDecision: (applicationId) => {
+    const released = { ...get().released, [applicationId]: true };
+    set({ released });
+    persist(get());
+  },
+  setMonitoring: (companyId, phase) => {
+    const monitoring = { ...get().monitoring, [companyId]: phase };
+    set({ monitoring });
+    persist(get());
+  },
+  setRestructureOn: (companyId, on) => {
+    const restructureOn = { ...get().restructureOn, [companyId]: on };
+    set({ restructureOn });
+    persist(get());
+  },
+  pushChat: (companyId, line) => {
+    const prev = get().chat[companyId] ?? [];
+    const chat = {
+      ...get().chat,
+      [companyId]: [
+        ...prev,
+        {
+          ...line,
+          id: `c-${Date.now()}-${prev.length}`,
+          at: new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }),
+        },
+      ],
+    };
+    set({ chat });
+    persist(get());
+  },
+  setInspectorLock: (inspectorLock) => {
+    set({ inspectorLock });
+    persist(get());
+  },
+  resetStory: () => {
+    sessionStorage.removeItem(STORY_KEY);
+    set({
+      offerSent: {},
+      released: {},
+      monitoring: {},
+      restructureOn: {},
+      chat: {},
+      inspectorLock: false,
+      clientNotices: [],
+      creditDocs: [],
+      screen: "home",
+      viewMode: "business",
+    });
+  },
 }));
+
+function persist(state: DemoStore): void {
+  writeStory({
+    offerSent: state.offerSent,
+    released: state.released,
+    monitoring: state.monitoring,
+    restructureOn: state.restructureOn,
+    chat: state.chat,
+    inspectorLock: state.inspectorLock,
+  });
+}
 
 /** Хелпер: положить уведомление клиенту по статусу заявки. */
 export function notifyClientAboutStatus(

@@ -93,6 +93,41 @@ export function givenName(fullName: string | undefined): string {
   return parts[0] ?? "коллега";
 }
 
+/** «Фамилия Имя Отчество» → «Имя Фамилия». */
+export function shortPerson(fullName: string | undefined): string {
+  const parts = fullName?.trim().split(/\s+/) ?? [];
+  if (parts.length >= 3) {
+    return `${parts[1]} ${parts[0]}`;
+  }
+  if (parts.length === 2) {
+    return `${parts[1]} ${parts[0]}`;
+  }
+  return fullName || "коллега";
+}
+
+export function givenInitial(fullName: string | undefined): string {
+  const parts = fullName?.trim().split(/\s+/) ?? [];
+  const given = parts.length >= 3 ? parts[1] : parts[0];
+  return (given?.[0] ?? "?").toUpperCase();
+}
+
+export function formatAge(months: number): string {
+  const years = Math.floor(months / 12);
+  const rest = months % 12;
+  const yearLabel = years % 10 === 1 && years % 100 !== 11
+    ? "год"
+    : years % 10 >= 2 && years % 10 <= 4 && (years % 100 < 10 || years % 100 >= 20)
+      ? "года"
+      : "лет";
+  if (years <= 0) {
+    return `${months} мес.`;
+  }
+  if (rest === 0) {
+    return `${years} ${yearLabel}`;
+  }
+  return `${years} ${yearLabel} ${rest} мес.`;
+}
+
 export function roleLabel(role: string): string {
   return {
     CEO_OWNER: "Генеральный директор",

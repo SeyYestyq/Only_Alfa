@@ -195,6 +195,7 @@ class CompanyRepository:
                 text=row["text"],
                 cta=row["cta"],
                 cluster=row["cluster"],
+                source=row.get("source", "NEWS"),
                 created_at=now - timedelta(hours=index * 3),
             ))
 

@@ -1,18 +1,24 @@
-import { AppNav } from "./components/AppNav";
-import { CreditNoticeToasts } from "./components/CreditNoticeToasts";
-import { DynamicIsland } from "./components/DynamicIsland";
+import { Chrome } from "./components/v2/Chrome";
 import { ApplicationsScreen } from "./screens/ApplicationsScreen";
-import { ApplyScreen } from "./screens/ApplyScreen";
-import { BankHubScreen } from "./screens/BankHubScreen";
-import { DashboardScreen } from "./screens/DashboardScreen";
-import { DecisionScreen } from "./screens/DecisionScreen";
 import { DocumentsScreen } from "./screens/DocumentsScreen";
 import { InvoiceScreen } from "./screens/InvoiceScreen";
-import { MessagesScreen } from "./screens/MessagesScreen";
-import { PassportScreen } from "./screens/PassportScreen";
 import { PaymentsScreen } from "./screens/PaymentsScreen";
 import { SearchScreen } from "./screens/SearchScreen";
-import { SigningScreen } from "./screens/SigningScreen";
+import { BankCase } from "./screens/v2/BankCase";
+import { BankCustomers } from "./screens/v2/BankCustomers";
+import { BankEffect } from "./screens/v2/BankEffect";
+import { BankPayout } from "./screens/v2/BankPayout";
+import { BankPortfolio } from "./screens/v2/BankPortfolio";
+import { BankQueue } from "./screens/v2/BankQueue";
+import { BankSignal } from "./screens/v2/BankSignal";
+import { BankStates } from "./screens/v2/BankStates";
+import { ClientApply } from "./screens/v2/ClientApply";
+import { ClientDecision } from "./screens/v2/ClientDecision";
+import { ClientEdges } from "./screens/v2/ClientEdges";
+import { ClientHome } from "./screens/v2/ClientHome";
+import { ClientSign } from "./screens/v2/ClientSign";
+import { FeedsScreen } from "./screens/v2/FeedsScreen";
+import { MessagesScreenV2 } from "./screens/v2/MessagesScreenV2";
 import { useApp } from "./state/AppState";
 
 export default function App() {
@@ -27,39 +33,41 @@ export default function App() {
     );
   }
 
-  const isBank = viewMode === "bank" || screen.startsWith("bank-");
+  const bank = viewMode === "bank" || screen.startsWith("bank-");
 
   return (
-    <div className="app-shell has-dyn-island">
-      <DynamicIsland />
-      <AppNav />
-      <main className={`page ${isBank ? "page-bank" : ""}`}>
-        {isBank ? (
-          <BankHubScreen />
+    <div className="v2-app">
+      <Chrome />
+      <main className="v2-main">
+        {bank ? (
+          <>
+            {screen === "bank-queue" && <BankQueue />}
+            {screen === "bank-signal" && <BankSignal />}
+            {(screen === "bank-xray" || screen === "bank-messages" || screen === "bank-profile") && <BankCase />}
+            {screen === "bank-payout" && <BankPayout />}
+            {screen === "bank-clients" && <BankPortfolio />}
+            {screen === "bank-customers" && <BankCustomers />}
+            {screen === "bank-effect" && <BankEffect />}
+            {screen === "bank-states" && <BankStates />}
+            {screen === "messages" && <MessagesScreenV2 />}
+          </>
         ) : (
           <>
-            {screen === "home" && <DashboardScreen />}
-            {screen === "applications" && <ApplicationsScreen />}
-            {screen === "apply" && <ApplyScreen />}
-            {screen === "passport" && <PassportScreen />}
-            {screen === "decision" && <DecisionScreen />}
-            {screen === "signing" && <SigningScreen />}
-            {screen === "search" && <SearchScreen />}
+            {screen === "home" && <ClientHome />}
+            {screen === "apply" || screen === "passport" ? <ClientApply /> : null}
+            {screen === "decision" && <ClientDecision />}
+            {screen === "signing" && <ClientSign />}
+            {screen === "edges" && <ClientEdges />}
+            {screen === "feeds" && <FeedsScreen />}
+            {screen === "messages" && <MessagesScreenV2 />}
             {screen === "payments" && <PaymentsScreen />}
-            {screen === "invoice" && <InvoiceScreen />}
-            {screen === "messages" && <MessagesScreen />}
             {screen === "documents" && <DocumentsScreen />}
+            {screen === "applications" && <ApplicationsScreen />}
+            {screen === "search" && <SearchScreen />}
+            {screen === "invoice" && <InvoiceScreen />}
           </>
         )}
       </main>
-      <footer className="footer">
-        <span>
-          <strong>Only_Alfa</strong> · хакатон «Альфа-Будущее»
-        </span>
-        <span>Демо-данные. Расчёты выполняет бэкенд, фронтенд только отображает ответы API.</span>
-        <span>Режим: {viewMode === "bank" ? "глазами банка" : "глазами бизнеса"}</span>
-      </footer>
-      <CreditNoticeToasts />
     </div>
   );
 }
