@@ -24,6 +24,10 @@ info:
     - `POST /api/v1/applications/{application_id}/accept-offer` — выбор одного из 4 встречных офферов.
     - `GET /api/v1/applications/invoice-templates` — 3 предзаготовленных демо-счёта.
     - `GET /api/v1/companies/{company_id}/applications` — история заявок компании.
+    - `POST /api/v1/applications/{application_id}/client-product-request` — встречный запрос клиента на другой продукт.
+    - `POST /api/v1/applications/{application_id}/client-request-decision` — решение пилота по встречному запросу.
+    - `POST /api/v1/applications/{application_id}/supplement-document` — дозагрузка документа и пересчёт скоринга.
+    - `GET /api/v1/companies/{company_id}/system-actions` — лента «система решила» для пилота.
     - `GET /api/v1/suppliers/{supplier_inn}/deal-risk` — аналитика поставщика для Invoice-to-Credit (вероятность сделки, плюсы/минусы, seed=hash(INN)).
     - `GET /health` — проверка живости сервиса.
 
@@ -820,6 +824,26 @@ components:
           title: Updated At
           type: string
           nullable: true
+        client_brief:
+          type: object
+          nullable: true
+          title: Client Brief
+        offer_letters:
+          type: array
+          items:
+            type: object
+          title: Offer Letters
+        client_product_request:
+          type: object
+          nullable: true
+        score_changes:
+          type: array
+          items:
+            type: object
+        applied_supplements:
+          type: array
+          items:
+            type: string
       type: object
       required:
       - application_id
