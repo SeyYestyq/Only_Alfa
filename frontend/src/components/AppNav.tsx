@@ -58,7 +58,7 @@ export function AppNav() {
   const bankLinks: NavLink[] = [
     {
       id: "bank-queue",
-      label: "На разборе",
+      label: "Очередь",
       badge: companies.length > 0 ? companies.length : undefined,
     },
     {
@@ -67,8 +67,8 @@ export function AppNav() {
         ? `Разбор №${application.application_id.slice(-4).toUpperCase()}`
         : "Разбор",
     },
-    { id: "bank-clients", label: "Портфель" },
-    { id: "bank-effect", label: "Показатели банка" },
+    { id: "bank-effect", label: "Портфель" },
+    { id: "bank-clients", label: "Клиенты" },
   ];
   const links = viewMode === "bank" ? bankLinks : CLIENT_LINKS;
 

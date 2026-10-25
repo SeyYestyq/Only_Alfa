@@ -1,16 +1,13 @@
 import type { ScreenId } from "../api/types";
 import { useApp } from "../state/AppState";
 import { ApplicationDeskScreen } from "./bank/ApplicationDeskScreen";
+import { BankPortfolioScreen } from "./bank/BankPortfolioScreen";
 import { ClientsScreen } from "./bank/ClientsScreen";
-import { EffectScreen } from "./bank/EffectScreen";
 import { QueueScreen } from "./bank/QueueScreen";
 import { SignalScreen } from "./bank/SignalScreen";
 
 /**
- * Кабинет банка = 4 зоны + сигнал CAPEX:
- * Очередь → Разбор (стол) → Портфель → Показатели.
- * bank-signal — макет Figma (без старой верхней панели).
- * bank-xray / bank-messages — стол заявки.
+ * Кабинет банка = Очередь → Разбор (стол) → Портфель (аналитика/эффект) → Клиенты.
  */
 export function BankHubScreen() {
   const { screen } = useApp();
@@ -23,7 +20,7 @@ export function BankHubScreen() {
       {active === "bank-queue" && <QueueScreen />}
       {active === "bank-signal" && <SignalScreen />}
       {isDesk && <ApplicationDeskScreen />}
-      {active === "bank-effect" && <EffectScreen />}
+      {active === "bank-effect" && <BankPortfolioScreen />}
       {isClients && <ClientsScreen />}
     </>
   );
