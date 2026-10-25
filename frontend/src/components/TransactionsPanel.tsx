@@ -372,35 +372,62 @@ export function TransactionsPanel({ transactions }: { transactions: Transaction[
                   <td style={{ textAlign: "right" }}>
                     {transaction.installment_taken || offer?.status === "ACCEPTED" ? (
                       <span className="pill pill-good">Оформлена</span>
-                    ) : offer ? (
-                      offer.status === "COUNTER_OFFERED" ? (
+                    ) : isBank ? (
+                      /* ДЛЯ ПИЛОТА БАНКА: видит возможность предложить рассрочку или статус отправленного оффера */
+                      offer ? (
+                        offer.status === "COUNTER_OFFERED" ? (
+                          <button
+                            type="button"
+                            className="btn btn-warning btn-sm dyn-counter-btn"
+                            title="Клиент направил свои условия на рассмотрение"
+                            onClick={() => handleOpenModal(transaction)}
+                          >
+                            Свои условия ⚠️
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm dyn-offer-btn"
+                            title="Оффер с 2 вариантами отправлен клиенту"
+                            onClick={() => handleOpenModal(transaction)}
+                          >
+                            Оффер отправлен ✓
+                          </button>
+                        )
+                      ) : transaction.can_installment ? (
                         <button
                           type="button"
-                          className="btn btn-warning btn-sm dyn-counter-btn"
-                          title="Клиент направил свои условия на рассмотрение"
+                          className="btn btn-ghost btn-sm"
+                          title="Предложить 2 варианта рассрочки клиенту"
                           onClick={() => handleOpenModal(transaction)}
                         >
-                          Свои условия ⚠️
+                          + Рассрочка
                         </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-sm dyn-offer-btn"
-                          title="Банк предлагает 2 варианта рассрочки"
-                          onClick={() => handleOpenModal(transaction)}
-                        >
-                          2 варианта банка
-                        </button>
-                      )
-                    ) : transaction.can_installment ? (
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => handleOpenModal(transaction)}
-                      >
-                        Рассрочка
-                      </button>
-                    ) : null}
+                      ) : null
+                    ) : (
+                      /* ДЛЯ КЛИЕНТА (ПРЕДПРИНИМАТЕЛЯ): видит кнопку ТОЛЬКО когда банк оставил предложение! */
+                      offer ? (
+                        offer.status === "COUNTER_OFFERED" ? (
+                          <button
+                            type="button"
+                            className="btn btn-warning btn-sm dyn-counter-btn"
+                            title="Ваши условия на рассмотрении в банке"
+                            onClick={() => handleOpenModal(transaction)}
+                          >
+                            На рассмотрении ⏳
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm dyn-offer-btn"
+                            title="Банк одобрил рассрочку! Выберите вариант"
+                            onClick={() => handleOpenModal(transaction)}
+                          >
+                            Рассрочка
+                          </button>
+                        )
+                      ) : null
+                    )}
                   </td>
                 </tr>
               );

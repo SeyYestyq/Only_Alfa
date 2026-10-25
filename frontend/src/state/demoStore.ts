@@ -117,28 +117,7 @@ export interface InstallmentOffer {
   clientComment?: string;
 }
 
-const INITIAL_INSTALLMENT_OFFERS: Record<string, InstallmentOffer> = {
-  trn_rosters_1: {
-    txId: "trn_rosters_1",
-    txDescription: "Оплата ООО «РестоОборудование»",
-    amountRub: 235_000,
-    variant1: {
-      months: 3,
-      ratePct: 18.0,
-      monthlyPayment: 80_737,
-      totalInterest: 7_211,
-    },
-    variant2: {
-      months: 6,
-      ratePct: 18.0,
-      monthlyPayment: 41_248,
-      totalInterest: 12_488,
-    },
-    selectedVariantIndex: 2,
-    status: "OFFERED",
-    offeredAt: "Сегодня 10:15",
-  },
-};
+const INITIAL_INSTALLMENT_OFFERS: Record<string, InstallmentOffer> = {};
 
 interface DemoStore {
   screen: ScreenId;
