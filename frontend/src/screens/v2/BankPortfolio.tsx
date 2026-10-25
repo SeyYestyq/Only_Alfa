@@ -1,96 +1,175 @@
+import { useState } from "react";
 import {
-  JULY_REVENUE_FORECAST,
-  LIMIT_UP_AMOUNT,
-  RESTRUCTURE_PAYMENT,
-} from "../../domain-ui/caseScript";
+  FunnelChart,
+  KpiButton,
+  ProductBars,
+  RiskBar,
+  attentionRows,
+  countDelta,
+  pctDelta,
+} from "../../components/v2/AnalyticsBlocks";
+import { EmptyState, SkeletonLines } from "../../components/v2/ScreenState";
+import {
+  ANALYTICS_BOOK,
+  ANALYTICS_PERIODS,
+  type AnalyticsPeriod,
+  applyIssued,
+  biggestDropIndex,
+  dropHint,
+} from "../../domain-ui/bankAnalytics";
+import { ROSTERS_OFFER_AMOUNT, ROSTERS_REQUEST_AMOUNT } from "../../domain-ui/caseScript";
 import { useApp } from "../../state/AppState";
-import { useDemoStore } from "../../state/demoStore";
+import { useDemoStore, type MonitoringPhase } from "../../state/demoStore";
+import { useUiStore } from "../../state/uiStore";
 import { formatMoney } from "../../utils/format";
 
 export function BankPortfolio() {
-  const { companies, companyId, application, goToScreen } = useApp();
-  const phase = useDemoStore((state) => (companyId ? state.monitoring[companyId] ?? "none" : "none"));
+  const { companies, companyId, application, goToScreen, selectCompany } = useApp();
+  const monitoring = useDemoStore((state) => state.monitoring);
   const setMonitoring = useDemoStore((state) => state.setMonitoring);
-  const funded = application?.status === "FUNDED";
+  const setQueuePreset = useUiStore((state) => state.setQueuePreset);
+  const setClientFocus = useUiStore((state) => state.setClientFocus);
+  const [period, setPeriod] = useState<AnalyticsPeriod>(30);
+
   const rosters = companies.find((company) => company.demo_key === "rosters");
+  const live = rosters && companyId === rosters.id ? application : null;
+  const phase: MonitoringPhase = rosters ? monitoring[rosters.id] ?? "none" : "none";
+  const canAct = live?.status === "FUNDED" || phase !== "none";
+  const issuedExtra = live?.status === "FUNDED" ? (live.approved_amount_rub || ROSTERS_OFFER_AMOUNT) : 0;
+  const book = applyIssued(ANALYTICS_BOOK[period], issuedExtra);
+  const dropAt = biggestDropIndex(book.funnel);
+  const rostersLine = live?.status === "COUNTER_OFFER"
+    ? `Ростерс Кафе просит ${formatMoney(ROSTERS_REQUEST_AMOUNT)} при предложении ${formatMoney(ROSTERS_OFFER_AMOUNT)}.`
+    : null;
+
+  function openQueue() {
+    setQueuePreset("app");
+    goToScreen("bank-queue");
+  }
 
   return (
-    <>
-      <div className="v2-row">
+    <div className="v2-analytics">
+      <header className="v2-analytics-head">
         <div>
-          <h1 className="v2-h1">Портфель</h1>
-          <p className="v2-lead">Кредиты и ранние сигналы</p>
+          <h1 className="v2-h1">Аналитика</h1>
+          <p className="v2-lead">Портфель, воронка и риски за период</p>
         </div>
-        <span className="v2-pill demo">демо-данные</span>
-      </div>
-      <section className="v2-kpis">
-        <article className="v2-card"><div className="v2-kpi-value">24</div><div className="v2-kpi-sub">кредитов в портфеле · демо</div></article>
-        <article className="v2-card"><div className="v2-kpi-value">3</div><div className="v2-kpi-sub">ранних сигнала · демо</div></article>
-        <article className="v2-card"><div className="v2-kpi-value">1</div><div className="v2-kpi-sub">просрочка · демо</div></article>
-        <article className="v2-card"><div className="v2-kpi-value">2</div><div className="v2-kpi-sub">готовы к росту лимита · демо</div></article>
-      </section>
-      <div className="v2-split">
+        <div className="v2-period" role="group" aria-label="Период">
+          {ANALYTICS_PERIODS.map((days) => (
+            <button
+              key={days}
+              type="button"
+              className={period === days ? "on" : ""}
+              aria-pressed={period === days}
+              onClick={() => setPeriod(days)}
+            >
+              {days} дней
+            </button>
+          ))}
+        </div>
+      </header>
+
+      {companies.length === 0 ? (
+        <section className="v2-kpis" aria-busy="true">
+          {Array.from({ length: 4 }, (_, index) => (
+            <article key={index} className="v2-card"><SkeletonLines lines={3} /></article>
+          ))}
+        </section>
+      ) : (
+        <section className="v2-kpis">
+          <KpiButton value={formatMoney(book.issuedRub)} caption="Выдано" delta={pctDelta(book.issuedDeltaPct, "up")} demo onClick={() => { setClientFocus("issued"); goToScreen("bank-customers"); }} />
+          <KpiButton value={String(book.inWork)} caption="Заявок в работе" delta={countDelta(book.inWorkDelta, "work")} demo onClick={openQueue} />
+          <KpiButton value={`${book.decisionMin} мин`} caption="Среднее время решения" delta={pctDelta(book.decisionDeltaPct, "down")} demo onClick={openQueue} />
+          <KpiButton value={String(book.atRisk)} caption="Клиенты в зоне риска" delta={countDelta(book.atRiskDelta, "risk")} riskValue={book.atRisk > 0} demo onClick={() => { setClientFocus("risk"); goToScreen("bank-customers"); }} />
+        </section>
+      )}
+
+      <div className="v2-analytics-main">
         <section className="v2-card">
-          <h2>Требуют действия</h2>
-          {funded && rosters && companyId === rosters.id ? (
-            <div className="v2-check">
-              <span>
-                <span className="v2-pill warn">Ранний сигнал</span> {rosters.name}<br />
-                Июль: выручка {formatMoney(JULY_REVENUE_FORECAST)} · платёж съест запас кассы
-              </span>
-              <strong>{phase}</strong>
-            </div>
-          ) : (
-            <p className="v2-muted">После выдачи Ростерс Кафе здесь появится ранний сигнал. Цифры 24 / 3 / 1 / 2 — демо-портфель, не эта заявка.</p>
+          <div className="v2-card-head">
+            <h2>Воронка</h2>
+            <span className="v2-pill demo">демо</span>
+          </div>
+          {companies.length === 0 ? <SkeletonLines lines={4} /> : (
+            <FunnelChart book={book} hint={dropHint(dropAt, rostersLine)} dropAt={dropAt} />
           )}
-          <div className="v2-check">
-            <span><span className="v2-pill bad">Просрочка</span> ООО «ТехноСтрой» · демо</span>
-            <span className="v2-muted">написать в кабинет</span>
+        </section>
+        <AttentionCard
+          rows={attentionRows(companies, live?.status, phase, canAct)}
+          loading={companies.length === 0}
+          onOpen={(id, screen) => void selectCompany(id, { nextScreen: screen })}
+          onAct={(id, next) => setMonitoring(id, next)}
+          onQueue={openQueue}
+        />
+      </div>
+
+      <div className="v2-analytics-charts">
+        <section className="v2-card">
+          <div className="v2-card-head">
+            <h2>Продукты</h2>
+            <span className="v2-pill demo">демо</span>
           </div>
-          <div className="v2-check">
-            <span><span className="v2-pill good">Рост лимита</span> ИП Ковалев · демо</span>
-            <span className="v2-muted">8 из 12 платежей</span>
-          </div>
+          {companies.length === 0 ? <SkeletonLines lines={5} /> : (
+            <ProductBars book={book} liveNote={issuedExtra > 0 ? issuedExtra : null} />
+          )}
         </section>
         <section className="v2-card">
-          <h2>Ростерс Кафе: как не допустить просрочку</h2>
-          <div className="v2-bars" style={{ margin: "12px 0" }}>
-            {[70, 80, 90, 85, 60, 45, 40].map((height, index) => (
-              <i key={index} className={index > 4 ? "hot" : ""} style={{ height: `${height}%` }} />
-            ))}
+          <div className="v2-card-head">
+            <h2>Риск портфеля</h2>
+            <span className="v2-pill demo">демо</span>
           </div>
-          <p className="v2-muted">Обычное лето — прогноз с учётом ремонта тротуара на Покровке.</p>
-          <label className="v2-radio on">
-            <input type="radio" readOnly checked />
-            <span>
-              <strong>Платёж 3% от выручки · июль–август</strong>
-              <div className="v2-muted">≈ {formatMoney(RESTRUCTURE_PAYMENT)} вместо графика · недоплата размажется на сентябрь–декабрь</div>
-            </span>
-          </label>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              className="v2-btn"
-              disabled={!funded || !companyId || phase !== "none"}
-              onClick={() => companyId && setMonitoring(companyId, "early")}
-            >
-              Зафиксировать ранний сигнал
-            </button>
-            <button
-              type="button"
-              className="v2-btn primary"
-              disabled={!funded || !companyId || phase === "none"}
-              onClick={() => companyId && setMonitoring(companyId, phase === "early" ? "restructure" : "limit")}
-            >
-              {phase === "limit" ? "Лимит уже предложен" : phase === "restructure" ? `Предложить лимит ${formatMoney(LIMIT_UP_AMOUNT)}` : "Предложить платёж от выручки"}
-            </button>
-          </div>
-          <p className="v2-note">
-            Ранний сигнал клиент ещё не видит. Карточка на главной появляется после «предложить». Лимит {formatMoney(LIMIT_UP_AMOUNT)} — отдельное предложение, не новая выдача без клиента.
-          </p>
-          <button type="button" className="v2-link" onClick={() => goToScreen("home")}>Открыть глазами клиента</button>
+          {companies.length === 0 ? <SkeletonLines lines={3} /> : <RiskBar risk={book.risk} />}
         </section>
       </div>
-    </>
+    </div>
+  );
+}
+
+function AttentionCard({
+  rows,
+  loading,
+  onOpen,
+  onAct,
+  onQueue,
+}: {
+  rows: ReturnType<typeof attentionRows>;
+  loading: boolean;
+  onOpen: (id: string, screen: ReturnType<typeof attentionRows>[number]["screen"]) => void;
+  onAct: (id: string, phase: MonitoringPhase) => void;
+  onQueue: () => void;
+}) {
+  return (
+    <section className="v2-card">
+      <div className="v2-card-head">
+        <h2>Требует внимания</h2>
+      </div>
+      {loading ? <SkeletonLines lines={4} /> : rows.length === 0 ? (
+        <EmptyState
+          title="Сейчас некого разбирать"
+          text="В портфеле нет клиентов с сигналом, SLA или встречным предложением."
+          action="К очереди"
+          onAction={onQueue}
+        />
+      ) : (
+        <ul className="v2-attention">
+          {rows.map((row) => (
+            <li key={row.id}>
+              <div className="v2-attention-copy">
+                <strong>{row.name}</strong>
+                <p>{row.reason}</p>
+              </div>
+              <div className="v2-attention-actions">
+                {row.primary && row.nextPhase ? (
+                  <button type="button" className="v2-btn dense primary" onClick={() => onAct(row.id, row.nextPhase as MonitoringPhase)}>
+                    {row.primary}
+                  </button>
+                ) : null}
+                <button type="button" className="v2-btn dense" onClick={() => onOpen(row.id, row.screen)}>Открыть</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

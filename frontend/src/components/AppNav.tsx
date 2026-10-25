@@ -68,7 +68,7 @@ export function AppNav() {
         ? `Разбор №${application.application_id.slice(-4).toUpperCase()}`
         : "Разбор",
     },
-    { id: "bank-clients", label: "Портфель" },
+    { id: "bank-clients", label: "Аналитика" },
     { id: "bank-effect", label: "Показатели банка" },
   ];
   const links = viewMode === "bank" ? bankLinks : CLIENT_LINKS;

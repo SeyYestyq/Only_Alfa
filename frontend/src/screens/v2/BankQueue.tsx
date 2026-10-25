@@ -47,6 +47,16 @@ export function BankQueue() {
   const [cursor, setCursor] = useState(0);
   const searchQuery = useUiStore((state) => state.searchQuery);
   const setSearchQuery = useUiStore((state) => state.setSearchQuery);
+  const queuePreset = useUiStore((state) => state.queuePreset);
+  const setQueuePreset = useUiStore((state) => state.setQueuePreset);
+
+  useEffect(() => {
+    if (!queuePreset) {
+      return;
+    }
+    setFilter(queuePreset);
+    setQueuePreset(null);
+  }, [queuePreset, setQueuePreset]);
 
   const tasks = useMemo(() => {
     const rows: Task[] = [];

@@ -12,9 +12,15 @@ export interface ToastItem {
   undo?: () => void;
 }
 
+export type ClientFocus = "risk" | "issued" | null;
+
 interface UiState {
   searchQuery: string;
   setSearchQuery: (value: string) => void;
+  queuePreset: string | null;
+  setQueuePreset: (value: string | null) => void;
+  clientFocus: ClientFocus;
+  setClientFocus: (value: ClientFocus) => void;
   toasts: ToastItem[];
   pushToast: (item: Omit<ToastItem, "id">) => string;
   dismissToast: (id: string) => void;
@@ -24,6 +30,10 @@ interface UiState {
 export const useUiStore = create<UiState>((set, get) => ({
   searchQuery: "",
   setSearchQuery: (searchQuery) => set({ searchQuery }),
+  queuePreset: null,
+  setQueuePreset: (queuePreset) => set({ queuePreset }),
+  clientFocus: null,
+  setClientFocus: (clientFocus) => set({ clientFocus }),
   toasts: [],
   pushToast: (item) => {
     const id = `toast-${Date.now()}-${get().toasts.length}`;

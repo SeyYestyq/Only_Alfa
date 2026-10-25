@@ -97,7 +97,7 @@ export function Chrome() {
   ];
   const bankLinks: Array<{ id: ScreenId; label: string; dot?: boolean }> = [
     { id: "bank-queue", label: "Рабочий стол" },
-    { id: "bank-clients", label: "Портфель" },
+    { id: "bank-clients", label: "Аналитика" },
     { id: "bank-customers", label: "Клиенты" },
     { id: "bank-effect", label: "Эффект" },
   ];

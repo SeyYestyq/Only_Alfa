@@ -25,7 +25,7 @@ export function BankPayout() {
           <h1 className="v2-h1">Выдача</h1>
           <p className="v2-lead">{funded ? `Выдано ${formatMoney(amount)}` : "Ждём подпись, деньги ещё не ушли"}</p>
         </div>
-        <button type="button" className="v2-btn" onClick={() => goToScreen("bank-clients")}>В портфель</button>
+        <button type="button" className="v2-btn" onClick={() => goToScreen("bank-clients")}>К аналитике</button>
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         <span className="v2-pill good">{application.status}</span>
