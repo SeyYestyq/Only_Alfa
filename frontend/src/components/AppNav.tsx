@@ -54,7 +54,7 @@ export function AppNav() {
         ? 1
         : undefined;
 
-  /** Подписи как у кредитного конвейера, не «красивые абстракции». */
+  /** Подписи как у кредитного конвейера: Клиенты, Заявки, активный Разбор и Портфель. */
   const bankLinks: NavLink[] = [
     {
       id: "bank-clients",
@@ -66,12 +66,14 @@ export function AppNav() {
       label: "Заявки",
       badge: applications.length > 0 ? applications.length : undefined,
     },
-    {
-      id: "bank-xray",
-      label: application
-        ? `Разбор №${application.application_id.slice(-4).toUpperCase()}`
-        : "Разбор",
-    },
+    ...(application
+      ? [
+          {
+            id: "bank-xray" as ScreenId,
+            label: `Разбор №${application.application_id.slice(-4).toUpperCase()}`,
+          },
+        ]
+      : []),
     { id: "bank-effect", label: "Портфель" },
   ];
   const links = viewMode === "bank" ? bankLinks : CLIENT_LINKS;
@@ -99,24 +101,12 @@ export function AppNav() {
                   ? BANK_CLIENT_SCREENS.includes(screen)
                   : screen === link.id;
           const badge = link.id === "applications" ? creditBadge : link.badge;
-          const deskNeedsCase = link.id === "bank-xray" && !application && viewMode === "bank";
           return (
             <button
               key={link.id}
               type="button"
-              className={`figma-nav-item ${active ? "active" : ""} ${deskNeedsCase ? "is-muted" : ""}`}
-              title={
-                deskNeedsCase
-                  ? "Сначала откройте заявку в списке «На разборе»"
-                  : undefined
-              }
-              onClick={() => {
-                if (deskNeedsCase) {
-                  goToScreen("bank-queue");
-                  return;
-                }
-                goToScreen(link.id);
-              }}
+              className={`figma-nav-item ${active ? "active" : ""}`}
+              onClick={() => goToScreen(link.id)}
             >
               {link.label}
               {typeof badge === "number" && badge > 0 ? (
