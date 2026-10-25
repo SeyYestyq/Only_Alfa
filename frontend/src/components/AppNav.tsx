@@ -13,13 +13,13 @@ const CREDIT_SCREENS: ScreenId[] = [
   "passport",
   "decision",
   "signing",
-  "invoice",
 ];
 
-/** Документы договора — на шаге «Подпись», не отдельный раздел. */
+/** Навигация личного кабинета: Главная, Кредиты и Оплата счёта — в разных вкладках. */
 const CLIENT_LINKS: NavLink[] = [
   { id: "home", label: "Главная" },
-  { id: "applications", label: "Кредит" },
+  { id: "applications", label: "Кредиты" },
+  { id: "invoice", label: "Оплатить счёт" },
 ];
 
 /** Портфель = список компаний + 360°. */
@@ -35,7 +35,7 @@ function initials(name: string): string {
 }
 
 export function AppNav() {
-  const { screen, goToScreen, viewMode, dashboard, userRole, application, companies } = useApp();
+  const { screen, goToScreen, viewMode, dashboard, userRole, application, companies, templates } = useApp();
   const company = dashboard?.company;
   const user = company?.users.find((row) => row.role === userRole) ?? company?.users[0];
   const displayName =
@@ -97,14 +97,21 @@ export function AppNav() {
           const active =
             link.id === "applications"
               ? CREDIT_SCREENS.includes(screen)
-              : link.id === "bank-xray"
-                ? screen === "bank-xray"
-                : link.id === "bank-messages"
-                  ? screen === "bank-messages"
-                  : link.id === "bank-clients"
-                    ? BANK_CLIENT_SCREENS.includes(screen)
-                    : screen === link.id;
-          const badge = link.id === "applications" ? creditBadge : link.badge;
+              : link.id === "invoice"
+                ? screen === "invoice"
+                : link.id === "bank-xray"
+                  ? screen === "bank-xray"
+                  : link.id === "bank-messages"
+                    ? screen === "bank-messages"
+                    : link.id === "bank-clients"
+                      ? BANK_CLIENT_SCREENS.includes(screen)
+                      : screen === link.id;
+          const badge =
+            link.id === "applications"
+              ? creditBadge
+              : link.id === "invoice"
+                ? (templates.length > 0 ? templates.length : undefined)
+                : link.badge;
           return (
             <button
               key={link.id}
