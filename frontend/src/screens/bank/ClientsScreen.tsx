@@ -6,13 +6,157 @@ import { RadarPanel } from "../../components/RadarPanel";
 import { BankEmptyState, ClientsSkeleton } from "../../components/Skeleton";
 import { TransactionsPanel } from "../../components/TransactionsPanel";
 import { useApp } from "../../state/AppState";
+import { useBankMessagesStore } from "../../state/bankMessagesStore";
 import { formatMoney, formatPercent } from "../../utils/format";
+import type { Application, CompanyBrief } from "../../api/types";
 import "../../styles/bank-clients.css";
+
+interface ClientAppBadge {
+  hasApp: boolean;
+  dotColor: "orange" | "yellow" | "blue" | "green" | "red" | "gray";
+  label: string;
+  badgeClass: string;
+  stageLabel: string;
+  detailText: string;
+  amountLabel: string;
+}
+
+const DEMO_SCENARIOS: Record<string, any> = {
+  rosters: {
+    product_type: "INVEST_LEASING",
+    requested_amount_rub: 2_500_000,
+    term_months: 12,
+    declared_monthly_revenue: 2_100_000,
+  },
+  tekhnostroy: {
+    product_type: "VKL",
+    requested_amount_rub: 3_200_000,
+    term_months: 24,
+    declared_monthly_revenue: 6_000_000,
+  },
+  kovalev: {
+    product_type: "OVERDRAFT",
+    requested_amount_rub: 200_000,
+    term_months: 12,
+    declared_monthly_revenue: 680_000,
+  },
+  smirnov: {
+    product_type: "INVEST_LEASING",
+    requested_amount_rub: 900_000,
+    term_months: 24,
+    declared_monthly_revenue: 1_450_000,
+  },
+  bodrost: {
+    product_type: "INVEST_LEASING",
+    requested_amount_rub: 1_500_000,
+    term_months: 12,
+    declared_monthly_revenue: 400_000,
+  },
+  bodrost_plus: {
+    product_type: "INVEST_LEASING",
+    requested_amount_rub: 1_500_000,
+    term_months: 12,
+    declared_monthly_revenue: 400_000,
+  },
+};
+
+function getClientAppBadge(
+  company: CompanyBrief,
+  liveApp?: Application | null,
+): ClientAppBadge {
+  const key = (company.demo_key || company.id || "").toLowerCase();
+
+  // Если в системе загружена актуальная заявка именно этой компании
+  if (liveApp && (liveApp.company.id === company.id || liveApp.company.inn === company.inn)) {
+    const isRisk =
+      liveApp.status === "REJECTED" || liveApp.status === "ANOMALY_VERIFICATION";
+    const isWarn =
+      liveApp.status === "MANUAL_REVIEW" || liveApp.status === "NEED_MORE_INFO";
+    const isGood =
+      liveApp.status === "APPROVED" || liveApp.status === "FUNDED";
+
+    return {
+      hasApp: true,
+      dotColor: isRisk ? "red" : isWarn ? "orange" : isGood ? "green" : "blue",
+      label: `Заявка ${formatMoney(liveApp.requested_amount_rub)} · ${liveApp.status_label}`,
+      badgeClass: isRisk ? "is-risk" : isWarn ? "is-warn" : isGood ? "is-good" : "is-info",
+      stageLabel: liveApp.status_label,
+      detailText: `Скоринг ${liveApp.risk_score} · ${liveApp.status_label} · Срок ${liveApp.term_months} мес.`,
+      amountLabel: formatMoney(liveApp.requested_amount_rub),
+    };
+  }
+
+  if (key.includes("rosters")) {
+    return {
+      hasApp: true,
+      dotColor: "orange",
+      label: "Заявка 2,5 млн ₽ · Ручной разбор",
+      badgeClass: "is-warn",
+      stageLabel: "Ручной разбор (Серый коридор)",
+      detailText: "Скоринг 610 · Запрошено поручительство учредителя или залог оборудования",
+      amountLabel: "2 500 000 ₽",
+    };
+  }
+  if (key.includes("tekhnostroy")) {
+    return {
+      hasApp: true,
+      dotColor: "yellow",
+      label: "Заявка 5,6 млн ₽ · Аномалия",
+      badgeClass: "is-warn",
+      stageLabel: "Аномалия Мультибанка",
+      detailText: "Скоринг 760 · Расхождение кассы -34% между Альфой и декларацией",
+      amountLabel: "5 600 000 ₽",
+    };
+  }
+  if (key.includes("kovalev")) {
+    return {
+      hasApp: true,
+      dotColor: "blue",
+      label: "Заявка 600 тыс ₽ · Документы",
+      badgeClass: "is-info",
+      stageLabel: "Документы получены",
+      detailText: "Скоринг 495 · Клиент прикрепил Договор аренды помещения № 14-А",
+      amountLabel: "600 000 ₽",
+    };
+  }
+  if (key.includes("smirnov")) {
+    return {
+      hasApp: true,
+      dotColor: "green",
+      label: "Заявка 900 тыс ₽ · Одобрено",
+      badgeClass: "is-good",
+      stageLabel: "Одобрено (Авто-скоринг)",
+      detailText: "Скоринг 815 · Кредит одобрен под 16.5% годовых, ожидает подписания КЭП",
+      amountLabel: "900 000 ₽",
+    };
+  }
+  if (key.includes("bodrost")) {
+    return {
+      hasApp: true,
+      dotColor: "red",
+      label: "Стоп-фактор · ФССП 1,4 млн ₽",
+      badgeClass: "is-risk",
+      stageLabel: "Отказ (Hard Stop)",
+      detailText: "Скоринг 0 · Открытые исполнительные производства ФССП на 1 420 000 ₽",
+      amountLabel: "1 500 000 ₽",
+    };
+  }
+
+  return {
+    hasApp: false,
+    dotColor: "gray",
+    label: "Без открытой заявки",
+    badgeClass: "is-muted",
+    stageLabel: "Нет заявки",
+    detailText: "Клиент обслуживается в банке без открытых кредитных заявок",
+    amountLabel: "—",
+  };
+}
 
 /**
  * Б6 — Клиенты банка (Master-Detail 360° по макету Figma).
- * Слева — выбор компании из портфеля с балансом.
- * Справа — 360°-аналитика бизнеса: счета, ДНК, прогноз кассы 60 дней, радар и выписка.
+ * Слева — выбор компании из портфеля со статусной точкой заявки.
+ * Справа — 360°-аналитика бизнеса: баннер заявки, счета, ДНК, прогноз кассы 60 дней, радар и выписка.
  */
 export function ClientsScreen() {
   const {
@@ -23,11 +167,12 @@ export function ClientsScreen() {
     isBusy,
     isReady,
     application,
-    applications,
     openApplication,
+    openBankCase,
     goToScreen,
   } = useApp();
 
+  const setActiveChatThread = useBankMessagesStore((state) => state.setActiveThread);
   const [query, setQuery] = useState("");
   const showSkeleton = !isReady || (isBusy && companies.length === 0);
 
@@ -37,8 +182,25 @@ export function ClientsScreen() {
     return `${c.name} ${c.inn} ${c.okved_code} ${c.okved_cluster}`.toLowerCase().includes(q);
   });
 
-  // Найти заявку текущей выбранной компании, если есть
-  const currentApp = application?.company?.id === companyId ? application : null;
+  const selectedCompany = companies.find((c) => c.id === companyId) ?? companies[0];
+  const selectedBadge = selectedCompany ? getClientAppBadge(selectedCompany, application) : null;
+
+  const handleOpenDesk = (company: CompanyBrief) => {
+    const key = (company.demo_key || company.id).replace("cmp_", "");
+    const scenario = DEMO_SCENARIOS[key] ?? {
+      product_type: "INVEST_LEASING",
+      requested_amount_rub: 1_000_000,
+      term_months: 12,
+      declared_monthly_revenue: 1_500_000,
+    };
+    void openBankCase(company.id, scenario);
+  };
+
+  const handleOpenChat = (company: CompanyBrief) => {
+    const key = (company.demo_key || company.id).replace("cmp_", "");
+    setActiveChatThread(key);
+    void selectCompany(company.id, { nextScreen: "bank-messages" });
+  };
 
   return (
     <div className="bank-clients-page">
@@ -47,7 +209,7 @@ export function ClientsScreen() {
           <div className="figma-eyebrow">Пилот банка · Клиенты и заявки</div>
           <h1 className="figma-h1">Клиенты банка</h1>
           <p className="figma-lead">
-            Портфель демо-компаний · откройте клиента, чтобы увидеть аналитику
+            Статусные точки показывают входящие заявки клиентов · откройте досье для разбора
           </p>
         </div>
         <div className="bank-toolbar">
@@ -70,7 +232,7 @@ export function ClientsScreen() {
         />
       ) : (
         <div className="bank-split">
-          {/* Левая колонка: список клиентов */}
+          {/* Левая колонка: список клиентов с точками заявок */}
           <aside className="bank-clients-sidebar">
             <div className="card-header">
               <div>
@@ -81,7 +243,7 @@ export function ClientsScreen() {
             <ul className="client-list">
               {filteredCompanies.map((company) => {
                 const isSelected = companyId === company.id;
-                const hasApp = Boolean(application?.company?.id === company.id);
+                const badge = getClientAppBadge(company, application);
 
                 return (
                   <li key={company.id}>
@@ -95,8 +257,13 @@ export function ClientsScreen() {
                         <strong>{company.name}</strong>
                         <div className="client-meta">
                           ИНН {company.inn} · {company.legal_form === "IP" ? "ИП" : "ООО"}
-                          {hasApp && <span style={{ color: "var(--accent, #ef3124)", marginLeft: 6 }}>● заявка</span>}
                         </div>
+                        {badge.hasApp && (
+                          <div className={`client-app-dot-badge ${badge.badgeClass}`}>
+                            <span className={`status-dot dot-${badge.dotColor}`} />
+                            <span>{badge.label}</span>
+                          </div>
+                        )}
                       </div>
                       <div className="client-balance">
                         {formatMoney(company.account_balance)}
@@ -130,41 +297,57 @@ export function ClientsScreen() {
                       {dashboard.company.geo_score}
                     </p>
                   </div>
-                  {currentApp && (
-                    <button
-                      type="button"
-                      className="bank-btn-action"
-                      onClick={() => {
-                        void openApplication(currentApp.application_id);
-                        goToScreen("bank-xray");
-                      }}
-                    >
-                      К заявке →
-                    </button>
-                  )}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {selectedCompany && (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleOpenChat(selectedCompany)}
+                      >
+                        Чат с клиентом
+                      </button>
+                    )}
+                    {selectedBadge?.hasApp && selectedCompany && (
+                      <button
+                        type="button"
+                        className="bank-btn-action"
+                        onClick={() => handleOpenDesk(selectedCompany)}
+                      >
+                        Стол разбора →
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {/* Баннер активной заявки, если есть */}
-                {currentApp && (
+                {/* Баннер активной заявки со статусной точкой и действиями */}
+                {selectedBadge?.hasApp && selectedCompany && (
                   <div className="bank-active-app-banner">
                     <div className="banner-text">
-                      <strong>
-                        Активная кредитная заявка №{currentApp.application_id.slice(-6).toUpperCase()}
-                      </strong>
-                      <span>
-                        Статус: {currentApp.status_label} · Запрошено: {formatMoney(currentApp.requested_amount_rub)} · Срок: {currentApp.term_months} мес.
-                      </span>
+                      <div className="banner-title-row">
+                        <span className={`status-dot dot-${selectedBadge.dotColor}`} />
+                        <strong>{selectedBadge.label}</strong>
+                        <span className={`status-tag ${selectedBadge.badgeClass}`}>
+                          {selectedBadge.stageLabel}
+                        </span>
+                      </div>
+                      <p className="banner-desc">{selectedBadge.detailText}</p>
                     </div>
-                    <button
-                      type="button"
-                      className="bank-btn-action"
-                      onClick={() => {
-                        void openApplication(currentApp.application_id);
-                        goToScreen("bank-xray");
-                      }}
-                    >
-                      Разбор заявки
-                    </button>
+                    <div className="banner-actions">
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleOpenDesk(selectedCompany)}
+                      >
+                        К столу разбора →
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleOpenChat(selectedCompany)}
+                      >
+                        Чат
+                      </button>
+                    </div>
                   </div>
                 )}
 

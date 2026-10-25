@@ -89,6 +89,76 @@
   margin-top: 3px;
 }
 
+/* Статусные точки и бейджи заявок */
+.client-app-dot-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.client-app-dot-badge.is-warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.client-app-dot-badge.is-risk {
+  background: rgba(239, 49, 36, 0.15);
+  color: #ff7568;
+  border: 1px solid rgba(239, 49, 36, 0.3);
+}
+
+.client-app-dot-badge.is-good {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.client-app-dot-badge.is-info {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot.dot-orange {
+  background: #f97316;
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.7);
+}
+
+.status-dot.dot-yellow {
+  background: #eab308;
+  box-shadow: 0 0 6px rgba(234, 179, 8, 0.7);
+}
+
+.status-dot.dot-blue {
+  background: #3b82f6;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.7);
+}
+
+.status-dot.dot-green {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+}
+
+.status-dot.dot-red {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.7);
+}
+
 .client-balance {
   font-family: var(--mono, "JetBrains Mono", monospace);
   font-size: 13px;
@@ -136,21 +206,41 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 18px;
-  border-radius: 12px;
-  background: rgba(239, 49, 36, 0.1);
-  border: 1px solid rgba(239, 49, 36, 0.28);
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(239, 49, 36, 0.12) 0%, rgba(20, 20, 24, 0.95) 100%);
+  border: 1px solid rgba(239, 49, 36, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
-.bank-active-app-banner .banner-text strong {
-  display: block;
-  font-size: 14px;
-  color: #ff7568;
+.bank-active-app-banner .banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.bank-active-app-banner .banner-text span {
-  font-size: 12px;
+.bank-active-app-banner .banner-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bank-active-app-banner .banner-title-row strong {
+  font-size: 15px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.bank-active-app-banner .banner-desc {
+  font-size: 13px;
   color: var(--text-secondary, #a3a3ad);
+  margin: 0;
+}
+
+.bank-active-app-banner .banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .bank-btn-action {

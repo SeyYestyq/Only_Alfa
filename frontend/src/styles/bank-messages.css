@@ -1,0 +1,605 @@
+/* Стили для экрана «Чаты и сообщения пилота банка» (по референсу index.html) */
+
+.bank-messages-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.bank-chat-shell {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 0;
+  min-height: 720px;
+  background: var(--surface-1, #141418);
+  border: 1px solid var(--border, #26262c);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+/* Левая колонка: список диалогов */
+.bank-chat-sidebar {
+  border-right: 1px solid var(--border, #26262c);
+  display: flex;
+  flex-direction: column;
+  background: rgba(16, 16, 20, 0.95);
+}
+
+.bank-chat-sidebar-head {
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid var(--border, #26262c);
+}
+
+.bank-chat-sidebar-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bank-chat-sidebar-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary, #f5f5f6);
+  margin: 0;
+}
+
+.bank-chat-filter-chips {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.bank-chat-filter-chip {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border, #26262c);
+  background: transparent;
+  color: var(--text-secondary, #a3a3ad);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bank-chat-filter-chip:hover {
+  background: var(--surface-2, #1c1c24);
+  color: var(--text-primary, #f5f5f6);
+}
+
+.bank-chat-filter-chip.active {
+  background: rgba(239, 49, 36, 0.15);
+  border-color: rgba(239, 49, 36, 0.4);
+  color: #fff;
+  font-weight: 600;
+}
+
+.bank-chat-search {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #26262c);
+  background: var(--surface-2, #1c1c24);
+  color: var(--text-primary, #f5f5f6);
+  font-size: 13px;
+  outline: none;
+}
+
+.bank-chat-search:focus {
+  border-color: var(--accent, #ef3124);
+}
+
+/* Список тредов */
+.bank-chat-thread-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.bank-chat-thread-item {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 18px;
+  border: 0;
+  border-bottom: 1px solid var(--border, #202026);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.bank-chat-thread-item:hover {
+  background: var(--surface-2, #1c1c24);
+}
+
+.bank-chat-thread-item.active {
+  background: rgba(239, 49, 36, 0.12);
+  border-left: 3px solid var(--accent, #ef3124);
+}
+
+.bank-chat-thread-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #252530;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.bank-chat-thread-avatar.dot-orange {
+  border: 2px solid rgba(249, 115, 22, 0.6);
+  color: #fb923c;
+}
+
+.bank-chat-thread-avatar.dot-yellow {
+  border: 2px solid rgba(234, 179, 8, 0.6);
+  color: #facc15;
+}
+
+.bank-chat-thread-avatar.dot-blue {
+  border: 2px solid rgba(59, 130, 246, 0.6);
+  color: #60a5fa;
+}
+
+.bank-chat-thread-avatar.dot-green {
+  border: 2px solid rgba(16, 185, 129, 0.6);
+  color: #34d399;
+}
+
+.bank-chat-thread-avatar.dot-red {
+  border: 2px solid rgba(239, 68, 68, 0.6);
+  color: #f87171;
+}
+
+.bank-chat-thread-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.bank-chat-thread-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.bank-chat-thread-header strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #f5f5f6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bank-chat-thread-time {
+  font-size: 11px;
+  color: var(--text-faint, #6e6e7c);
+  white-space: nowrap;
+}
+
+.bank-chat-thread-sub {
+  font-size: 11px;
+  color: var(--text-secondary, #a3a3ad);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bank-chat-thread-preview {
+  font-size: 12px;
+  color: var(--text-secondary, #a3a3ad);
+  margin-top: 4px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bank-chat-thread-tags {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  gap: 8px;
+}
+
+.bank-chat-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary, #a3a3ad);
+  white-space: nowrap;
+}
+
+.bank-chat-unread-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--accent, #ef3124);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+/* Правая панель: активный чат */
+.bank-chat-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 720px;
+  background: var(--surface-1, #141418);
+}
+
+.bank-chat-pane-head {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border, #26262c);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: rgba(20, 20, 24, 0.7);
+  backdrop-filter: blur(8px);
+}
+
+.bank-chat-pane-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.bank-chat-pane-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary, #f5f5f6);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bank-chat-pane-sub {
+  font-size: 12px;
+  color: var(--text-secondary, #a3a3ad);
+  margin: 2px 0 0;
+}
+
+.bank-chat-pane-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Стрим сообщений */
+.bank-chat-stream {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  background: radial-gradient(circle at top right, rgba(239, 49, 36, 0.04), transparent 60%);
+}
+
+.bank-chat-system-event {
+  align-self: center;
+  max-width: 600px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary, #a3a3ad);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border, #26262c);
+  padding: 6px 14px;
+  border-radius: 999px;
+  margin: 4px 0;
+}
+
+/* Пузыри сообщений */
+.bank-chat-bubble {
+  max-width: 580px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  position: relative;
+}
+
+.bank-chat-bubble.in {
+  align-self: flex-start;
+  background: #1c1c24;
+  border: 1px solid var(--border, #26262c);
+  color: var(--text-primary, #f5f5f6);
+  border-bottom-left-radius: 4px;
+}
+
+.bank-chat-bubble.out {
+  align-self: flex-end;
+  background: linear-gradient(135deg, rgba(239, 49, 36, 0.22) 0%, rgba(35, 18, 18, 0.9) 100%);
+  border: 1px solid rgba(239, 49, 36, 0.4);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.bank-chat-bubble-author {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary, #a3a3ad);
+  margin-bottom: 6px;
+}
+
+.bank-chat-bubble.out .bank-chat-bubble-author {
+  color: #ff9186;
+}
+
+.bank-chat-bubble-text {
+  margin: 0;
+  word-break: break-word;
+}
+
+.bank-chat-bubble-time {
+  font-size: 10px;
+  color: var(--text-faint, #6e6e7c);
+  text-align: right;
+  margin-top: 6px;
+}
+
+.bank-chat-bubble.out .bank-chat-bubble-time {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Карточка вложения (документ) */
+.bank-chat-attachment-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border, #2a2a34);
+  border-radius: 10px;
+}
+
+.bank-chat-doc-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(239, 49, 36, 0.15);
+  color: #ef3124;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.bank-chat-doc-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.bank-chat-doc-meta {
+  font-size: 11px;
+  color: var(--text-secondary, #a3a3ad);
+}
+
+/* Карточка оффера / предложения банка (по макету index.html) */
+.bank-chat-offer-card {
+  margin-top: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(239, 49, 36, 0.15) 0%, rgba(20, 20, 24, 0.9) 100%);
+  border: 1px solid rgba(239, 49, 36, 0.4);
+  border-radius: 12px;
+}
+
+.bank-chat-offer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.bank-chat-offer-head strong {
+  font-size: 13px;
+  color: #ff7568;
+}
+
+.bank-chat-offer-body {
+  font-size: 13px;
+  color: #fff;
+  line-height: 1.45;
+}
+
+.bank-chat-offer-metrics {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Индикатор печати */
+.bank-chat-typing {
+  align-self: flex-start;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: #1c1c24;
+  border: 1px solid var(--border, #26262c);
+  font-size: 12px;
+  color: var(--text-secondary, #a3a3ad);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-secondary, #a3a3ad);
+  animation: typingBlink 1.4s infinite both;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBlink {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* Быстрые шаблоны банка */
+.bank-chat-quick-actions {
+  padding: 10px 24px;
+  border-top: 1px solid var(--border, #26262c);
+  background: rgba(16, 16, 20, 0.85);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.bank-quick-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-faint, #6e6e7c);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.bank-quick-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #2a2a34);
+  background: var(--surface-2, #1c1c24);
+  color: var(--text-secondary, #a3a3ad);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.bank-quick-btn:hover {
+  background: rgba(239, 49, 36, 0.15);
+  border-color: rgba(239, 49, 36, 0.4);
+  color: #fff;
+}
+
+/* Форма отправки сообщения */
+.bank-chat-compose {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border, #26262c);
+  background: var(--surface-1, #141418);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bank-chat-attach-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #26262c);
+  background: var(--surface-2, #1c1c24);
+  color: var(--text-secondary, #a3a3ad);
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.bank-chat-attach-btn:hover {
+  border-color: var(--accent, #ef3124);
+  color: #fff;
+}
+
+.bank-chat-input {
+  flex: 1;
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #26262c);
+  background: var(--surface-2, #1c1c24);
+  color: var(--text-primary, #f5f5f6);
+  padding: 0 16px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.bank-chat-input:focus {
+  border-color: var(--accent, #ef3124);
+}
+
+.bank-chat-send-btn {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 0;
+  background: var(--accent, #ef3124);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.bank-chat-send-btn:hover {
+  opacity: 0.9;
+}
+
+.bank-chat-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 960px) {
+  .bank-chat-shell {
+    grid-template-columns: 1fr;
+  }
+}

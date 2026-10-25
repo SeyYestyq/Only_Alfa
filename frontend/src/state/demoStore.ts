@@ -24,6 +24,77 @@ export interface ClientNotice {
   secondaryLabel: string;
 }
 
+export type BankNoticeKind = "new_app" | "manual_review" | "anomaly" | "docs" | "stop_factor";
+
+export interface BankNotice {
+  id: string;
+  kind: BankNoticeKind;
+  title: string;
+  text: string;
+  companyId: string;
+  companyName: string;
+  demoKey: string;
+  amountLabel?: string;
+  targetScreen: ScreenId;
+  primaryLabel: string;
+  time: string;
+}
+
+const INITIAL_BANK_NOTICES: BankNotice[] = [
+  {
+    id: "bn-1",
+    kind: "manual_review",
+    title: "Заявка на 2,5 млн ₽ на ручном разборе",
+    text: "ООО «Ростерс Кафе» · Скоринг 610 (Серый коридор). Требуется решение по поручительству или контр-офферу.",
+    companyId: "cmp_rosters",
+    companyName: "ООО «Ростерс Кафе»",
+    demoKey: "rosters",
+    amountLabel: "2 500 000 ₽",
+    targetScreen: "bank-xray",
+    primaryLabel: "К разбору",
+    time: "10 мин назад",
+  },
+  {
+    id: "bn-2",
+    kind: "anomaly",
+    title: "Аномалия кассы: расхождение -34%",
+    text: "ООО «ТехноСтрой» · Заявка на 5,6 млн ₽. Декларировано 6 млн ₽, в Альфе 1,8 млн ₽. Выписка ВТБ в чате.",
+    companyId: "cmp_tekhnostroy",
+    companyName: "ООО «ТехноСтрой Инжиниринг»",
+    demoKey: "tekhnostroy",
+    amountLabel: "5 600 000 ₽",
+    targetScreen: "bank-messages",
+    primaryLabel: "В чат",
+    time: "25 мин назад",
+  },
+  {
+    id: "bn-3",
+    kind: "docs",
+    title: "Загружен Договор аренды № 14-А",
+    text: "ИП Ковалев Д.С. · Заявка на 600 000 ₽. Скан договора аренды помещения на Профсоюзной 41 прикреплен в чате.",
+    companyId: "cmp_kovalev",
+    companyName: "ИП Ковалев Д.С.",
+    demoKey: "kovalev",
+    amountLabel: "600 000 ₽",
+    targetScreen: "bank-messages",
+    primaryLabel: "Проверить",
+    time: "45 мин назад",
+  },
+  {
+    id: "bn-4",
+    kind: "new_app",
+    title: "Новая заявка: 900 000 ₽ (Инвест-лизинг)",
+    text: "ИП Смирнов А.В. · Скоринг 815. Автоматически одобрено. Договор передан на подпись клиенту.",
+    companyId: "cmp_smirnov",
+    companyName: "ИП Смирнов А.В.",
+    demoKey: "smirnov",
+    amountLabel: "900 000 ₽",
+    targetScreen: "bank-clients",
+    primaryLabel: "Открыть",
+    time: "1 час назад",
+  },
+];
+
 interface DemoStore {
   screen: ScreenId;
   viewMode: ViewMode;
@@ -35,6 +106,7 @@ interface DemoStore {
   offersMuted: boolean;
   creditDocs: string[];
   clientNotices: ClientNotice[];
+  bankNotices: BankNotice[];
   /** Панель списка уведомлений (колокольчик). */
   noticesOpen: boolean;
   setScreen: (screen: ScreenId) => void;
@@ -48,6 +120,9 @@ interface DemoStore {
   pushClientNotice: (notice: Omit<ClientNotice, "id">) => void;
   dismissClientNotice: (id: string) => void;
   clearClientNotices: () => void;
+  pushBankNotice: (notice: Omit<BankNotice, "id">) => void;
+  dismissBankNotice: (id: string) => void;
+  clearBankNotices: () => void;
   setNoticesOpen: (open: boolean) => void;
 }
 
@@ -138,6 +213,7 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
   offersMuted: false,
   creditDocs: [],
   clientNotices: [],
+  bankNotices: INITIAL_BANK_NOTICES,
   noticesOpen: false,
   setScreen: (screen) => set({ screen }),
   setViewMode: (viewMode) => set({ viewMode }),
@@ -174,6 +250,19 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
   dismissClientNotice: (id) =>
     set({ clientNotices: get().clientNotices.filter((row) => row.id !== id) }),
   clearClientNotices: () => set({ clientNotices: [], noticesOpen: false }),
+  pushBankNotice: (notice) => {
+    const id = `bn-${Date.now()}-${notice.kind}`;
+    const withoutSame = get().bankNotices.filter(
+      (row) => !(row.companyId === notice.companyId && row.kind === notice.kind),
+    );
+    set({
+      bankNotices: [{ ...notice, id }, ...withoutSame].slice(0, 6),
+      noticesOpen: false,
+    });
+  },
+  dismissBankNotice: (id) =>
+    set({ bankNotices: get().bankNotices.filter((row) => row.id !== id) }),
+  clearBankNotices: () => set({ bankNotices: [], noticesOpen: false }),
   setNoticesOpen: (noticesOpen) => set({ noticesOpen }),
 }));
 

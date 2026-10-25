@@ -2,6 +2,7 @@ import { NoticeBell } from "./NoticeBell";
 import { useApp } from "../state/AppState";
 import type { ScreenId } from "../api/types";
 import { useDemoStore } from "../state/demoStore";
+import { useBankMessagesStore } from "../state/bankMessagesStore";
 import { roleLabel } from "../utils/format";
 
 type NavLink = { id: ScreenId; label: string; badge?: number };
@@ -21,10 +22,8 @@ const CLIENT_LINKS: NavLink[] = [
   { id: "applications", label: "Кредит" },
 ];
 
-/** Разбор = стол заявки (xray/messages). Сигнал CAPEX — отдельный экран. */
-const BANK_DESK_SCREENS: ScreenId[] = ["bank-xray", "bank-messages"];
 /** Портфель = список компаний + 360°. */
-const BANK_CLIENT_SCREENS: ScreenId[] = ["bank-clients", "bank-profile"];
+const BANK_CLIENT_SCREENS: ScreenId[] = ["bank-clients", "bank-profile", "bank-queue"];
 
 function initials(name: string): string {
   return name
@@ -36,7 +35,7 @@ function initials(name: string): string {
 }
 
 export function AppNav() {
-  const { screen, goToScreen, viewMode, dashboard, userRole, application, applications, companies } = useApp();
+  const { screen, goToScreen, viewMode, dashboard, userRole, application, companies } = useApp();
   const company = dashboard?.company;
   const user = company?.users.find((row) => row.role === userRole) ?? company?.users[0];
   const displayName =
@@ -44,6 +43,10 @@ export function AppNav() {
   const displayRole =
     viewMode === "bank" ? "Кредитный инспектор" : roleLabel(userRole);
   const noticeCount = useDemoStore((state) => state.clientNotices.length);
+  const unreadChats = useBankMessagesStore((state) =>
+    state.threads.reduce((sum, t) => sum + t.unreadCount, 0),
+  );
+
   const creditBadge =
     noticeCount > 0
       ? noticeCount
@@ -54,17 +57,16 @@ export function AppNav() {
         ? 1
         : undefined;
 
-  /** Подписи как у кредитного конвейера: Клиенты, Заявки, активный Разбор и Портфель. */
+  /** Подписи для кредитного конвейера: Клиенты, Чаты, активный Разбор и Портфель. */
   const bankLinks: NavLink[] = [
     {
       id: "bank-clients",
       label: "Клиенты",
-      badge: companies.length > 0 ? companies.length : undefined,
     },
     {
-      id: "bank-queue",
-      label: "Заявки",
-      badge: applications.length > 0 ? applications.length : undefined,
+      id: "bank-messages",
+      label: "Чаты",
+      badge: unreadChats > 0 ? unreadChats : undefined,
     },
     ...(application
       ? [
@@ -96,10 +98,12 @@ export function AppNav() {
             link.id === "applications"
               ? CREDIT_SCREENS.includes(screen)
               : link.id === "bank-xray"
-                ? BANK_DESK_SCREENS.includes(screen)
-                : link.id === "bank-clients"
-                  ? BANK_CLIENT_SCREENS.includes(screen)
-                  : screen === link.id;
+                ? screen === "bank-xray"
+                : link.id === "bank-messages"
+                  ? screen === "bank-messages"
+                  : link.id === "bank-clients"
+                    ? BANK_CLIENT_SCREENS.includes(screen)
+                    : screen === link.id;
           const badge = link.id === "applications" ? creditBadge : link.badge;
           return (
             <button
@@ -132,10 +136,10 @@ export function AppNav() {
         <button
           type="button"
           className="figma-search"
-          onClick={() => goToScreen("bank-queue")}
-          title="Открыть список заявок — поиск по ИНН внутри"
+          onClick={() => goToScreen("bank-clients")}
+          title="Открыть список клиентов — поиск по названию или ИНН"
         >
-          Найти заявку по ИНН…
+          Найти клиента по ИНН…
         </button>
       )}
 
