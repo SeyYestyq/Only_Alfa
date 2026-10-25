@@ -44,7 +44,10 @@ class InvoiceService:
             display_name=parsed.supplier_name,
         )
         draft = self.applications.create_draft(
-            profile, parsed.to_dict(), antifraud, actor_role="ACCOUNTANT"
+            profile,
+            {**parsed.to_dict(), "supplier_deal_risk": deal_risk},
+            antifraud,
+            actor_role="ACCOUNTANT",
         )
         return {
             "invoice": parsed.to_dict(),

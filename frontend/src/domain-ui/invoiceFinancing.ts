@@ -5,6 +5,12 @@ import type { InvoiceTemplate } from "../api/types";
  * Ориентир продукта на UI; решение и лимит считает бэкенд при заявке.
  */
 export const INVOICE_INSTANT_FINANCING_RATIO = 0.85;
+/** Срок предложения на экране счёта. Ставку и платёж решения считает бэкенд. */
+export const INVOICE_FINANCING_TERM_MONTHS = 6;
+/** Подпись ставки до решения. Не расчёт ПСК. */
+export const INVOICE_RATE_LABEL = "18%";
+export const INVOICE_RATE_ANNUAL = 0.18;
+export const INVOICE_PSK_LABEL = "в договоре";
 
 export type InvoiceUiStatus = "unsent" | "viewed" | "overdue";
 
@@ -70,6 +76,21 @@ export function toUnpaidInvoiceRow(template: InvoiceTemplate): UnpaidInvoiceRow 
       { label: "НДС", amount_rub: template.vat_rub },
     ],
   };
+}
+
+/** Строка очереди: счёт и вероятность из сохранённой проверки, без нового расчёта. */
+export function invoiceQueueLine(invoice: Record<string, unknown> | null | undefined): string | null {
+  if (!invoice || typeof invoice.supplier_name !== "string" || !invoice.supplier_name) {
+    return null;
+  }
+  const risk = invoice.supplier_deal_risk;
+  const probability = risk && typeof risk === "object" && "deal_success_probability_pct" in risk
+    ? Number((risk as { deal_success_probability_pct: unknown }).deal_success_probability_pct)
+    : null;
+  if (probability != null && Number.isFinite(probability)) {
+    return `Счёт ${invoice.supplier_name} · успех сделки ${Math.round(probability)}%`;
+  }
+  return `Счёт ${invoice.supplier_name}`;
 }
 
 export function unpaidInvoiceKpis(rows: UnpaidInvoiceRow[]) {

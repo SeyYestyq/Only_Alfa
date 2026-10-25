@@ -91,6 +91,7 @@ export function Chrome() {
     { id: "home", label: "Главная" },
     { id: "payments", label: "Деньги" },
     { id: "apply", label: "Кредиты" },
+    { id: "invoice", label: "Счёт" },
     { id: "documents", label: "Документы" },
     { id: "messages", label: "Сообщения", dot: messages > 0 && screen !== "messages" },
   ];

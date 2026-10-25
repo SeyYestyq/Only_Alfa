@@ -1,24 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
+import { useDropzone } from "react-dropzone";
 import { ApiError, api } from "../api/client";
 import type { SupplierDealRisk } from "../api/types";
-import { InvoicePanel, InvoiceRecognizedSummary } from "../components/InvoicePanel";
-import { InvoiceDetailPane } from "../components/invoice/InvoiceDetailPane";
-import { InvoiceKpiStrip } from "../components/invoice/InvoiceKpiStrip";
-import { InvoiceListPane } from "../components/invoice/InvoiceListPane";
+import { SupplierVerdict } from "../components/invoice/SupplierVerdict";
+import { EmptyState, ErrorState, SkeletonLines } from "../components/v2/ScreenState";
 import {
+  INVOICE_FINANCING_TERM_MONTHS,
+  INVOICE_INSTANT_FINANCING_RATIO,
+  INVOICE_PSK_LABEL,
+  INVOICE_RATE_ANNUAL,
+  INVOICE_RATE_LABEL,
   instantFinancingAmount,
+  invoiceStatusLabel,
   toUnpaidInvoiceRow,
-  unpaidInvoiceKpis,
 } from "../domain-ui/invoiceFinancing";
 import { useApp } from "../state/AppState";
-import { useDemoStore } from "../state/demoStore";
-import { formatMoney } from "../utils/format";
+import { formatMoney, roughAnnuity } from "../utils/format";
 
-type FilterTab = "all" | "unpaid" | "draft";
+interface RecognizedInvoice {
+  code: string | null;
+  supplier_name: string;
+  supplier_inn: string;
+  amount_rub: number;
+  purpose: string;
+  due_label: string;
+}
+
+const STEPS = ["Счёт", "Проверка", "Финансирование"];
 
 /**
- * Invoice-to-Credit: кабинет неоплаченных счетов (list + detail) и CTA
- * «мгновенное финансирование 85%» → форма заявки с предзаполненной суммой.
+ * Счёт → проверка поставщика → одно предложение финансирования.
+ * Оформление идёт в ту же заявку, что и обычный кредит.
  */
 export function InvoiceScreen() {
   const {
@@ -26,201 +38,265 @@ export function InvoiceScreen() {
     templates,
     invoiceResult,
     isBusy,
+    error,
+    clearError,
     viewMode,
-    goToScreen,
     parseTemplate,
+    parseFile,
+    createApplication,
   } = useApp();
-  const setApplyIntent = useDemoStore((state) => state.setApplyIntent);
-  const setApplyPrefillAmount = useDemoStore((state) => state.setApplyPrefillAmount);
 
-  const [tab, setTab] = useState<FilterTab>("unpaid");
-  const [selectedCode, setSelectedCode] = useState<string | null>(null);
-  const [paidFromAccount, setPaidFromAccount] = useState(false);
-  const [showUpload, setShowUpload] = useState(false);
-  const [supplierRisk, setSupplierRisk] = useState<SupplierDealRisk | null>(null);
-  const [supplierRiskLoading, setSupplierRiskLoading] = useState(false);
-  const [supplierRiskError, setSupplierRiskError] = useState<string | null>(null);
+  const rows = useMemo(() => templates.map(toUnpaidInvoiceRow), [templates]);
+  const [invoice, setInvoice] = useState<RecognizedInvoice | null>(null);
+  const [risk, setRisk] = useState<SupplierDealRisk | null>(null);
+  const [riskLoading, setRiskLoading] = useState(false);
+  const [riskError, setRiskError] = useState<string | null>(null);
+  const [riskAttempt, setRiskAttempt] = useState(0);
 
-  const unpaidRows = useMemo(() => templates.map(toUnpaidInvoiceRow), [templates]);
-
-  useEffect(() => {
-    if (!selectedCode && unpaidRows[0]) {
-      setSelectedCode(unpaidRows[0].code);
-    }
-  }, [selectedCode, unpaidRows]);
-
-  useEffect(() => {
-    const fromParse = invoiceResult?.invoice.template_code;
-    if (fromParse && unpaidRows.some((row) => row.code === fromParse)) {
-      setSelectedCode(fromParse);
-    }
-  }, [invoiceResult?.invoice.template_code, unpaidRows]);
-
-  const selected = unpaidRows.find((row) => row.code === selectedCode) ?? unpaidRows[0] ?? null;
-  const kpis = unpaidInvoiceKpis(unpaidRows);
   const company = dashboard?.company;
-  const balance = dashboard?.account_balance ?? 0;
   const bankView = viewMode === "bank";
+  const pct = Math.round(INVOICE_INSTANT_FINANCING_RATIO * 100);
+  const financing = invoice ? instantFinancingAmount(invoice.amount_rub) : 0;
+  const payment = invoice ? roughAnnuity(financing, INVOICE_FINANCING_TERM_MONTHS, INVOICE_RATE_ANNUAL) : 0;
+  const step = !invoice ? 0 : riskLoading || !risk ? 1 : 2;
 
   useEffect(() => {
-    if (!selected || !company) {
-      setSupplierRisk(null);
-      setSupplierRiskError(null);
+    if (!invoiceResult) {
       return;
     }
+    const parsed = invoiceResult.invoice;
+    const known = rows.find((row) => row.code === parsed.template_code);
+    setInvoice({
+      code: parsed.template_code,
+      supplier_name: parsed.supplier_name,
+      supplier_inn: parsed.supplier_inn,
+      amount_rub: parsed.amount_rub,
+      purpose: parsed.purpose,
+      due_label: known?.due_label ?? "Срок в счёте",
+    });
+  }, [invoiceResult, rows]);
 
-    const supplierInn = selected.supplier_inn;
-    const amountRub = selected.amount_rub;
-    const supplierName = selected.supplier_name;
-    const companyId = company.id;
-
+  useEffect(() => {
+    if (!invoice || !company) {
+      setRisk(null);
+      setRiskError(null);
+      return;
+    }
     let cancelled = false;
-    setSupplierRiskLoading(true);
-    setSupplierRiskError(null);
-
-    void api
-      .getSupplierDealRisk(supplierInn, {
-        buyerCompanyId: companyId,
-        invoiceAmountRub: amountRub,
-        displayName: supplierName,
-      })
-      .then((payload) => {
-        if (!cancelled) {
-          setSupplierRisk(payload);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setSupplierRisk(null);
-          setSupplierRiskError(
-            err instanceof ApiError ? err.detail : "Не удалось загрузить аналитику поставщика",
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setSupplierRiskLoading(false);
-        }
-      });
-
+    setRiskLoading(true);
+    setRiskError(null);
+    void api.getSupplierDealRisk(invoice.supplier_inn, {
+      buyerCompanyId: company.id,
+      invoiceAmountRub: invoice.amount_rub,
+      displayName: invoice.supplier_name,
+    }).then((payload) => {
+      if (!cancelled) {
+        setRisk(payload);
+      }
+    }).catch((cause: unknown) => {
+      if (!cancelled) {
+        setRisk(null);
+        setRiskError(cause instanceof ApiError ? cause.detail : "Не удалось сверить поставщика");
+      }
+    }).finally(() => {
+      if (!cancelled) {
+        setRiskLoading(false);
+      }
+    });
     return () => {
       cancelled = true;
     };
-  }, [selected?.code, selected?.supplier_inn, selected?.amount_rub, selected?.supplier_name, company?.id]);
+  }, [invoice?.supplier_inn, invoice?.amount_rub, invoice?.supplier_name, company?.id, riskAttempt]);
 
-  async function startFinancing(code: string, amountRub: number) {
-    setApplyPrefillAmount(instantFinancingAmount(amountRub));
-    setApplyIntent("standard");
-    await parseTemplate(code);
-    goToScreen("apply");
-  }
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: { "application/pdf": [".pdf"] },
+    multiple: false,
+    disabled: isBusy,
+    onDrop: (files) => {
+      const file = files[0];
+      if (file) {
+        void parseFile(file);
+      }
+    },
+  });
 
-  async function financeSelected() {
-    if (!selected || bankView) {
+  function chooseTemplate(code: string) {
+    const row = rows.find((item) => item.code === code);
+    if (!row) {
       return;
     }
-    await startFinancing(selected.code, selected.amount_rub);
+    clearError();
+    setInvoice({
+      code: row.code,
+      supplier_name: row.supplier_name,
+      supplier_inn: row.supplier_inn,
+      amount_rub: row.amount_rub,
+      purpose: row.purpose,
+      due_label: row.due_label,
+    });
   }
+
+  async function finance() {
+    if (!invoice || !company || bankView) {
+      return;
+    }
+    const amount = instantFinancingAmount(invoice.amount_rub);
+    const parsed = invoice.code ? await parseTemplate(invoice.code) : invoiceResult ?? undefined;
+    const draftId = parsed?.draft.application_id ?? invoiceResult?.draft.application_id;
+    if (!draftId) {
+      return;
+    }
+    await createApplication({
+      product_type: "INVEST_LEASING",
+      requested_amount_rub: amount,
+      term_months: INVOICE_FINANCING_TERM_MONTHS,
+      declared_monthly_revenue: company.declared_monthly_revenue,
+      draft_application_id: draftId,
+    });
+  }
+
+  if (!dashboard) {
+    return <SkeletonLines lines={6} />;
+  }
+
+  const forecast = dashboard.cash_forecast;
+  const fits = forecast.min_balance_rub >= payment;
 
   return (
     <>
-      <section className="home-hero">
-        <div className="home-hero-main">
-          <div className="figma-eyebrow">
-            {company?.name ?? "Кабинет"} · Invoice-to-Credit
-          </div>
-          <h1 className="figma-h1">Счета к оплате</h1>
-          <p className="figma-lead">
-            Выберите счёт поставщика — банк профинансирует до 85%. Остаток закроется после оплаты
-            контрагентом.
-          </p>
-          <div className="home-hero-balance">
-            <span>На счёте сейчас</span>
-            <strong>{formatMoney(balance)}</strong>
-            <small>можно оплатить целиком или взять финансирование</small>
-          </div>
+      <div className="v2-row v2-inv-head">
+        <div>
+          <h1 className="v2-h1">Счёт и финансирование</h1>
+          <p className="v2-lead">Загрузите счёт — банк оплатит поставщику напрямую</p>
         </div>
-        <div className="home-hero-cta">
-          <button
-            type="button"
-            className="btn btn-primary primary-cta"
-            disabled={isBusy || bankView || !selected}
-            onClick={() => void financeSelected()}
-          >
-            Финансировать выбранный
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => setShowUpload((open) => !open)}
-          >
-            {showUpload ? "Скрыть PDF" : "Загрузить PDF"}
-          </button>
-          <button type="button" className="btn btn-ghost" onClick={() => goToScreen("home")}>
-            ← На главную
-          </button>
+        <div className="v2-steps" aria-label="Шаги">
+          {STEPS.map((label, index) => (
+            <span key={label} className={index === step ? "on" : index < step ? "done" : ""}>
+              <i>{index + 1}</i>
+              {label}
+            </span>
+          ))}
         </div>
-      </section>
+      </div>
 
-      <InvoiceKpiStrip
-        overdueRub={kpis.overdue}
-        dueSoonRub={kpis.dueSoon}
-        availableRub={kpis.available}
-        onFinanceAll={() => void financeSelected()}
-        financeDisabled={isBusy || bankView || !selected}
-      />
-
-      <section className="inv-workspace">
-        <InvoiceListPane
-          rows={tab === "draft" ? [] : unpaidRows}
-          selectedCode={selected?.code ?? null}
-          tab={tab}
-          onTabChange={setTab}
-          onSelect={(code) => {
-            setSelectedCode(code);
-            setPaidFromAccount(false);
-          }}
-        />
-
-        <div className="inv-detail-wrap">
-          {selected && company ? (
-            <InvoiceDetailPane
-              invoice={selected}
-              companyName={company.name}
-              balanceRub={balance}
-              isBusy={isBusy}
-              disabled={bankView}
-              onFinance={() => void financeSelected()}
-              onPayFromAccount={() => setPaidFromAccount(true)}
-              paidFromAccount={paidFromAccount}
-              supplierRisk={supplierRisk}
-              supplierRiskLoading={supplierRiskLoading}
-              supplierRiskError={supplierRiskError}
-            />
-          ) : (
-            <div className="inv-list-empty">
-              <strong>Выберите счёт</strong>
-              <p className="muted">Слева — демо-шаблоны Invoice-to-Credit из API.</p>
+      <div className="v2-invoice">
+        <div className="v2-invoice-main">
+          {!invoice ? (
+            <div {...getRootProps({ className: `v2-inv-drop ${isDragActive ? "on" : ""}` })}>
+              <input {...getInputProps()} />
+              {isBusy ? <SkeletonLines lines={3} /> : error ? (
+                <ErrorState title="Не удалось прочитать счёт" text={error} onRetry={clearError} />
+              ) : rows.length === 0 ? (
+                <EmptyState
+                  title="Счетов пока нет"
+                  text="Перетащите PDF или дождитесь демо-шаблонов."
+                  action="Обновить"
+                  onAction={() => window.location.reload()}
+                />
+              ) : (
+                <>
+                  <div className="v2-kicker">Счёт</div>
+                  <h2>{isDragActive ? "Отпустите PDF" : "Перетащите PDF-счёт"}</h2>
+                  <p className="v2-muted">или выберите демо-счёт ниже. Файл до 10 МБ.</p>
+                  <div className="v2-inv-picks">
+                    {rows.map((row) => (
+                      <button key={row.code} type="button" className="v2-btn" onClick={(event) => { event.stopPropagation(); chooseTemplate(row.code); }}>
+                        {row.supplier_name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
+          ) : (
+            <section className="v2-card">
+              <div className="v2-row">
+                <div>
+                  <div className="v2-kicker">Распознанный счёт</div>
+                  <h2>Проверьте поля</h2>
+                </div>
+                <button type="button" className="v2-btn ghost" onClick={() => setInvoice(null)}>Другой счёт</button>
+              </div>
+              <div className="v2-inv-fields">
+                <label>Поставщик
+                  <input value={invoice.supplier_name} onChange={(event) => setInvoice({ ...invoice, supplier_name: event.target.value })} />
+                </label>
+                <label>ИНН
+                  <input className="v2-num" value={invoice.supplier_inn} onChange={(event) => setInvoice({ ...invoice, supplier_inn: event.target.value })} />
+                </label>
+                <label>Сумма счёта, ₽
+                  <input
+                    className="v2-num"
+                    inputMode="numeric"
+                    value={String(invoice.amount_rub)}
+                    onChange={(event) => setInvoice({ ...invoice, amount_rub: Number(event.target.value.replace(/[^\d]/g, "")) || 0 })}
+                  />
+                </label>
+                <label>Срок оплаты
+                  <input value={invoice.due_label} onChange={(event) => setInvoice({ ...invoice, due_label: event.target.value })} />
+                </label>
+                <label className="wide">Назначение
+                  <input value={invoice.purpose} onChange={(event) => setInvoice({ ...invoice, purpose: event.target.value })} />
+                </label>
+              </div>
+            </section>
           )}
 
-          {invoiceResult ? (
-            <div className="inv-recognized">
-              <InvoiceRecognizedSummary />
-            </div>
+          {invoice ? (
+            <SupplierVerdict
+              risk={risk}
+              isLoading={riskLoading}
+              error={riskError}
+              onRetry={() => setRiskAttempt((value) => value + 1)}
+            />
+          ) : null}
+
+          {invoice && !riskLoading && !riskError ? (
+            <section className="v2-card">
+              <div className="v2-kicker">Финансирование</div>
+              <h2>Банк платит поставщику {pct}% счёта</h2>
+              <div className="v2-check"><span>К финансированию</span><strong className="v2-num">{formatMoney(financing)}</strong></div>
+              <div className="v2-check"><span>Срок</span><strong>{INVOICE_FINANCING_TERM_MONTHS} мес.</strong></div>
+              <div className="v2-check"><span>Ставка до решения</span><strong>{INVOICE_RATE_LABEL}</strong></div>
+              <div className="v2-check"><span>Платёж, ориентир</span><strong className="v2-num">≈ {formatMoney(payment)}</strong></div>
+              <div className="v2-check"><span>ПСК</span><strong>{INVOICE_PSK_LABEL}</strong></div>
+              <p className="v2-note">
+                {fits
+                  ? `Платёж ниже минимума кассы ${formatMoney(forecast.min_balance_rub)} на дне ${forecast.min_day}. Точный график придёт в решении.`
+                  : `В низкую точку кассы (${formatMoney(forecast.min_balance_rub)}, день ${forecast.min_day}) ориентир платежа не помещается. Банк пересчитает его в решении.`}
+              </p>
+              {bankView ? (
+                <p className="v2-muted">Оформляет клиент. Заявка с проверкой поставщика появится в очереди.</p>
+              ) : (
+                <button type="button" className="v2-btn primary" disabled={isBusy || financing <= 0} onClick={() => void finance()}>
+                  {isBusy ? "Оформляем…" : "Оформить финансирование"}
+                </button>
+              )}
+            </section>
           ) : null}
         </div>
-      </section>
 
-      {showUpload ? (
-        <section className="figma-panel figma-panel-sm" style={{ marginTop: 16 }}>
-          <div className="figma-panel-title">Свой PDF-счёт</div>
-          <div className="figma-panel-heading" style={{ fontSize: 18, marginBottom: 12 }}>
-            Распознать и перейти к финансированию
-          </div>
-          <InvoicePanel />
-        </section>
-      ) : null}
+        <aside className="v2-card v2-inv-history">
+          <div className="v2-kicker">История счетов</div>
+          <h2>Статусы</h2>
+          {rows.length === 0 ? (
+            <p className="v2-muted">Список пуст.</p>
+          ) : rows.map((row) => (
+            <button
+              key={row.code}
+              type="button"
+              className={invoice?.code === row.code ? "on" : ""}
+              onClick={() => chooseTemplate(row.code)}
+            >
+              <span>
+                <strong>{row.supplier_name}</strong>
+                <small>{invoiceStatusLabel(row.status)} · {row.due_label}</small>
+              </span>
+              <b className="v2-num">{formatMoney(row.amount_rub)}</b>
+            </button>
+          ))}
+        </aside>
+      </div>
     </>
   );
 }

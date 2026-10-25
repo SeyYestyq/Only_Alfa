@@ -5,6 +5,7 @@ import { isTextField } from "../../components/v2/keys";
 import { RefuseDialog } from "../../components/v2/RefuseDialog";
 import { scoreCorridorLabel } from "../../components/RiskScoreGauge";
 import { INSPECTOR_NAME } from "../../domain-ui/caseScript";
+import { supplierRiskBandLabel } from "../../domain-ui/supplierRisk";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
 import { useUiStore } from "../../state/uiStore";
@@ -169,6 +170,7 @@ export function BankCase() {
             ))}
             <p className="v2-note">Источники — симуляторы реестров, seed = hash(ИНН). Время ответа в демо помечено как ориентир, не замер продакшена.</p>
           </section>
+          <SupplierDealCard invoice={application.invoice} />
           <section className="v2-card" style={{ marginTop: 12 }}>
             <h2>Почему {application.risk_score}</h2>
             <div className="v2-check"><span>База</span><strong>500</strong></div>
@@ -255,5 +257,46 @@ export function BankCase() {
         }}
       />
     </>
+  );
+}
+
+function supplierDeal(invoice: Record<string, unknown> | null): {
+  supplier_name: string;
+  supplier_inn: string;
+  deal_success_probability_pct: number;
+  risk_band: string;
+  summary: string;
+} | null {
+  const raw = invoice?.supplier_deal_risk;
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const deal = raw as Record<string, unknown>;
+  if (typeof deal.supplier_name !== "string" || typeof deal.deal_success_probability_pct !== "number") {
+    return null;
+  }
+  return {
+    supplier_name: deal.supplier_name,
+    supplier_inn: typeof deal.supplier_inn === "string" ? deal.supplier_inn : "",
+    deal_success_probability_pct: deal.deal_success_probability_pct,
+    risk_band: typeof deal.risk_band === "string" ? deal.risk_band : "",
+    summary: typeof deal.summary === "string" ? deal.summary : "",
+  };
+}
+
+function SupplierDealCard({ invoice }: { invoice: Record<string, unknown> | null }) {
+  const deal = supplierDeal(invoice);
+  if (!deal) {
+    return null;
+  }
+  return (
+    <section className="v2-card" style={{ marginTop: 12 }}>
+      <div className="v2-kicker">Проверка поставщика по счёту</div>
+      <h2>{deal.supplier_name}</h2>
+      <div className="v2-check"><span>ИНН</span><strong className="v2-num">{deal.supplier_inn}</strong></div>
+      <div className="v2-check"><span>Успех сделки</span><strong>{Math.round(deal.deal_success_probability_pct)}%</strong></div>
+      <div className="v2-check"><span>Оценка</span><strong>{supplierRiskBandLabel(deal.risk_band)}</strong></div>
+      <p className="v2-note">{deal.summary}</p>
+    </section>
   );
 }

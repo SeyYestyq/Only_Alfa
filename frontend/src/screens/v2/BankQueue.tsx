@@ -4,6 +4,7 @@ import { HotkeyCard } from "../../components/v2/HotkeyCard";
 import { Kbd } from "../../components/v2/Kbd";
 import { isTextField } from "../../components/v2/keys";
 import { EmptyState, SkeletonLines } from "../../components/v2/ScreenState";
+import { invoiceQueueLine } from "../../domain-ui/invoiceFinancing";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
 import { useUiStore } from "../../state/uiStore";
@@ -63,11 +64,12 @@ export function BankQueue() {
             companyId: company.id,
             client: company.name,
             inn: company.inn,
-            what: waitingSign
-              ? "Ждёт подписи гендиректора"
-              : isPause
-                ? "Клиент выбирает вариант или присылает документ"
-                : "Решение по заявке — сумма выше предложения",
+            what: invoiceQueueLine(application.invoice)
+              ?? (waitingSign
+                ? "Ждёт подписи гендиректора"
+                : isPause
+                  ? "Клиент выбирает вариант или присылает документ"
+                  : "Решение по заявке — сумма выше предложения"),
             amount: formatMoney(application.requested_amount_rub),
             score: String(application.risk_score || "стоп"),
             slaMin: isPause ? 400 : 117,

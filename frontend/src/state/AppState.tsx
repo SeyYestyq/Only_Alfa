@@ -62,7 +62,7 @@ interface AppContextValue {
   setViewMode: (mode: ViewMode) => void;
   goToScreen: (screen: ScreenId) => void;
   runSearch: (query: string) => Promise<void>;
-  parseTemplate: (code: string) => Promise<void>;
+  parseTemplate: (code: string) => Promise<InvoiceParseResult | undefined>;
   parseFile: (file: File) => Promise<void>;
   submitDraft: (productType: ProductType, termMonths: number) => Promise<void>;
   createApplication: (
@@ -369,18 +369,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const parseTemplate = useCallback(async (code: string) => {
     if (!companyId) {
-      return;
+      return undefined;
     }
     setIsBusy(true);
     setError(null);
     try {
       const result = await api.parseInvoiceTemplate(companyId, code);
       if (companyRef.current !== companyId) {
-        return;
+        return undefined;
       }
       setInvoiceResult(result);
+      return result;
     } catch (cause) {
       handleError(cause);
+      return undefined;
     } finally {
       setIsBusy(false);
     }

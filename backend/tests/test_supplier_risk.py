@@ -115,3 +115,7 @@ def test_parse_invoice_includes_supplier_deal_risk(client, companies):
     payload = response.json()
     assert payload["supplier_deal_risk"]["supplier_inn"] == "7712345671"
     assert "deal_success_probability_pct" in payload["supplier_deal_risk"]
+    stored = payload["draft"]["invoice"]["supplier_deal_risk"]
+    assert stored["supplier_inn"] == "7712345671"
+    codes = [check["code"] for check in payload["draft"]["checks"]]
+    assert "SUPPLIER_DEAL" in codes

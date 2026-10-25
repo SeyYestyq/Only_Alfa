@@ -585,6 +585,21 @@ class ApplicationService:
             antifraud["message"],
             {"supplier_inn": invoice["supplier_inn"], "amount_rub": invoice["amount_rub"]},
         )
+        deal_risk = invoice.get("supplier_deal_risk")
+        if isinstance(deal_risk, dict):
+            band = str(deal_risk.get("risk_band") or "")
+            probability = deal_risk.get("deal_success_probability_pct")
+            self.applications.add_check(
+                application.id,
+                "SUPPLIER_DEAL",
+                "PASS" if band == "LOW" else "WARN",
+                f"Проверка поставщика: успех сделки {probability}%",
+                {
+                    "supplier_inn": invoice.get("supplier_inn"),
+                    "risk_band": band,
+                    "probability_pct": probability,
+                },
+            )
         self.applications.add_event(
             application_id=application.id,
             company_id=profile.id,
