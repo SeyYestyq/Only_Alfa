@@ -22,6 +22,8 @@ export interface ClientNotice {
   targetScreen: ScreenId;
   primaryLabel: string;
   secondaryLabel: string;
+  /** Показывать только подписанту (гендиректор / ИП). */
+  signingAuthorityOnly?: boolean;
 }
 
 export type BankNoticeKind = "new_app" | "manual_review" | "anomaly" | "docs" | "stop_factor";
@@ -162,14 +164,15 @@ function noticeFromStatus(
   if (status === "APPROVED") {
     return {
       kind: "approved",
-      title: "Кредит одобрен",
+      title: "Кредит одобрен — ждёт подписи",
       text: amountLabel
-        ? `Банк одобрил ${amountLabel}. Можно подтвердить условия и подписать договор.`
-        : "Банк одобрил заявку. Можно перейти к подписи.",
+        ? `Банк одобрил ${amountLabel}. Договор ждёт подписи руководителя.`
+        : "Банк одобрил заявку. Договор ждёт подписи руководителя.",
       applicationId,
       targetScreen: "signing",
-      primaryLabel: "Подписать",
+      primaryLabel: "Подписать договор",
       secondaryLabel: "Позже",
+      signingAuthorityOnly: true,
     };
   }
   if (status === "AWAITING_CEO_APPROVAL") {
@@ -181,6 +184,7 @@ function noticeFromStatus(
       targetScreen: "signing",
       primaryLabel: "Подписать",
       secondaryLabel: "Позже",
+      signingAuthorityOnly: true,
     };
   }
   if (status === "REJECTED") {
@@ -328,9 +332,22 @@ export function notifyClientAboutStatus(
   status: string,
   applicationId: string,
   amountLabel?: string,
+  options?: { isSigningAuthority?: boolean },
 ): void {
   const payload = noticeFromStatus(status, applicationId, amountLabel);
-  if (payload) {
-    useDemoStore.getState().pushClientNotice(payload);
+  if (!payload) {
+    return;
   }
+  if (payload.signingAuthorityOnly && options?.isSigningAuthority === false) {
+    useDemoStore.getState().pushClientNotice({
+      ...payload,
+      signingAuthorityOnly: false,
+      title: "Кредит одобрен",
+      text: "Договор отправлен на подпись руководителю. Статус обновится автоматически.",
+      targetScreen: "decision",
+      primaryLabel: "Смотреть статус",
+    });
+    return;
+  }
+  useDemoStore.getState().pushClientNotice(payload);
 }

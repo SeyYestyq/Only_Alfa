@@ -1,27 +1,43 @@
 import type { NewsItem } from "../api/types";
+import { useApp } from "../state/AppState";
 import { formatDateTime } from "../utils/format";
 
 export function NewsFeed({ items }: { items: NewsItem[] }) {
+  const { goToScreen } = useApp();
+
   return (
-    <section className="card">
-      <div className="card-header">
-        <div>
-          <h2 className="card-title">News-to-Action</h2>
-          <p className="card-subtitle">Лента перестраивается после каждого поискового запроса</p>
-        </div>
-      </div>
-      <div className="card-body">
-        <div className="news-list">
-          {items.map((item) => (
-            <article key={item.id} className={`news-item ${item.source === "NEWS_TO_ACTION" ? "is-new" : ""}`}>
-              <div className="news-title">{item.title}</div>
-              <div className="news-text">{item.text}</div>
-              <div className="news-cta">
-                {item.cta} · {formatDateTime(item.created_at)}
-              </div>
-            </article>
-          ))}
-        </div>
+    <section className="figma-panel figma-panel-sm">
+      <div className="figma-panel-title">News-to-Action</div>
+      <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+        Системные подсказки и офферы — переход ведёт в сценарий, а не на пустой экран.
+      </p>
+      <div className="news-list" style={{ marginTop: 12 }}>
+        {items.map((item) => (
+          <article
+            key={item.id}
+            className={`news-item figma-panel figma-panel-sm ${item.source === "NEWS_TO_ACTION" ? "is-new" : ""}`}
+            style={{ marginBottom: 10, background: "var(--surface-2)" }}
+          >
+            <div className="news-title" style={{ fontWeight: 650 }}>{item.title}</div>
+            <div className="news-text muted" style={{ fontSize: 13, marginTop: 6 }}>{item.text}</div>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              style={{ marginTop: 10 }}
+              onClick={() => {
+                if (item.cluster === "PROACTIVE" || item.cta.toLowerCase().includes("загруз")) {
+                  goToScreen("decision");
+                } else if (item.cta.toLowerCase().includes("кредит") || item.cta.toLowerCase().includes("оффер")) {
+                  goToScreen("apply");
+                } else {
+                  goToScreen("home");
+                }
+              }}
+            >
+              {item.cta} · {formatDateTime(item.created_at)}
+            </button>
+          </article>
+        ))}
       </div>
     </section>
   );

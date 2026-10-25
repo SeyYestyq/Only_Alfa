@@ -6,6 +6,9 @@ import { BankDealEconomics } from "../../components/BankDealEconomics";
 import { EventLog } from "../../components/EventLog";
 import { GeoPanel } from "../../components/GeoPanel";
 import { BankEmptyState, XrayRecalcPanel, XraySkeleton } from "../../components/Skeleton";
+import { PilotClientRequestCard } from "../../components/PilotClientRequestCard";
+import { SystemDecidedFeed } from "../../components/SystemDecidedFeed";
+import { OfferLetterPanel } from "../../components/OfferLetterPanel";
 import { UnderwriterActions } from "../../components/UnderwriterActions";
 import { RiskScoreGauge } from "../../components/RiskScoreGauge";
 import { XrayBaseDecomposition } from "../../components/XrayBaseDecomposition";
@@ -136,6 +139,14 @@ export function ApplicationDeskScreen() {
       </div>
 
       {/* ── 1. Bento Command Cockpit (Hero Radar + 2x2 Vitals + 3 Modular Cards) ── */}
+      <SystemDecidedFeed />
+
+      <PilotClientRequestCard application={application} />
+
+      {application.offer_letters && application.offer_letters[0] && (
+        <OfferLetterPanel letter={application.offer_letters[0]} />
+      )}
+
       <BankBentoCockpit
         onNavigateSection={(id) => {
           setActiveSection(id.replace("desk-", "") as DeskSection);

@@ -1,6 +1,6 @@
-import { useState } from "react";
 import type { Application } from "../api/types";
-import { CreditChatModal } from "./CreditChatModal";
+import { ApplicationBriefPanel } from "./ApplicationBriefPanel";
+import { OfferLetterPanel } from "./OfferLetterPanel";
 import { useApp } from "../state/AppState";
 import { formatDateTime, formatMoney, formatPercent } from "../utils/format";
 
@@ -9,15 +9,10 @@ const SIGNING_STATUSES = ["APPROVED", "AWAITING_CEO_APPROVAL"];
 /** Подписание: условия слева, код ПЭП справа. */
 export function SigningPanel({ application }: { application: Application }) {
   const { signApplication, isBusy, effectiveRole, viewMode } = useApp();
-  const [chatOpen, setChatOpen] = useState(false);
   const legalForm = application.company.legal_form;
   const isSigningRole = legalForm === "OOO" ? effectiveRole === "CEO_OWNER" : effectiveRole === "IP_OWNER";
   const canSign = SIGNING_STATUSES.includes(application.status) && isSigningRole && viewMode !== "bank";
   const digits = ["4", "8", "1", "7", "", ""];
-  const director =
-    application.company.users.find((user) => user.role === "CEO_OWNER" || user.role === "IP_OWNER")
-      ?.full_name ?? "гендиректору";
-
   return (
     <>
       <div className="sign-layout">
@@ -104,21 +99,18 @@ export function SigningPanel({ application }: { application: Application }) {
           ) : !canSign ? (
             <>
               <h2 style={{ fontSize: 22, fontWeight: 650, margin: "8px 0" }}>
-                Подписать может только генеральный директор
+                Подписать может только руководитель
               </h2>
               <p className="muted" style={{ fontSize: 14, lineHeight: 1.45 }}>
                 {application.status === "COUNTER_OFFER"
                   ? "Сначала выберите вариант на экране решения."
-                  : "У роли бухгалтера нет права подписи по ООО. Отправьте условия подписанту."}
+                  : "Бухгалтер не подписывает договор. Подписант получит уведомление и откроет этот экран сам."}
               </p>
-              <button
-                type="button"
-                className="btn btn-primary btn-block"
-                style={{ marginTop: 16 }}
-                onClick={() => setChatOpen(true)}
-              >
-                Отправить гендиректору
-              </button>
+              {application.status === "FUNDED" && (
+                <p style={{ marginTop: 12 }}>
+                  Договор подписан руководителем. Деньги зачислены — статус обновлён автоматически.
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -149,12 +141,13 @@ export function SigningPanel({ application }: { application: Application }) {
         </section>
       </div>
 
-      {chatOpen && (
-        <CreditChatModal
-          application={application}
-          onClose={() => setChatOpen(false)}
-          initialDraft={`Прошу направить условия кредита на подпись: ${director}.`}
-        />
+      {application.client_brief && (
+        <div style={{ marginTop: 20 }}>
+          <ApplicationBriefPanel brief={application.client_brief} />
+        </div>
+      )}
+      {application.offer_letters && application.offer_letters[0] && (
+        <OfferLetterPanel letter={application.offer_letters[0]} />
       )}
     </>
   );

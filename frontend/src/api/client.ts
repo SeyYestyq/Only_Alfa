@@ -182,6 +182,54 @@ export const api = {
   resetDemo(): Promise<{ ok: boolean; message: string }> {
     return request("/companies/reset-demo", { method: "POST" });
   },
+
+  submitClientProductRequest(
+    applicationId: string,
+    payload: {
+      product_type: ProductType;
+      requested_amount_rub: number;
+      term_months: number;
+      comment?: string;
+      actor_role: ActorRole;
+    },
+  ): Promise<Application> {
+    return request(`/applications/${applicationId}/client-product-request`, jsonInit(payload));
+  },
+
+  decideClientProductRequest(
+    applicationId: string,
+    payload: {
+      action: "APPROVE" | "REQUEST_DATA" | "SEND_COUNTER";
+      actor_role: ActorRole;
+      comment?: string;
+      document_code?: string;
+    },
+  ): Promise<Application> {
+    return request(`/applications/${applicationId}/client-request-decision`, jsonInit(payload));
+  },
+
+  uploadSupplement(
+    applicationId: string,
+    payload: {
+      document_code: "MULTIBANK_STATEMENT" | "SUPPLY_CONTRACT" | "COLLATERAL_DOC" | "EQUIPMENT_INVOICE";
+      file_name?: string;
+      actor_role: ActorRole;
+    },
+  ): Promise<Application> {
+    return request(`/applications/${applicationId}/supplement-document`, jsonInit(payload));
+  },
+
+  getSystemActions(companyId: string): Promise<{ actions: import("./types").SystemAction[] }> {
+    return request(`/companies/${companyId}/system-actions`);
+  },
+
+  publishSystemAction(companyId: string, actionId: string): Promise<{ id: string; status: string }> {
+    return request(`/companies/${companyId}/system-actions/${actionId}/publish`, { method: "POST" });
+  },
+
+  cancelSystemAction(companyId: string, actionId: string): Promise<{ id: string; status: string }> {
+    return request(`/companies/${companyId}/system-actions/${actionId}/cancel`, { method: "POST" });
+  },
 };
 
 export const PRODUCT_LABELS: Record<ProductType, string> = {

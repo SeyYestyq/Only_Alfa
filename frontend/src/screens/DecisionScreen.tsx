@@ -3,6 +3,9 @@ import { COLLATERAL_LABELS } from "../api/client";
 import { CreditChatModal } from "../components/CreditChatModal";
 import { FlowStepper, stepFromStatus } from "../components/FlowStepper";
 import { MultibankPanel } from "../components/MultibankPanel";
+import { ApplicationBriefPanel } from "../components/ApplicationBriefPanel";
+import { ClientProductRequestPanel } from "../components/ClientProductRequestPanel";
+import { OfferLetterPanel } from "../components/OfferLetterPanel";
 import { ProductOfferCards } from "../components/offers/ProductOfferCards";
 import { RiskScoreGauge } from "../components/RiskScoreGauge";
 import { StatusTrack } from "../components/StatusTrack";
@@ -82,6 +85,8 @@ export function DecisionScreen() {
           : `${application.product_label} · ${formatMoney(application.requested_amount_rub)} на ${application.term_months} мес.`}
       </p>
       <FlowStepper active={stepFromStatus(application.status, "decision")} />
+
+      {application.client_brief && <ApplicationBriefPanel brief={application.client_brief} />}
 
       {/* Проверки — только на Паспорте; здесь лишь итог скоринга и ссылка назад. */}
       <div className="decision-score-bar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, padding: "16px 24px", background: "var(--surface-1)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)" }}>
@@ -253,14 +258,16 @@ export function DecisionScreen() {
 
       {application.status === "REJECTED" && (
         <div className="alert alert-risk" style={{ marginBottom: 24 }}>
-          <strong>
-            {application.is_hard_stop ? "Hard Stop: мгновенный отказ" : "Заявка отклонена"}
-          </strong>
+          <strong>{application.is_hard_stop ? "Мгновенный отказ по стоп-фактору" : "Заявка отклонена"}</strong>
           <p style={{ marginTop: 4 }}>
-            {application.hard_stop_reason ?? "RiskScore ниже красного коридора."}
+            {application.hard_stop_reason ?? "Кредитная оценка ниже допустимого коридора."}
           </p>
+          <div className="figma-panel-title" style={{ marginTop: 12 }}>План на 90 дней</div>
           <ul className="checklist">
-            {application.rejection_checklist.map((item) => (
+            {(application.client_brief?.decision_letter?.next_steps?.length
+              ? application.client_brief.decision_letter.next_steps
+              : application.rejection_checklist
+            ).map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
@@ -283,6 +290,14 @@ export function DecisionScreen() {
             Изменить залог
           </button>
         </div>
+      )}
+
+      {(application.status === "APPROVED" || application.status === "COUNTER_OFFER") &&
+        application.offer_letters &&
+        application.offer_letters[0] && <OfferLetterPanel letter={application.offer_letters[0]} />}
+
+      {(application.status === "COUNTER_OFFER" || application.status === "APPROVED") && (
+        <ClientProductRequestPanel application={application} />
       )}
 
       {application.status === "COUNTER_OFFER" && application.counter_offers.length > 0 && (
@@ -360,9 +375,9 @@ export function DecisionScreen() {
               </>
             ) : (
               <>
-                <strong>Подписать может только гендиректор</strong>
+                <strong>Подписать может только руководитель</strong>
                 <div className="muted" style={{ fontSize: 13 }}>
-                  Напишите {director} в чате по этой заявке.
+                  Бухгалтер видит статус; подписант получит уведомление на экран подписи.
                 </div>
               </>
             )}
@@ -372,19 +387,12 @@ export function DecisionScreen() {
           type="button"
           className="btn btn-primary"
           disabled={
-            canSign &&
-            application.status === "COUNTER_OFFER" &&
-            !application.selected_offer_index
+            !canSign ||
+            (application.status === "COUNTER_OFFER" && !application.selected_offer_index)
           }
-          onClick={() => {
-            if (canSign) {
-              goToScreen("signing");
-            } else {
-              setChatOpen(true);
-            }
-          }}
+          onClick={() => goToScreen("signing")}
         >
-          {canSign ? "Подписать договор" : "Написать гендиректору"}
+          {canSign ? "Подписать договор" : "К экрану подписи"}
         </button>
       </div>
 

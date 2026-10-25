@@ -206,6 +206,86 @@ export interface ApplicationCheck {
   created_at: string | null;
 }
 
+export interface DecisionLetter {
+  title: string;
+  paragraphs: string[];
+  next_steps: string[];
+  tone: string;
+}
+
+export interface ClientBrief {
+  where: string;
+  what_next: string;
+  why_facts: string[];
+  next_action: string;
+  pre_decision_warnings: string[];
+  decision_letter: DecisionLetter | null;
+  tone: "good" | "warn" | "risk" | string;
+}
+
+export interface OfferLetter {
+  kind: string;
+  product_type: string;
+  product_label: string;
+  amount_rub: number;
+  term_months: number;
+  rate_pct: number;
+  monthly_payment_rub: number;
+  headline: string;
+  why_this_product: string;
+  top_factors: Array<{ label: string; delta: number; direction: string }>;
+  why_terms: string;
+  if_no_action: string;
+  score: number;
+}
+
+export interface ScoreChange {
+  previous_score: number;
+  new_score: number;
+  score_delta: number;
+  shifted_factors: string[];
+  document_code: string;
+  document_label: string;
+}
+
+export interface ClientProductRequestState {
+  status: string;
+  request: {
+    product_type: ProductType;
+    requested_amount_rub: number;
+    term_months: number;
+    comment?: string;
+  };
+  verdict: {
+    is_acceptable: boolean;
+    summary: string;
+    reasons: string[];
+    suggested_supplements: Array<{
+      code: string;
+      label: string;
+      reason: string;
+      score_delta: number;
+    }>;
+    pilot_actions: string[];
+  };
+  requested_document?: { code: string; label: string; score_delta?: number; reason?: string };
+}
+
+export interface SystemAction {
+  id: string;
+  rule_code: string;
+  title: string;
+  explanation: string;
+  client_text: string;
+  status: string;
+  target_screen: string;
+  payload: Record<string, unknown>;
+  visible_to_client_at: string | null;
+  client_opened_at: string | null;
+  client_response: string | null;
+  created_at: string | null;
+}
+
 export interface Application {
   application_id: string;
   company: CompanyBrief;
@@ -251,6 +331,11 @@ export interface Application {
   account_balance: number;
   created_at: string | null;
   updated_at: string | null;
+  client_brief?: ClientBrief | null;
+  offer_letters?: OfferLetter[];
+  client_product_request?: ClientProductRequestState | null;
+  score_changes?: ScoreChange[];
+  applied_supplements?: string[];
 }
 
 export interface InvoiceTemplate {

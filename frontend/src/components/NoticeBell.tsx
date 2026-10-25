@@ -66,12 +66,15 @@ const DEMO_SCENARIOS: Record<string, any> = {
 export function NoticeBell() {
   const {
     viewMode,
+    effectiveRole,
     openApplication,
     goToScreen,
     openBankCase,
     selectCompany,
     companies,
   } = useApp();
+
+  const isSigningAuthority = effectiveRole === "CEO_OWNER" || effectiveRole === "IP_OWNER";
 
   const clientNotices = useDemoStore((state) => state.clientNotices);
   const bankNotices = useDemoStore((state) => state.bankNotices);
@@ -98,7 +101,10 @@ export function NoticeBell() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open, setOpen]);
 
-  const count = viewMode === "bank" ? bankNotices.length : clientNotices.length;
+  const visibleClientNotices = clientNotices.filter(
+    (notice) => !notice.signingAuthorityOnly || isSigningAuthority,
+  );
+  const count = viewMode === "bank" ? bankNotices.length : visibleClientNotices.length;
 
   const handleBankNoticeClick = (notice: BankNotice) => {
     dismissBank(notice.id);
@@ -203,7 +209,7 @@ export function NoticeBell() {
             </p>
           ) : (
             <ul className="notice-panel-list">
-              {clientNotices.map((notice) => (
+              {visibleClientNotices.map((notice) => (
                 <li key={notice.id}>
                   <button
                     type="button"

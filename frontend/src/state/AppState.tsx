@@ -84,6 +84,20 @@ interface AppContextValue {
     comment?: string,
     documentName?: string,
   ) => Promise<void>;
+  submitClientProductRequest: (
+    input: Omit<import("../api/types").ApplicationCreateInput, "company_id" | "declared_monthly_revenue" | "actor_role"> & {
+      comment?: string;
+    },
+  ) => Promise<void>;
+  decideClientProductRequest: (
+    action: "APPROVE" | "REQUEST_DATA" | "SEND_COUNTER",
+    comment?: string,
+    documentCode?: string,
+  ) => Promise<void>;
+  uploadSupplement: (input: {
+    document_code: "MULTIBANK_STATEMENT" | "SUPPLY_CONTRACT" | "COLLATERAL_DOC" | "EQUIPMENT_INVOICE";
+    file_name?: string;
+  }) => Promise<void>;
   runInstallment: (transactionId: string, months: number) => Promise<InstallmentResult>;
   refresh: () => Promise<void>;
   resetAllScenarios: () => Promise<void>;
@@ -443,6 +457,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         created.status,
         created.application_id,
         formatMoney(created.requested_amount_rub),
+        {
+          isSigningAuthority:
+            effectiveRole === "CEO_OWNER" || effectiveRole === "IP_OWNER",
+        },
       );
       if (next === "applications") {
         const payload = await api.listApplications(targetCompanyId);
@@ -613,6 +631,79 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [afterApplicationChange, application, effectiveRole, handleError, setScreen]);
 
+  const submitClientProductRequest = useCallback(async (
+    input: {
+      product_type: ProductType;
+      requested_amount_rub: number;
+      term_months: number;
+      comment?: string;
+    },
+  ) => {
+    if (!application) {
+      return;
+    }
+    setIsBusy(true);
+    setError(null);
+    try {
+      const updated = await api.submitClientProductRequest(application.application_id, {
+        ...input,
+        actor_role: effectiveRole === "UNDERWRITER" ? "ACCOUNTANT" : effectiveRole,
+      });
+      await afterApplicationChange(updated);
+    } catch (cause) {
+      handleError(cause);
+    } finally {
+      setIsBusy(false);
+    }
+  }, [afterApplicationChange, application, effectiveRole, handleError]);
+
+  const decideClientProductRequest = useCallback(async (
+    action: "APPROVE" | "REQUEST_DATA" | "SEND_COUNTER",
+    comment?: string,
+    documentCode?: string,
+  ) => {
+    if (!application) {
+      return;
+    }
+    setIsBusy(true);
+    setError(null);
+    try {
+      const updated = await api.decideClientProductRequest(application.application_id, {
+        action,
+        actor_role: "UNDERWRITER",
+        comment,
+        document_code: documentCode,
+      });
+      await afterApplicationChange(updated);
+    } catch (cause) {
+      handleError(cause);
+    } finally {
+      setIsBusy(false);
+    }
+  }, [afterApplicationChange, application, handleError]);
+
+  const uploadSupplement = useCallback(async (input: {
+    document_code: "MULTIBANK_STATEMENT" | "SUPPLY_CONTRACT" | "COLLATERAL_DOC" | "EQUIPMENT_INVOICE";
+    file_name?: string;
+  }) => {
+    if (!application) {
+      return;
+    }
+    setIsBusy(true);
+    setError(null);
+    try {
+      const updated = await api.uploadSupplement(application.application_id, {
+        ...input,
+        actor_role: effectiveRole === "UNDERWRITER" ? "ACCOUNTANT" : effectiveRole,
+      });
+      await afterApplicationChange(updated);
+    } catch (cause) {
+      handleError(cause);
+    } finally {
+      setIsBusy(false);
+    }
+  }, [afterApplicationChange, application, effectiveRole, handleError]);
+
   const underwriterAction = useCallback(async (
     action: "APPROVE" | "COUNTER_OFFER" | "NEED_MORE_INFO" | "REJECT",
     comment?: string,
@@ -638,6 +729,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updated.status,
         updated.application_id,
         formatMoney(updated.approved_amount_rub || updated.requested_amount_rub),
+        {
+          isSigningAuthority:
+            effectiveRole === "CEO_OWNER" || effectiveRole === "IP_OWNER",
+        },
       );
     } catch (cause) {
       handleError(cause);
@@ -732,6 +827,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     acceptOffer,
     signApplication,
     underwriterAction,
+    submitClientProductRequest,
+    decideClientProductRequest,
+    uploadSupplement,
     runInstallment,
     refresh,
     resetAllScenarios,
@@ -740,7 +838,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     acceptOffer, application, applications, cbrRate, companies, companyId, createApplication, dashboard,
     effectiveRole, error, goToScreen, invoiceResult, isBusy, isReady, loadApplications, lookupInn, multibankResult,
     openApplication, openBankCase, parseFile, parseTemplate, refresh, resetAllScenarios, runInstallment, runSearch, screen, searchResult,
-    selectCompany, setViewMode, signApplication, submitDraft, templates, underwriterAction, userRole,
+    selectCompany, setViewMode, signApplication, submitClientProductRequest, decideClientProductRequest,
+    uploadSupplement, submitDraft, templates, underwriterAction, userRole,
     verifyMultibank, viewMode, xray,
   ]);
 
