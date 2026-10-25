@@ -1,16 +1,13 @@
 import { useEffect } from "react";
 import { useApp } from "../state/AppState";
 
-/**
- * Бывший раздел «Документы» слит с шагом подписи / вкладкой «Кредит».
- * Оставляем экран как редирект на случай старых переходов.
- */
+/** Старый маршрут «Документы» открывает страницу «Компания». */
 export function DocumentsScreen() {
-  const { application, goToScreen } = useApp();
+  const { goToScreen } = useApp();
 
   useEffect(() => {
-    goToScreen(application ? "signing" : "applications");
-  }, [application, goToScreen]);
+    goToScreen("company");
+  }, [goToScreen]);
 
   return (
     <div className="loading">

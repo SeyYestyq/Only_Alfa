@@ -99,6 +99,23 @@ def accept_offer(
     )
 
 
+@router.post("/applications/{application_id}/documents", response_model=ApplicationSchema)
+async def upload_client_document(
+    application_id: str,
+    actor_role: str = Form(default="ACCOUNTANT"),
+    file: UploadFile = File(...),
+    session: Session = Depends(get_session),
+) -> dict:
+    """Клиент загружает документ по запросу инспектора и возвращает заявку на разбор."""
+    content = await file.read()
+    return ApplicationService(session).upload_client_document(
+        application_id,
+        actor_role,
+        file.filename or "document.pdf",
+        content,
+    )
+
+
 @router.post("/applications/{application_id}/underwriter-action", response_model=ApplicationSchema)
 def underwriter_action(
     application_id: str,

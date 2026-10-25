@@ -38,6 +38,7 @@
 | **PDF-счёт** | Ограничение | `pdfplumber` извлекает текст, регулярные выражения ищут ИНН, итог, НДС, поставщика и назначение; 3 демо-шаблона; скан без текстового слоя не поддерживается | Сканы и фотографии счёта не распознаются; нестандартная вёрстка может не разобраться | Проверка `%PDF`, обязательные ИНН и сумма; ошибка → 422; в UI есть 3 шаблона; лимит загрузки 10 МБ | `test_parse_real_pdf_extracts_inn_amount_vat`, `test_broken_pdf_returns_422`, `test_pdf_without_inn_returns_422` |
 | **База данных** | Фолбэк | В Docker — PostgreSQL 16; локально по умолчанию `sqlite:///./alfa.db`; `JSONType` переключается на JSONB только в PostgreSQL | Различия JSONB/JSON, конкурентность и поведение SQLite | Тесты идут на SQLite, Docker — на PostgreSQL; схема создаётся `create_all`; сидер идемпотентен | `pytest` на SQLite; `docker compose up --build`; `GET /health` показывает тип БД |
 | **OpenStreetMap** | Ограничение | Карта встроена iframe-ссылкой `openstreetmap.org/export/embed.html`; API-ключ не нужен | Внешние тайлы и доступность сети; карта не работает офлайн | Карта не участвует в решении; координаты, адрес и GeoScore остаются в `xray` | `test_xray_contains_pnl_waterfall_and_events`: `map_url` начинается с `https://www.openstreetmap.org/` |
+| **Посткредит** | Ограничение | После `FUNDED` API не меняет статус. Ранний сигнал, платёж ≈ 39 000 ₽ и лимит 2 000 000 ₽ живут в браузере и помечены «Демо · без API». Включить летний платёж может только подпись гендиректора, тоже в браузере | Состояние пропадает в другой вкладке и не видно банку через API | Плашка на экранах шагов после выдачи; ядро «сигнал → выдача» от этого не зависит | На «Обзоре» после выдачи видна плашка. Бухгалтер не включает платёж сам |
 
 ## 3. Детали по интеграциям
 
@@ -177,7 +178,7 @@ curl -s -X POST http://localhost:8000/api/v1/companies/lookup-inn \
 curl -s http://localhost:8000/api/v1/applications/invoice-templates
 ```
 
-Ожидаемо: 35 passed; `lookup-inn` при повторном вызове отдаёт `source: DATABASE` и тот же `id`; `verify-multibank` — `score_delta: 465`; битый PDF — 422.
+Ожидаемо: 46 passed; `lookup-inn` при повторном вызове отдаёт `source: DATABASE` и тот же `id`; `verify-multibank` — `score_delta: 465`; битый PDF — 422.
 
 Связанные документы:
 

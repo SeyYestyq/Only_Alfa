@@ -28,11 +28,8 @@ function fcfFromDna(value: string | undefined): number | null {
 export function ClientHome() {
   const { dashboard, application, userRole, goToScreen, setViewMode, companyId } = useApp();
   const offerSent = useDemoStore((state) => (companyId ? state.offerSent[companyId] : false));
-  const released = useDemoStore((state) =>
-    application ? Boolean(state.released[application.application_id]) : false);
   const phase = useDemoStore((state) => (companyId ? state.monitoring[companyId] ?? "none" : "none"));
   const restructureOn = useDemoStore((state) => (companyId ? Boolean(state.restructureOn[companyId]) : false));
-  const setRestructureOn = useDemoStore((state) => state.setRestructureOn);
   const notifiedAt = useDemoStore((state) =>
     application ? state.ceoNotifiedAt[application.application_id] : undefined);
 
@@ -57,11 +54,17 @@ export function ClientHome() {
     nextText = "Шесть платежей в срок. Новая заявка не нужна, чтобы просто посмотреть условия.";
     nextCta = "Посмотреть условия";
     nextGo = () => goToScreen("signing");
-  } else if (phase === "restructure") {
-    nextTitle = "Июль может уйти в минус — включите на лето платёж от выручки";
-    nextText = `Прогноз выручки июля ${formatMoney(JULY_REVENUE_FORECAST)}. Платёж 3% ≈ ${formatMoney(RESTRUCTURE_PAYMENT)} вместо графика.`;
-    nextCta = restructureOn ? "Уже включено" : "Включить на 2 месяца";
-    nextGo = () => setRestructureOn(companyId, true);
+  } else if (phase === "restructure" && application?.status === "FUNDED") {
+    const signer = application.company.legal_form === "OOO" ? userRole === "CEO_OWNER" : userRole === "IP_OWNER";
+    const director = application.company.users.find((user) => user.role === "CEO_OWNER" || user.role === "IP_OWNER");
+    nextTitle = restructureOn
+      ? "Платёж от выручки включён на июль–август"
+      : signer
+        ? "Подпишите допсоглашение о платеже"
+        : `Ждёт подписи ${familyName(director?.full_name)}`;
+    nextText = `Около ${formatMoney(RESTRUCTURE_PAYMENT)} вместо графика. Демо · без API.`;
+    nextCta = !restructureOn && signer ? "К подписи" : "";
+    nextGo = () => goToScreen("signing");
   } else if (application?.status === "FUNDED") {
     nextTitle = "Деньги на счёте. График платежей уже в кабинете";
     nextText = "Банк следит за кассой и напишет раньше просрочки.";
@@ -82,25 +85,30 @@ export function ClientHome() {
       nextCta = "";
       nextGo = () => undefined;
     }
-  } else if (application?.status === "COUNTER_OFFER" && released) {
-    nextTitle = "Банк предлагает другие условия — выберите вариант";
+  } else if (application?.status === "COUNTER_OFFER") {
+    nextTitle = "Банк предлагает другие условия";
     nextText = "После выбора заявка уйдёт гендиректору на подпись.";
-    nextCta = "Выбрать вариант";
+    nextCta = "Выбрать условия";
     nextGo = () => goToScreen("decision");
   } else if (application?.status === "NEED_MORE_INFO") {
-    nextTitle = "Банк просит документ";
+    nextTitle = "Банк просит договор аренды";
     nextText = "Пока вы отвечаете, таймер решения у банка на паузе.";
-    nextCta = "Открыть запрос";
+    nextCta = "Загрузить";
     nextGo = () => goToScreen("decision");
   } else if (application?.status === "REJECTED") {
-    nextTitle = "Сейчас выдать не можем — есть, что изменить";
-    nextText = "Причина и следующий шаг на экране решения. Тупика нет.";
-    nextCta = "Что сделать";
+    nextTitle = "Банк не одобрил";
+    nextText = "Причина и план на 90 дней — на экране решения.";
+    nextCta = "Смотреть план";
     nextGo = () => goToScreen("decision");
-  } else if (application && !released) {
+  } else if (application?.status === "MANUAL_REVIEW" || application?.status === "ANOMALY_VERIFICATION") {
+    nextTitle = "На проверке, ответ до 00:44";
+    nextText = "Инспектор Елена Орлова смотрит заявку.";
+    nextCta = "";
+    nextGo = () => goToScreen("decision");
+  } else if (application) {
     nextTitle = "Заявка у инспектора";
-    nextText = "Решение появится здесь и в «Сообщениях». Можно вернуться на главную.";
-    nextCta = "Статус заявки";
+    nextText = "Решение появится здесь и в чате.";
+    nextCta = "";
     nextGo = () => goToScreen("decision");
   } else if (offerVisible && isRosters) {
     nextTitle = `Банк подготовил для вас предложение — ${formatMoney(ROSTERS_OFFER_AMOUNT)} на оборудование`;
@@ -144,12 +152,10 @@ export function ClientHome() {
         <div>
           <h1 className="v2-h1">Обзор</h1>
           <p className="v2-lead">
-            {season ? "Данные на 22.06.2027, 10:15" : "Касса, кредиты и следующий шаг"}
+            {season
+              ? "Данные на 22.06.2027, 10:15"
+              : `${company.demo_key === "rosters" ? "Ростерс Кафе" : company.name} · на счёте ${formatMoney(dashboard.account_balance)}`}
           </p>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" className="v2-btn ghost" onClick={() => goToScreen("payments")}>Выписка</button>
-          <button type="button" className="v2-btn" onClick={() => goToScreen("apply")}>Нужны деньги на бизнес</button>
         </div>
       </div>
 
@@ -159,17 +165,17 @@ export function ClientHome() {
           <p>{nextText}</p>
         </div>
         {nextCta ? (
-          <button
-            type="button"
-            className={`v2-btn ${offerVisible && isRosters && !application && nextCta === "Посмотреть условия" ? "ghost" : "primary"}`}
-            onClick={nextGo}
-            disabled={restructureOn && phase === "restructure"}
-          >
+          <button type="button" className="v2-btn primary" onClick={nextGo}>
             {nextCta}
           </button>
-        ) : null}
+        ) : (
+          <button type="button" className="v2-link" onClick={nextGo}>Статус</button>
+        )}
       </section>
 
+      {(phase === "restructure" || phase === "limit" || phase === "early") && application?.status === "FUNDED" ? (
+        <p className="v2-pill demo" style={{ marginBottom: 12 }}>Демо · без API</p>
+      ) : null}
       {(phase === "restructure" || phase === "limit") && application?.status === "FUNDED" ? (
         <section className="v2-grid-3">
           <article className="v2-card">
@@ -251,10 +257,7 @@ export function ClientHome() {
             <p className="v2-note">
               Ставка 18% = ключевая 14% + 1,5 п.п. продукт + 2,5 п.п. риск. Ориентир платежа до решения банка.
             </p>
-            <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-              <button type="button" className="v2-btn primary" onClick={() => goToScreen("apply")}>Оформить за 2 минуты</button>
-              <button type="button" className="v2-btn" onClick={() => goToScreen("apply")}>Другая сумма</button>
-            </div>
+            <button type="button" className="v2-link" onClick={() => goToScreen("apply")}>Другая сумма</button>
           </article>
         ) : (
           <article className="v2-card">

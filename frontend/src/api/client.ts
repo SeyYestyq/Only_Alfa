@@ -159,6 +159,21 @@ export const api = {
     return request(`/applications/${applicationId}/ceo-approve`, jsonInit({ actor_role: actorRole }));
   },
 
+  uploadDocument(applicationId: string, actorRole: ActorRole, file: File): Promise<Application> {
+    const form = new FormData();
+    form.append("actor_role", actorRole);
+    form.append("file", file);
+    return request(`/applications/${applicationId}/documents`, { method: "POST", body: form });
+  },
+
+  notifications(companyId: string): Promise<{ notifications: Array<{ id: string; audience: string; title: string; text: string }> }> {
+    return request(`/companies/${companyId}/notifications`);
+  },
+
+  companyDocuments(companyId: string): Promise<{ documents: Array<{ id: string; name: string; source: string; application_id: string; created_at: string | null; downloadable: boolean }> }> {
+    return request(`/companies/${companyId}/documents`);
+  },
+
   underwriterAction(
     applicationId: string,
     payload: {

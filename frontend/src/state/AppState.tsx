@@ -78,6 +78,7 @@ interface AppContextValue {
   verifyMultibank: () => Promise<void>;
   acceptOffer: (index: number) => Promise<void>;
   signApplication: () => Promise<void>;
+  uploadDocument: (file: File) => Promise<boolean>;
   underwriterAction: (
     action: "APPROVE" | "COUNTER_OFFER" | "NEED_MORE_INFO" | "REJECT",
     comment?: string,
@@ -669,6 +670,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [afterApplicationChange, application, effectiveRole, handleError, setScreen]);
 
+  const uploadDocument = useCallback(async (file: File) => {
+    if (!application) {
+      return false;
+    }
+    setIsBusy(true);
+    setError(null);
+    try {
+      const updated = await api.uploadDocument(application.application_id, effectiveRole, file);
+      if (updated.company.id !== companyRef.current) {
+        return false;
+      }
+      await afterApplicationChange(updated);
+      notifyClientAboutStatus(updated.status, updated.application_id);
+      useDemoStore.getState().addCreditDoc(file.name);
+      return true;
+    } catch (cause) {
+      handleError(cause);
+      return false;
+    } finally {
+      setIsBusy(false);
+    }
+  }, [afterApplicationChange, application, effectiveRole, handleError]);
+
   const underwriterAction = useCallback(async (
     action: "APPROVE" | "COUNTER_OFFER" | "NEED_MORE_INFO" | "REJECT",
     comment?: string,
@@ -754,6 +778,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     verifyMultibank,
     acceptOffer,
     signApplication,
+    uploadDocument,
     underwriterAction,
     runInstallment,
     refresh,
@@ -762,7 +787,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     acceptOffer, application, applications, cbrRate, companies, companyId, createApplication, dashboard,
     effectiveRole, error, goToScreen, invoiceResult, isBusy, isReady, loadApplications, lookupInn, multibankResult,
     openApplication, openBankCase, parseFile, parseTemplate, refresh, runInstallment, runSearch, screen, searchResult,
-    selectCompany, setViewMode, signApplication, submitDraft, templates, underwriterAction, userRole,
+    selectCompany, setViewMode, signApplication, submitDraft, templates, underwriterAction, uploadDocument, userRole,
     verifyMultibank, viewMode, xray,
   ]);
 

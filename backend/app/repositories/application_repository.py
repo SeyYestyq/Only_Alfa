@@ -87,6 +87,29 @@ class ApplicationRepository:
         self.session.flush()
         return event
 
+    def list_by_company(self, company_id: str) -> list[Application]:
+        return list(self.session.scalars(
+            select(Application)
+            .where(Application.company_id == company_id)
+            .order_by(Application.created_at.desc())
+        ).all())
+
+    def list_checks_for_company(self, company_id: str) -> list[tuple[Application, ApplicationCheck]]:
+        rows = self.session.execute(
+            select(Application, ApplicationCheck)
+            .join(ApplicationCheck, ApplicationCheck.application_id == Application.id)
+            .where(Application.company_id == company_id)
+            .order_by(ApplicationCheck.created_at.desc())
+        ).all()
+        return [(application, check) for application, check in rows]
+
+    def list_events_for_company(self, company_id: str) -> list[ApplicationEvent]:
+        return list(self.session.scalars(
+            select(ApplicationEvent)
+            .where(ApplicationEvent.company_id == company_id)
+            .order_by(ApplicationEvent.created_at.desc())
+        ).all())
+
     def list_events(self, application_id: str) -> list[ApplicationEvent]:
         return list(self.session.scalars(
             select(ApplicationEvent)

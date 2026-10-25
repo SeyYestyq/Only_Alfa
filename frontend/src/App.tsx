@@ -14,6 +14,7 @@ import { BankQueue } from "./screens/v2/BankQueue";
 import { BankSignal } from "./screens/v2/BankSignal";
 import { BankStates } from "./screens/v2/BankStates";
 import { ClientApply } from "./screens/v2/ClientApply";
+import { CompanyScreen } from "./screens/v2/CompanyScreen";
 import { ClientDecision } from "./screens/v2/ClientDecision";
 import { ClientEdges } from "./screens/v2/ClientEdges";
 import { ClientHome } from "./screens/v2/ClientHome";
@@ -63,6 +64,7 @@ export default function App() {
             {screen === "messages" && <MessagesScreenV2 />}
             {screen === "payments" && <PaymentsScreen />}
             {screen === "documents" && <DocumentsScreen />}
+            {screen === "company" && <CompanyScreen />}
             {screen === "applications" && <ApplicationsScreen />}
             {screen === "search" && <SearchScreen />}
             {screen === "invoice" && <InvoiceScreen />}

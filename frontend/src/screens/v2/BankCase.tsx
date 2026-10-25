@@ -4,12 +4,27 @@ import { Kbd } from "../../components/v2/Kbd";
 import { isTextField } from "../../components/v2/keys";
 import { RefuseDialog } from "../../components/v2/RefuseDialog";
 import { scoreCorridorLabel } from "../../components/RiskScoreGauge";
-import { INSPECTOR_NAME } from "../../domain-ui/caseScript";
+import { INSPECTOR_NAME, applicationNumber } from "../../domain-ui/caseScript";
 import { supplierRiskBandLabel } from "../../domain-ui/supplierRisk";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
 import { useUiStore } from "../../state/uiStore";
 import { formatAge, formatMoney, formatPercent } from "../../utils/format";
+
+function clientSees(status: string): string {
+  const labels: Record<string, string> = {
+    MANUAL_REVIEW: "На проверке",
+    ANOMALY_VERIFICATION: "На проверке",
+    NEED_MORE_INFO: "Банк просит документ",
+    COUNTER_OFFER: "Другие условия",
+    AWAITING_CEO_APPROVAL: "Ждёт подписи гендиректора",
+    APPROVED: "Одобрено, ждёт подписи",
+    FUNDED: "Кредит выдан",
+    REJECTED: "Отказ",
+    DRAFT_BY_EMPLOYEE: "Черновик",
+  };
+  return labels[status] ?? status;
+}
 
 type Action = "APPROVE" | "COUNTER_OFFER" | "NEED_MORE_INFO" | "REJECT";
 
@@ -24,9 +39,6 @@ export function BankCase() {
   const {
     application, dashboard, xray, underwriterAction, isBusy, goToScreen, companyId,
   } = useApp();
-  const released = useDemoStore((state) =>
-    application ? Boolean(state.released[application.application_id]) : false);
-  const releaseDecision = useDemoStore((state) => state.releaseDecision);
   const lock = useDemoStore((state) => state.inspectorLock);
   const setLock = useDemoStore((state) => state.setInspectorLock);
   const docs = useDemoStore((state) => state.creditDocs);
@@ -72,46 +84,36 @@ export function BankCase() {
   const maxPay = app.max_payment_rub || 1;
   const asked = app.monthly_payment_rub;
 
-  function publishCounter() {
-    releaseDecision(app.application_id);
+  function publishNote(text: string) {
     useDemoStore.getState().pushChat(caseCompanyId, {
       author: INSPECTOR_NAME,
       side: "bank",
-      text: "Ирина, добрый вечер. Полную сумму в низкий сезон не тянет касса. Выберите один из вариантов — подписать сможет только гендиректор.",
+      text,
     });
     pushToast({
       tone: "success",
-      title: "Отправлено клиенту",
-      subtitle: `${company.name} · 3 варианта. Отмена спрячет решение.`,
-      actionLabel: "Отменить",
-      until: Date.now() + 10_000,
-      undo: () => {
-        useDemoStore.getState().unreleaseDecision(app.application_id);
-        useDemoStore.getState().popChat(caseCompanyId);
-      },
+      title: "Клиент получил уведомление",
+      subtitle: company.name,
     });
   }
 
   async function send(reason?: string) {
-    if (lock) {
+    if (lock || !manual) {
       return;
     }
     if (action === "REJECT" && !reason) {
       setRefuseOpen(true);
       return;
     }
-    if (alreadyCounter && action === "COUNTER_OFFER") {
-      if (!released) {
-        publishCounter();
-      }
-      return;
-    }
-    if (!manual) {
-      return;
-    }
-    await underwriterAction(action, reason ?? comment, docs[0]);
+    const note = action === "NEED_MORE_INFO"
+      ? "Нужен договор аренды, Покровка, 17. Пока ждём файл, срок решения на паузе."
+      : reason ?? comment;
+    await underwriterAction(action, note, action === "NEED_MORE_INFO" ? "Договор аренды" : docs[0]);
     if (action === "COUNTER_OFFER") {
-      publishCounter();
+      publishNote("Полную сумму в низкий сезон не тянет касса. Выберите один из вариантов — подписать сможет только гендиректор.");
+    }
+    if (action === "NEED_MORE_INFO") {
+      publishNote("Нужен договор аренды, Покровка, 17. Пока ждём файл, срок решения на паузе.");
     }
   }
   sendRef.current = (reason) => {
@@ -123,21 +125,16 @@ export function BankCase() {
 
   return (
     <>
-      <div className="v2-crumb">Рабочий стол / Заявка {application.application_id.slice(-8)}</div>
       <div className="v2-row">
         <div>
-          <h1 className="v2-h1">Карточка клиента</h1>
+          <h1 className="v2-h1">Заявка № {applicationNumber(company.demo_key, application.application_id)}</h1>
           <p className="v2-lead">{company.name} · {formatMoney(application.requested_amount_rub)} на {application.term_months} мес.</p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" className="v2-btn" onClick={() => goToScreen("messages")}>Чат с клиентом</button>
-          <button type="button" className="v2-btn" onClick={() => goToScreen("bank-queue")}>Следующая задача</button>
+        <div style={{ textAlign: "right" }}>
+          <span className="v2-pill warn">{application.status_label}</span>
+          <p className="v2-muted">Клиент видит: {clientSees(application.status)}</p>
+          <p className="v2-muted">{scoreCorridorLabel(application.risk_score)}</p>
         </div>
-      </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        <span className="v2-pill warn">{application.status_label}</span>
-        <span className="v2-pill">{scoreCorridorLabel(application.risk_score)}</span>
-        {released ? <span className="v2-pill good">клиент уже видит решение</span> : <span className="v2-pill">клиент ещё видит «на проверке»</span>}
       </div>
       {lock ? (
         <div className="v2-card v2-lock" style={{ marginBottom: 12 }}>
@@ -227,8 +224,8 @@ export function BankCase() {
             {alreadyCounter && action !== "COUNTER_OFFER" ? (
               <p className="v2-note">Запрос документов и отказ из жёлтого коридора смотрите на заявке ИП Ковалев: она приходит в ручной разбор. Здесь система уже собрала встречные варианты.</p>
             ) : null}
-            <button type="button" className="v2-btn primary wide" disabled={isBusy || lock || (alreadyCounter && action !== "COUNTER_OFFER") || (!manual && !alreadyCounter)} onClick={() => void send()}>
-              {released && alreadyCounter ? "Уже отправлено клиенту" : "Отправить клиенту"}
+            <button type="button" className="v2-btn primary wide" disabled={isBusy || lock || !manual} onClick={() => void send()}>
+              {alreadyCounter ? "Уже отправлено клиенту" : "Отправить клиенту"}
               <Kbd>⌘↵</Kbd>
             </button>
             <button type="button" className="v2-link" onClick={() => setLock(true)}>Показать 409 второго инспектора</button>

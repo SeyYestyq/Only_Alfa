@@ -33,7 +33,12 @@ _TRANSITIONS: dict[tuple[ApplicationStatus, ApplicationStatus], set[UserRole]] =
     (S.MANUAL_REVIEW, S.COUNTER_OFFER): {UserRole.UNDERWRITER},
     (S.MANUAL_REVIEW, S.REJECTED): {UserRole.UNDERWRITER},
     (S.NEED_MORE_INFO, S.APPROVED): {UserRole.UNDERWRITER},
-    (S.NEED_MORE_INFO, S.MANUAL_REVIEW): {UserRole.UNDERWRITER},
+    (S.NEED_MORE_INFO, S.MANUAL_REVIEW): {
+        UserRole.UNDERWRITER,
+        UserRole.ACCOUNTANT,
+        UserRole.CEO_OWNER,
+        UserRole.IP_OWNER,
+    },
     (S.NEED_MORE_INFO, S.REJECTED): {UserRole.UNDERWRITER},
 }
 

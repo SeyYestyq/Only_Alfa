@@ -18,7 +18,7 @@ export function Stepper({ active }: { active: number }) {
   );
 }
 
-export function stepForStatus(status: string | undefined, released: boolean): number {
+export function stepForStatus(status: string | undefined): number {
   if (!status) {
     return 1;
   }
@@ -27,9 +27,6 @@ export function stepForStatus(status: string | undefined, released: boolean): nu
   }
   if (status === "AWAITING_CEO_APPROVAL" || status === "APPROVED") {
     return 3;
-  }
-  if (status === "COUNTER_OFFER" && !released) {
-    return 2;
   }
   if (["COUNTER_OFFER", "NEED_MORE_INFO", "REJECTED", "MANUAL_REVIEW", "ANOMALY_VERIFICATION"].includes(status)) {
     return 2;

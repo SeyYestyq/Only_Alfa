@@ -13,7 +13,7 @@ export function MessagesScreenV2() {
   return (
     <>
       <h1 className="v2-h1">{bank ? "Чат с клиентом" : "Чат с банком"}</h1>
-      <p className="v2-lead">Переписка по этой компании</p>
+      <p className="v2-lead">{bank ? "Ответ до 30 минут" : `${INSPECTOR_NAME} · отвечает до 30 минут`}</p>
       <section className="v2-card">
         <h2>{bank ? shortPerson(user?.full_name) : INSPECTOR_NAME}</h2>
         <div style={{ marginTop: 12 }}>

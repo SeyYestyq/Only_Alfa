@@ -24,14 +24,17 @@ info:
     - `POST /api/v1/applications/{application_id}/accept-offer` — выбор одного из 4 встречных офферов.
     - `GET /api/v1/applications/invoice-templates` — 3 предзаготовленных демо-счёта.
     - `GET /api/v1/companies/{company_id}/applications` — история заявок компании.
+    - `GET /api/v1/companies/{company_id}/notifications` — уведомления клиента и банка по событиям заявки.
+    - `GET /api/v1/companies/{company_id}/documents` — архив документов компании.
+    - `POST /api/v1/applications/{application_id}/documents` — клиент загружает запрошенный файл, заявка возвращается на разбор.
     - `GET /api/v1/suppliers/{supplier_inn}/deal-risk` — аналитика поставщика для Invoice-to-Credit (вероятность сделки, плюсы/минусы, seed=hash(INN)).
     - `GET /health` — проверка живости сервиса.
 
     ## Коды ошибок
     - `400` — рассрочка недоступна или уже взята; `APPROVE` после `NEED_MORE_INFO` без `document_name`.
-    - `403` — подпись ПЭП сотрудником ООО (не `CEO_OWNER`); действие инспектора не от `UNDERWRITER`.
+    - `403` — подпись ПЭП сотрудником ООО (не `CEO_OWNER`); действие инспектора не от `UNDERWRITER`; загрузка документа инспектором.
     - `404` — компания, заявка или транзакция не найдена.
-    - `409` — невалидный переход State Machine (например, `ceo-approve` из `MANUAL_REVIEW`/`REJECTED`, повторный `verify-multibank`).
+    - `409` — невалидный переход State Machine (например, `ceo-approve` из `MANUAL_REVIEW`/`REJECTED`, повторный `verify-multibank`, загрузка файла без запроса документа).
     - `422` — невалидный ИНН, битый PDF или ошибка валидации схемы.
   version: 1.0.0
 servers:
@@ -112,6 +115,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DashboardResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/companies/{company_id}/notifications:
+    get:
+      tags:
+      - companies
+      summary: Company Notifications
+      description: Уведомления по событиям заявки. Клиент видит запрос документа и встречное предложение, банк — загрузку файла.
+      operationId: company_notifications_api_v1_companies__company_id__notifications_get
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Company Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/companies/{company_id}/documents:
+    get:
+      tags:
+      - companies
+      summary: Company Documents
+      description: Архив документов компании. Запросы инспектора, файлы клиента и, после выдачи, строки договора и графика.
+      operationId: company_documents_api_v1_companies__company_id__documents_get
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Company Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyDocumentListResponse'
         '422':
           description: Validation Error
           content:
@@ -325,6 +382,39 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AcceptOfferRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationSchema'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/applications/{application_id}/documents:
+    post:
+      tags:
+      - applications
+      summary: Upload Client Document
+      description: 'Клиент (ACCOUNTANT, CEO_OWNER, IP_OWNER) отвечает на NEED_MORE_INFO. Файл до 10 МБ. Статус становится MANUAL_REVIEW. Инспектор — 403, загрузка без запроса — 409.'
+      operationId: upload_client_document_api_v1_applications__application_id__documents_post
+      parameters:
+      - name: application_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Application Id
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_upload_client_document'
       responses:
         '200':
           description: Successful Response
@@ -928,6 +1018,100 @@ components:
       - pdf_value
       - cash_forecast_value
       title: BankValueSchema
+    Body_upload_client_document:
+      properties:
+        actor_role:
+          type: string
+          title: Actor Role
+          default: ACCOUNTANT
+        file:
+          type: string
+          format: binary
+          title: File
+      type: object
+      required:
+      - file
+      title: Body_upload_client_document
+    CompanyDocumentSchema:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        source:
+          type: string
+          title: Source
+        application_id:
+          type: string
+          title: Application Id
+        created_at:
+          type: string
+          nullable: true
+          title: Created At
+        downloadable:
+          type: boolean
+          title: Downloadable
+          default: false
+      type: object
+      required:
+      - id
+      - name
+      - source
+      - application_id
+      title: CompanyDocumentSchema
+    CompanyDocumentListResponse:
+      properties:
+        documents:
+          items:
+            $ref: '#/components/schemas/CompanyDocumentSchema'
+          type: array
+          title: Documents
+      type: object
+      required:
+      - documents
+      title: CompanyDocumentListResponse
+    NotificationSchema:
+      properties:
+        id:
+          type: string
+          title: Id
+        audience:
+          type: string
+          title: Audience
+        title:
+          type: string
+          title: Title
+        text:
+          type: string
+          title: Text
+        application_id:
+          type: string
+          nullable: true
+          title: Application Id
+        created_at:
+          type: string
+          nullable: true
+          title: Created At
+      type: object
+      required:
+      - id
+      - audience
+      - title
+      - text
+      title: NotificationSchema
+    NotificationListResponse:
+      properties:
+        notifications:
+          items:
+            $ref: '#/components/schemas/NotificationSchema'
+          type: array
+          title: Notifications
+      type: object
+      required:
+      - notifications
+      title: NotificationListResponse
     Body_parse_invoice_api_v1_applications_parse_invoice_post:
       properties:
         company_id:

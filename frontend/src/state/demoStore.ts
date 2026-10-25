@@ -38,7 +38,6 @@ export interface ChatLine {
 
 interface StoryPersist {
   offerSent: Record<string, boolean>;
-  released: Record<string, boolean>;
   /** Время, когда система сама уведомила подписанта. Ключ — id заявки. */
   ceoNotifiedAt: Record<string, string>;
   monitoring: Record<string, MonitoringPhase>;
@@ -52,7 +51,6 @@ const STORY_KEY = "alfa-v2-story";
 function readStory(): StoryPersist {
   const empty: StoryPersist = {
     offerSent: {},
-    released: {},
     ceoNotifiedAt: {},
     monitoring: {},
     restructureOn: {},
@@ -88,7 +86,6 @@ interface DemoStore {
   /** Панель списка уведомлений (колокольчик). */
   noticesOpen: boolean;
   offerSent: Record<string, boolean>;
-  released: Record<string, boolean>;
   ceoNotifiedAt: Record<string, string>;
   monitoring: Record<string, MonitoringPhase>;
   restructureOn: Record<string, boolean>;
@@ -107,8 +104,6 @@ interface DemoStore {
   clearClientNotices: () => void;
   setNoticesOpen: (open: boolean) => void;
   markOfferSent: (companyId: string) => void;
-  releaseDecision: (applicationId: string) => void;
-  unreleaseDecision: (applicationId: string) => void;
   markCeoNotified: (applicationId: string, role?: ActorRole) => string;
   setMonitoring: (companyId: string, phase: MonitoringPhase) => void;
   setRestructureOn: (companyId: string, on: boolean) => void;
@@ -249,17 +244,6 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
     set({ offerSent });
     persist(get());
   },
-  releaseDecision: (applicationId) => {
-    const released = { ...get().released, [applicationId]: true };
-    set({ released });
-    persist(get());
-  },
-  unreleaseDecision: (applicationId) => {
-    const released = { ...get().released };
-    delete released[applicationId];
-    set({ released });
-    persist(get());
-  },
   markCeoNotified: (applicationId, role = "CEO_OWNER") => {
     const existing = get().ceoNotifiedAt[applicationId];
     if (existing) {
@@ -327,7 +311,6 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
     sessionStorage.removeItem(STORY_KEY);
     set({
       offerSent: {},
-      released: {},
       ceoNotifiedAt: {},
       monitoring: {},
       restructureOn: {},
@@ -344,7 +327,6 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
 function persist(state: DemoStore): void {
   writeStory({
     offerSent: state.offerSent,
-    released: state.released,
     ceoNotifiedAt: state.ceoNotifiedAt,
     monitoring: state.monitoring,
     restructureOn: state.restructureOn,

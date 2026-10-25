@@ -39,7 +39,7 @@ def test_parse_template_creates_draft_and_submits(client, companies):
         },
     )
     assert submitted.status_code == 201
-    assert submitted.json()["status"] == "COUNTER_OFFER"
+    assert submitted.json()["status"] == "MANUAL_REVIEW"
     assert submitted.json()["risk_score"] == 610
 
 

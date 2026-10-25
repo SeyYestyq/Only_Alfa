@@ -3,7 +3,7 @@ import { CodeCells } from "../../components/v2/CodeCells";
 import { ForecastLine } from "../../components/v2/ForecastLine";
 import { Kbd } from "../../components/v2/Kbd";
 import { Stepper } from "../../components/v2/Stepper";
-import { INSPECTOR_NAME, PEP_CODE, ROSTERS_PSK_LABEL } from "../../domain-ui/caseScript";
+import { INSPECTOR_NAME, PEP_CODE, RESTRUCTURE_PAYMENT, ROSTERS_PSK_LABEL } from "../../domain-ui/caseScript";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
 import { useUiStore } from "../../state/uiStore";
@@ -57,10 +57,28 @@ export function ClientSign() {
   const legalForm = application.company.legal_form;
   const canSign = legalForm === "OOO" ? userRole === "CEO_OWNER" : userRole === "IP_OWNER";
   const funded = application.status === "FUNDED";
+  const phase = useDemoStore((state) => (companyId ? state.monitoring[companyId] ?? "none" : "none"));
+  const restructureOn = useDemoStore((state) => Boolean(state.restructureOn[companyId]));
+  const setRestructureOn = useDemoStore((state) => state.setRestructureOn);
+  const addendum = funded && phase === "restructure" && !restructureOn;
   const director = application.company.users.find((user) => user.role === "CEO_OWNER" || user.role === "IP_OWNER");
   const amount = application.approved_amount_rub || application.requested_amount_rub;
   const was = Math.max(0, application.account_balance - (funded ? amount : 0));
   signRef.current = () => {
+    if (addendum) {
+      if (!canSign || isBusy || attemptsLeft === 0) {
+        return;
+      }
+      if (digits.join("") !== PEP_CODE) {
+        setCodeWrong(true);
+        setAttemptsLeft((value) => Math.max(0, value - 1));
+        return;
+      }
+      setRestructureOn(companyId, true);
+      pushToast({ tone: "success", title: "Допсоглашение подписано", subtitle: "Платёж июля и августа изменён. Демо · без API." });
+      goToScreen("home");
+      return;
+    }
     if (!canSign || funded || isBusy || attemptsLeft === 0) {
       return;
     }
@@ -84,6 +102,44 @@ export function ClientSign() {
     }
     void signApplication();
   };
+
+  if (addendum) {
+    return (
+      <>
+        <h1 className="v2-h1">Подпись</h1>
+        <p className="v2-lead">Платёж {formatMoney(RESTRUCTURE_PAYMENT)} · июль–август</p>
+        <p className="v2-pill demo">Демо · без API</p>
+        <section className="v2-card" style={{ marginTop: 12 }}>
+          <h2>Допсоглашение</h2>
+          <p className="v2-muted">3% выручки в июле и августе вместо графика. Эмуляция ПЭП, реальная подпись не выполняется.</p>
+          {canSign ? (
+            <>
+              <CodeCells
+                digits={digits}
+                active={activeCell}
+                invalid={codeWrong}
+                onFocusIndex={setActiveCell}
+                onChange={(index, value) => {
+                  const next = [...digits];
+                  next[index] = value;
+                  setDigits(next);
+                  setCodeWrong(false);
+                  if (value && index < digits.length - 1) {
+                    setActiveCell(index + 1);
+                  }
+                }}
+              />
+              <button type="button" className="v2-btn primary" style={{ marginTop: 12 }} disabled={isBusy} onClick={() => signRef.current()}>
+                Подписать
+              </button>
+            </>
+          ) : (
+            <p>Ждёт подписи {familyName(director?.full_name)}. Писать руководителю не нужно.</p>
+          )}
+        </section>
+      </>
+    );
+  }
 
   if (funded) {
     return (

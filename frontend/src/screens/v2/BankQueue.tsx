@@ -40,7 +40,6 @@ const FILTERS: Array<{ id: string; label: string; kinds?: Kind[] }> = [
 export function BankQueue() {
   const { companies, companyId, application, selectCompany, goToScreen } = useApp();
   const offerSent = useDemoStore((state) => state.offerSent);
-  const released = useDemoStore((state) => state.released);
   const monitoring = useDemoStore((state) => state.monitoring);
   const chat = useDemoStore((state) => state.chat);
   const [filter, setFilter] = useState("all");
@@ -65,12 +64,13 @@ export function BankQueue() {
       const phase = monitoring[company.id] ?? "none";
       if (mine && application) {
         const status = application.status;
-        const isPause = status === "NEED_MORE_INFO" || (status === "COUNTER_OFFER" && released[application.application_id]);
+        const uploaded = application.checks.some((check) => check.code === "CLIENT_DOCUMENT" && check.status === "UPLOADED");
+        const isPause = status === "NEED_MORE_INFO";
         const waitingSign = status === "AWAITING_CEO_APPROVAL" || status === "APPROVED";
         if (status !== "FUNDED" && status !== "REJECTED") {
           rows.push({
             id: application.application_id,
-            kind: "Заявка",
+            kind: uploaded && status === "MANUAL_REVIEW" ? "Документы" : "Заявка",
             companyId: company.id,
             client: company.name,
             inn: company.inn,
@@ -159,7 +159,7 @@ export function BankQueue() {
       rows.push({ ...extra, companyId: company.id, inn: company.inn });
     }
     return rows.sort((a, b) => a.slaMin - b.slaMin);
-  }, [application, chat, companies, companyId, monitoring, offerSent, released]);
+  }, [application, chat, companies, companyId, monitoring, offerSent]);
 
   const query = searchQuery.trim().toLowerCase();
   const visible = tasks.filter((task) => {
@@ -214,8 +214,8 @@ export function BankQueue() {
     <>
       <div className="v2-row">
         <div>
-          <h1 className="v2-h1">Очередь заявок</h1>
-          <p className="v2-lead">Срочные задачи сверху</p>
+          <h1 className="v2-h1">Очередь</h1>
+          <p className="v2-lead">Срочные сверху · {tasks.length} задач</p>
         </div>
         <button type="button" className="v2-btn primary" onClick={() => visible[0] && void open(visible[0])}>
           Взять следующую <Kbd>N</Kbd>

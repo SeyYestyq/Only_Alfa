@@ -28,7 +28,7 @@ def test_rosters_with_collateral_approves_full_amount() -> None:
     assert decision.approved_amount_rub == 2_500_000
 
 
-def test_rosters_without_collateral_stays_counter_offer() -> None:
+def test_rosters_without_collateral_waits_for_inspector() -> None:
     score = calculate_risk_score(ROSTERS)
     decision = make_decision(
         ROSTERS,
@@ -39,7 +39,7 @@ def test_rosters_without_collateral_stays_counter_offer() -> None:
         collateral_type="NONE",
         collateral_value_rub=0,
     )
-    assert decision.outcome.value == "COUNTER_OFFER"
+    assert decision.outcome.value == "MANUAL_REVIEW"
     assert len(decision.counter_offers) == 4
 
 

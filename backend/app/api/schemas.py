@@ -323,6 +323,32 @@ class UnderwriterActionRequest(BaseModel):
     document_name: Optional[str] = None
 
 
+class NotificationSchema(BaseModel):
+    id: str
+    audience: str
+    title: str
+    text: str
+    application_id: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class NotificationListResponse(BaseModel):
+    notifications: list[NotificationSchema]
+
+
+class CompanyDocumentSchema(BaseModel):
+    id: str
+    name: str
+    source: str
+    application_id: str
+    created_at: Optional[str] = None
+    downloadable: bool = False
+
+
+class CompanyDocumentListResponse(BaseModel):
+    documents: list[CompanyDocumentSchema]
+
+
 class DraftSummarySchema(BaseModel):
     application_id: str
     status: str

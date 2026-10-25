@@ -4,7 +4,9 @@
 """
 from __future__ import annotations
 
+import uuid
 from dataclasses import asdict, dataclass
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -17,7 +19,7 @@ from app.core.constants import (
     MULTIBANK_DEFAULT_SHARE_OF_ALFA,
     MULTIBANK_REVENUE_TEKHNOSTROY,
 )
-from app.core.exceptions import EntityNotFound, InvalidRequest, InvalidTransition
+from app.core.exceptions import EntityNotFound, InvalidRequest, InvalidTransition, RoleViolation
 from app.domain.anomaly import check_revenue_anomaly
 from app.domain.decision.decision_engine import (
     build_counter_offers,
@@ -51,6 +53,9 @@ from app.repositories.transaction_repository import TransactionRepository
 from app.services.presenters import PRODUCT_LABELS, STATUS_LABELS, application_detail, money
 
 _UNDERWRITER_ACTIONS = {"APPROVE", "COUNTER_OFFER", "NEED_MORE_INFO", "REJECT"}
+_CLIENT_ROLES = {UserRole.ACCOUNTANT, UserRole.CEO_OWNER, UserRole.IP_OWNER}
+_DOC_ROOT = Path("/tmp/alfa-docs")
+_MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
 
 
 @dataclass
@@ -59,6 +64,26 @@ class PipelineResult:
     decision: object
     anomaly: object
     status: ApplicationStatus
+
+
+def _notification_from_event(event) -> dict | None:
+    titles = {
+        "UNDERWRITER_NEED_MORE_INFO": ("client", "Нужен документ"),
+        "DOCUMENT_UPLOADED": ("bank", "Документ получен"),
+        "UNDERWRITER_COUNTER_OFFER": ("client", "Банк предлагает другие условия"),
+    }
+    mapped = titles.get(event.event_type)
+    if mapped is None:
+        return None
+    audience, title = mapped
+    return {
+        "id": event.id,
+        "audience": audience,
+        "title": title,
+        "text": event.details,
+        "application_id": event.application_id,
+        "created_at": event.created_at.isoformat() if event.created_at else None,
+    }
 
 
 def _status_from_decision(outcome: DecisionOutcome) -> ApplicationStatus:
@@ -397,8 +422,6 @@ class ApplicationService:
             raise InvalidRequest(f"Неизвестное действие инспектора: {body.action}")
         role = UserRole(body.actor_role)
         if role != UserRole.UNDERWRITER:
-            from app.core.exceptions import RoleViolation
-
             raise RoleViolation("Действия инспектора доступны только роли UNDERWRITER")
 
         current = ApplicationStatus(application.status)
@@ -505,6 +528,88 @@ class ApplicationService:
         )
         self.session.commit()
         return self.detail(application.id)
+
+    def upload_client_document(self, application_id: str, actor_role: str, file_name: str, content: bytes) -> dict:
+        """Клиент отвечает на запрос: файл сохраняется, заявка возвращается на разбор."""
+        if not content:
+            raise InvalidRequest("Файл пустой")
+        if len(content) > _MAX_DOCUMENT_BYTES:
+            raise InvalidRequest("Файл больше 10 МБ")
+        application = self._get_application(application_id)
+        profile = self._profile(application)
+        role = UserRole(actor_role)
+        if role not in _CLIENT_ROLES:
+            raise RoleViolation("Документ загружает клиент, не инспектор")
+        current = ApplicationStatus(application.status)
+        target = ApplicationStatus.MANUAL_REVIEW
+        apply_transition(current, target, role, profile.legal_form)
+        safe_name = Path(file_name or "document.pdf").name
+        folder = _DOC_ROOT / application.id
+        folder.mkdir(parents=True, exist_ok=True)
+        stored = folder / f"{uuid.uuid4().hex[:8]}_{safe_name}"
+        stored.write_bytes(content)
+        self.applications.update(application, status=target.value)
+        self.applications.add_check(
+            application.id,
+            "CLIENT_DOCUMENT",
+            "UPLOADED",
+            f"Клиент загрузил документ: {safe_name}",
+            {"document_name": safe_name, "stored_path": str(stored), "size": len(content)},
+        )
+        self.applications.add_event(
+            application_id=application.id,
+            company_id=profile.id,
+            event_type="DOCUMENT_UPLOADED",
+            actor_role=role.value,
+            previous_status=current.value,
+            new_status=target.value,
+            details=f"Клиент загрузил {safe_name}. Заявка снова на разборе.",
+        )
+        self.session.commit()
+        return self.detail(application.id)
+
+    def notifications(self, company_id: str) -> dict:
+        rows = []
+        for event in self.applications.list_events_for_company(company_id):
+            mapped = _notification_from_event(event)
+            if mapped is not None:
+                rows.append(mapped)
+        return {"notifications": rows}
+
+    def company_documents(self, company_id: str) -> dict:
+        rows = []
+        for application, check in self.applications.list_checks_for_company(company_id):
+            if check.check_code not in {"CLIENT_DOCUMENT", "DOCUMENT_REQUEST"}:
+                continue
+            details = check.details_json or {}
+            rows.append({
+                "id": check.id,
+                "name": details.get("document_name") or check.message,
+                "source": "запрос" if check.check_code == "DOCUMENT_REQUEST" else "заявка",
+                "application_id": application.id,
+                "created_at": check.created_at.isoformat() if check.created_at else None,
+                "downloadable": bool(details.get("stored_path")),
+            })
+        for application in self.applications.list_by_company(company_id):
+            if application.status != ApplicationStatus.FUNDED.value:
+                continue
+            rows.append({
+                "id": f"contract-{application.id}",
+                "name": "Договор",
+                "source": "подпись",
+                "application_id": application.id,
+                "created_at": application.updated_at.isoformat() if application.updated_at else None,
+                "downloadable": False,
+            })
+            rows.append({
+                "id": f"schedule-{application.id}",
+                "name": "График платежей",
+                "source": "подпись",
+                "application_id": application.id,
+                "created_at": application.updated_at.isoformat() if application.updated_at else None,
+                "downloadable": False,
+            })
+        return {"documents": rows}
 
     def installment(self, transaction_id: str, months: int) -> dict:
         if months < INSTALLMENT_MIN_MONTHS or months > INSTALLMENT_MAX_MONTHS:

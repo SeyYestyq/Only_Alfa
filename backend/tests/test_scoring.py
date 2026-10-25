@@ -30,12 +30,12 @@ def test_smirnov_815_approved_rate_14_5():
     assert decision.approved_amount_rub == pytest.approx(900_000)
 
 
-def test_rosters_610_counter_offer_four_variants_rate_18():
+def test_rosters_610_manual_review_with_counter_offer_draft():
     score = calculate_risk_score(ROSTERS)
     decision = make_decision(ROSTERS, score, 2_500_000, ProductType.INVEST_LEASING, 12)
 
     assert score.final_score == 610
-    assert decision.outcome == DecisionOutcome.COUNTER_OFFER
+    assert decision.outcome == DecisionOutcome.MANUAL_REVIEW
     assert decision.final_rate_pct == 18.0
     assert len(decision.counter_offers) == 4
     assert decision.max_payment_rub == pytest.approx(110_500, rel=1e-6)

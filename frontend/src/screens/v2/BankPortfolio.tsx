@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BankEffectSection } from "./BankEffect";
 import {
   FunnelChart,
   KpiButton,
@@ -51,8 +52,8 @@ export function BankPortfolio() {
     <div className="v2-analytics">
       <header className="v2-analytics-head">
         <div>
-          <h1 className="v2-h1">Аналитика</h1>
-          <p className="v2-lead">Портфель, воронка и риски за период</p>
+          <h1 className="v2-h1">Портфель</h1>
+          <p className="v2-lead">Октябрь 2026 · {companies.length} клиентов</p>
         </div>
         <div className="v2-period" role="group" aria-label="Период">
           {ANALYTICS_PERIODS.map((days) => (
@@ -121,6 +122,7 @@ export function BankPortfolio() {
           {companies.length === 0 ? <SkeletonLines lines={3} /> : <RiskBar risk={book.risk} />}
         </section>
       </div>
+      <BankEffectSection />
     </div>
   );
 }

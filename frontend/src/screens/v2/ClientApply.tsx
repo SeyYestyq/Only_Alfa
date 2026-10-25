@@ -3,6 +3,7 @@ import { Stepper } from "../../components/v2/Stepper";
 import {
   APPLY_PRESET,
   ROSTERS_OFFER_AMOUNT,
+  ROSTERS_OFFER_TERM,
   ROSTERS_SAFE_PAYMENT,
   ROSTERS_SUMMER_SAFE,
 } from "../../domain-ui/caseScript";
@@ -14,6 +15,7 @@ export function ClientApply() {
   const preset = APPLY_PRESET[dashboard?.company.demo_key ?? ""] ?? APPLY_PRESET.rosters;
   const [amount, setAmount] = useState(preset.amount);
   const [term, setTerm] = useState(preset.term);
+  const [source, setSource] = useState<"own" | "offer">("own");
   const [consent, setConsent] = useState(true);
   const company = dashboard?.company;
   const isRosters = company?.demo_key === "rosters";
@@ -31,9 +33,26 @@ export function ClientApply() {
 
   return (
     <>
-      <div className="v2-crumb">Кредиты / Заявка на кредит</div>
-      <h1 className="v2-h1">Заявка на кредит</h1>
+      <div className="v2-crumb">Кредит / Заявка</div>
+      <h1 className="v2-h1">Заявка</h1>
       <p className="v2-lead">Сумма, срок и платёж</p>
+      <div className="v2-period" role="group" aria-label="Откуда сумма">
+        <button type="button" className={source === "own" ? "on" : ""} onClick={() => setSource("own")}>
+          Своя сумма
+        </button>
+        <button
+          type="button"
+          className={source === "offer" ? "on" : ""}
+          onClick={() => {
+            setSource("offer");
+            setAmount(isRosters ? ROSTERS_OFFER_AMOUNT : preset.amount);
+            setTerm(isRosters ? ROSTERS_OFFER_TERM : preset.term);
+          }}
+        >
+          По предложению банка
+        </button>
+        <button type="button" onClick={() => goToScreen("invoice")}>По счёту поставщика</button>
+      </div>
       <Stepper active={1} />
       <div className="v2-split case">
         <div>
@@ -60,7 +79,10 @@ export function ClientApply() {
               max={Math.max(preset.amount, 2_500_000)}
               step={50_000}
               value={amount}
-              onChange={(event) => setAmount(Number(event.target.value))}
+              onChange={(event) => {
+                setSource("own");
+                setAmount(Number(event.target.value));
+              }}
             />
             <p className="v2-muted">Цель · из выписки</p>
             <p>{preset.purpose}</p>

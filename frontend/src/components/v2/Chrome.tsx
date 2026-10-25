@@ -3,6 +3,7 @@ import type { ScreenId } from "../../api/types";
 import { INSPECTOR_NAME } from "../../domain-ui/caseScript";
 import { Kbd } from "./Kbd";
 import { isTextField } from "./keys";
+import { NoticeBellV2 } from "./NoticeBellV2";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
 import { useUiStore } from "../../state/uiStore";
@@ -47,6 +48,7 @@ export function Chrome() {
   const chat = useDemoStore((state) => state.chat);
   const resetStory = useDemoStore((state) => state.resetStory);
   const [companyOpen, setCompanyOpen] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
   const [roleOpen, setRoleOpen] = useState(false);
   const [inn, setInn] = useState("");
   const [innNote, setInnNote] = useState<string | null>(null);
@@ -60,6 +62,7 @@ export function Chrome() {
       if (event.key === "Escape") {
         setCompanyOpen(false);
         setRoleOpen(false);
+        setAvatarOpen(false);
         if (document.activeElement instanceof HTMLElement) {
           document.activeElement.blur();
         }
@@ -90,25 +93,25 @@ export function Chrome() {
   const clientLinks: Array<{ id: ScreenId; label: string; dot?: boolean }> = [
     { id: "home", label: "Главная" },
     { id: "payments", label: "Деньги" },
-    { id: "apply", label: "Кредиты" },
-    { id: "invoice", label: "Счёт" },
-    { id: "documents", label: "Документы" },
-    { id: "messages", label: "Сообщения", dot: messages > 0 && screen !== "messages" },
+    { id: "apply", label: "Кредит" },
+    { id: "messages", label: "Чат", dot: messages > 0 && screen !== "messages" },
   ];
   const bankLinks: Array<{ id: ScreenId; label: string; dot?: boolean }> = [
-    { id: "bank-queue", label: "Рабочий стол" },
-    { id: "bank-clients", label: "Аналитика" },
+    { id: "bank-queue", label: "Очередь" },
+    { id: "bank-clients", label: "Портфель" },
     { id: "bank-customers", label: "Клиенты" },
-    { id: "bank-effect", label: "Эффект" },
   ];
   const links = viewMode === "bank" ? bankLinks : clientLinks;
 
   function active(id: ScreenId): boolean {
     if (id === "apply") {
-      return ["apply", "decision", "signing", "passport", "applications"].includes(screen);
+      return ["apply", "decision", "signing", "passport", "applications", "invoice"].includes(screen);
     }
     if (id === "bank-queue") {
       return ["bank-queue", "bank-signal", "bank-xray", "bank-messages", "bank-payout"].includes(screen);
+    }
+    if (id === "bank-clients") {
+      return screen === "bank-clients" || screen === "bank-effect";
     }
     return screen === id;
   }
@@ -216,12 +219,13 @@ export function Chrome() {
           ))}
         </nav>
         <div className="v2-nav-tools">
+          <NoticeBellV2 />
           {viewMode === "bank" ? (
             <label className="v2-search">
               <input
                 id="v2-search"
                 type="search"
-                placeholder="Поиск: ИНН, компания, № заявки"
+                placeholder="ИНН, компания, № заявки"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
               />
@@ -269,12 +273,27 @@ export function Chrome() {
               </div>
             ) : null}
           </div>
-          <div className="v2-user">
-            <span className={`v2-avatar ${viewMode === "bank" ? "bank" : ""}`}>{initial}</span>
-            <span>
-              <strong>{person}</strong>
-              <small>{hint}</small>
-            </span>
+          <div className="v2-chip">
+            <button type="button" className="v2-user" onClick={() => setAvatarOpen((open) => !open)}>
+              <span className={`v2-avatar ${viewMode === "bank" ? "bank" : ""}`}>{initial}</span>
+              <span>
+                <strong>{person}</strong>
+                <small>{hint}</small>
+              </span>
+            </button>
+            {avatarOpen ? (
+              <div className="v2-menu-pop">
+                {viewMode === "business" ? (
+                  <button type="button" onClick={() => { setAvatarOpen(false); goToScreen("company"); }}>
+                    Компания
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => { setAvatarOpen(false); goToScreen("bank-customers"); }}>
+                    Клиенты
+                  </button>
+                )}
+              </div>
+            ) : null}
           </div>
         </div>
       </header>

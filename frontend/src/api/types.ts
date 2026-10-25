@@ -15,6 +15,7 @@ export type ScreenId =
   | "payments"
   | "messages"
   | "documents"
+  | "company"
   | "applications"
   | "edges"
   | "feeds"

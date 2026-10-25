@@ -1,12 +1,12 @@
-export function BankEffect() {
+import { useEffect } from "react";
+import { useApp } from "../../state/AppState";
+
+export function BankEffectSection() {
   return (
-    <>
-      <div className="v2-row">
-        <div>
-          <h1 className="v2-h1">Эффект</h1>
-          <p className="v2-lead">Замеры демо-прогона</p>
-        </div>
-        <span className="v2-pill demo">демо-данные / прогноз</span>
+    <section style={{ marginTop: 16 }}>
+      <div className="v2-card-head">
+        <h2>Эффект для банка</h2>
+        <span className="v2-pill demo">демо</span>
       </div>
       <section className="v2-kpis">
         <article className="v2-card"><div className="v2-kpi-value">38 с</div><div className="v2-kpi-sub">все проверки в прогоне Ростерс · демо</div></article>
@@ -35,6 +35,14 @@ export function BankEffect() {
           </ul>
         </section>
       </div>
-    </>
+    </section>
   );
+}
+
+export function BankEffect() {
+  const { goToScreen } = useApp();
+  useEffect(() => {
+    goToScreen("bank-clients");
+  }, [goToScreen]);
+  return null;
 }

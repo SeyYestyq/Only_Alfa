@@ -8,12 +8,10 @@ import { useDemoStore } from "../../state/demoStore";
 import { formatMoney, formatPercent, shortPerson } from "../../utils/format";
 
 export function ClientDecision() {
-  const { application, dashboard, acceptOffer, isBusy, goToScreen, userRole, companyId } = useApp();
-  const released = useDemoStore((state) =>
-    application ? Boolean(state.released[application.application_id]) : false);
-  const addCreditDoc = useDemoStore((state) => state.addCreditDoc);
+  const { application, dashboard, acceptOffer, uploadDocument, isBusy, goToScreen, userRole, companyId } = useApp();
   const docs = useDemoStore((state) => state.creditDocs);
   const [contest, setContest] = useState("");
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   if (!application || !companyId) {
     return (
@@ -26,14 +24,16 @@ export function ClientDecision() {
   }
 
   const user = application.company.users.find((row) => row.role === userRole);
-  const waiting = application.status === "COUNTER_OFFER" && !released;
-  const showOffers = application.status === "COUNTER_OFFER" && released;
+  const waiting = application.status === "MANUAL_REVIEW" || application.status === "ANOMALY_VERIFICATION";
+  const showOffers = application.status === "COUNTER_OFFER";
+  const requestedDoc = application.checks.find((check) => check.code === "DOCUMENT_REQUEST");
+  const docName = String(requestedDoc?.details.document_name ?? "договор аренды");
   const subtitle = waiting
-    ? "Заявка на проверке"
+    ? "На проверке · ответ до 00:44"
     : application.status === "REJECTED"
       ? "Сейчас выдать эту сумму нельзя"
-      : application.status === "NEED_MORE_INFO"
-        ? "Нужен документ от вас"
+        : application.status === "NEED_MORE_INFO"
+        ? "Нужен документ"
         : application.status === "MANUAL_REVIEW" || application.status === "ANOMALY_VERIFICATION"
           ? "Инспектор смотрит заявку"
           : "Есть другие условия";
@@ -43,14 +43,15 @@ export function ClientDecision() {
 
   return (
     <>
-      <div className="v2-crumb">Кредиты / Заявка {application.application_id.slice(-8)}</div>
+      <div className="v2-crumb">Кредит / Решение</div>
       <div className="v2-row">
         <div>
           <h1 className="v2-h1">Решение</h1>
           <p className="v2-lead">{subtitle}</p>
         </div>
+        <button type="button" className="v2-link" onClick={() => goToScreen("apply")}>Новая заявка</button>
       </div>
-      <Stepper active={stepForStatus(application.status, released)} />
+      <Stepper active={stepForStatus(application.status)} />
 
       {waiting ? (
         <section className="v2-score-card">
@@ -131,21 +132,31 @@ export function ClientDecision() {
             <p key={line} className="v2-note">{line}</p>
           ))}
           {application.status === "NEED_MORE_INFO" ? (
-            <label className="v2-btn" style={{ marginTop: 12, display: "inline-flex" }}>
-              Загрузить PDF
-              <input
-                type="file"
-                hidden
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) {
-                    addCreditDoc(file.name);
-                  }
-                }}
-              />
-            </label>
+            <div style={{ marginTop: 12 }}>
+              <p className="v2-muted">Банк просит: {docName}. Загрузка вернёт заявку на проверку.</p>
+              <label className="v2-btn primary" style={{ marginTop: 8, display: "inline-flex" }}>
+                Загрузить документ
+                <input
+                  type="file"
+                  hidden
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) {
+                      return;
+                    }
+                    setUploadError(null);
+                    void uploadDocument(file).then((ok) => {
+                      if (!ok) {
+                        setUploadError("Не получилось загрузить");
+                      }
+                    });
+                  }}
+                />
+              </label>
+              {uploadError ? <p className="v2-note">{uploadError}</p> : null}
+            </div>
           ) : null}
-          {docs.length > 0 ? <p className="v2-note">В заявке: {docs.join(", ")}. Инспектор увидит имена файлов.</p> : null}
+          {docs.length > 0 ? <p className="v2-note">В этой сессии: {docs.join(", ")}</p> : null}
           {application.status === "REJECTED" ? (
             <button type="button" className="v2-btn primary" style={{ marginTop: 12 }} onClick={() => goToScreen("apply")}>
               Подать снова, когда будет что изменить

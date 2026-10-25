@@ -265,9 +265,10 @@ def make_decision(
             k_sector=k_sector,
         )
 
+    # 520–649: черновик контр-оффера готов, но клиент его не видит, пока инспектор не опубликует.
     if score >= SCORE_COUNTER_OFFER_MIN:
         return DecisionResult(
-            outcome=DecisionOutcome.COUNTER_OFFER,
+            outcome=DecisionOutcome.MANUAL_REVIEW,
             approved_amount_rub=round(approved_amount, 2),
             final_rate_pct=rate,
             monthly_payment_rub=round(monthly_payment, 2),
@@ -285,7 +286,7 @@ def make_decision(
                 include_secured=has_collateral or collateral_type not in ("NONE", "", None),
             ),
             rejection_checklist=(
-                ["Платёж по заявке превышает расчётный MaxPayment — выберите один из 4 встречных вариантов."]
+                ["Платёж по заявке превышает расчётный MaxPayment — инспектор отправит встречные варианты."]
                 if payment_exceeds_limit or weak_location else []
             ),
         )

@@ -39,7 +39,7 @@ def test_dashboard_structure(client, companies):
 def test_five_reference_scenarios(client, companies):
     expected = {
         "smirnov": ("APPROVED", 815, 0),
-        "rosters": ("COUNTER_OFFER", 610, 4),
+        "rosters": ("MANUAL_REVIEW", 610, 4),
         "tekhnostroy": ("ANOMALY_VERIFICATION", 295, 0),
         "kovalev": ("MANUAL_REVIEW", 495, 0),
         "bodrost_plus": ("REJECTED", 0, 0),
@@ -87,7 +87,13 @@ def test_signature_for_ip_and_ooo(client, companies):
     assert signed.json()["account_balance"] == 420_000 + 900_000
 
     rosters = create_application(client, companies["rosters"], DEMO_APPLICATION_SCENARIOS["rosters"])
-    assert rosters["status"] == "COUNTER_OFFER"
+    assert rosters["status"] == "MANUAL_REVIEW"
+    published = client.post(
+        f"/api/v1/applications/{rosters['application_id']}/underwriter-action",
+        json={"action": "COUNTER_OFFER", "actor_role": "UNDERWRITER", "comment": "Публикуем черновик"},
+    )
+    assert published.status_code == 200
+    assert published.json()["status"] == "COUNTER_OFFER"
     # ПЭП из COUNTER_OFFER без accept-offer — 409 (нужен выбор оффера).
     premature = client.post(
         f"/api/v1/applications/{rosters['application_id']}/ceo-approve",

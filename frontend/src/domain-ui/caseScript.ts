@@ -12,6 +12,9 @@ export const ROSTERS_OFFER_TERM = 24;
 export const ROSTERS_REQUEST_AMOUNT = 2_500_000;
 export const ROSTERS_REQUEST_TERM = 12;
 export const EQUIPMENT_TOTAL = 418_600;
+/** Остаток до трёх платежей «Кофе-Техника»: 728 600 − 418 600 = 310 000. */
+export const BALANCE_BEFORE_EQUIPMENT = 728_600;
+export const ROSTERS_APPLICATION_NUMBER = "2026-10-0417";
 export const ROSTERS_OBLIGATIONS_TOTAL = 1_148_000;
 /** Контроль Decision Engine: MaxPayment Ростерс, тест test_rosters_610. */
 export const ROSTERS_SAFE_PAYMENT = 110_500;
@@ -156,6 +159,14 @@ export const BANK_SIGNAL: Record<string, BankSignalCopy> = {
     offerTerm: null,
   },
 };
+
+export function applicationNumber(demoKey: string | null | undefined, applicationId: string): string {
+  if (demoKey === "rosters") {
+    return ROSTERS_APPLICATION_NUMBER;
+  }
+  const tail = applicationId.replace(/[^a-f0-9]/gi, "").slice(-4).padStart(4, "0");
+  return `2026-10-${tail}`;
+}
 
 export function signalFor(demoKey: string | null | undefined): BankSignalCopy {
   return BANK_SIGNAL[demoKey ?? ""] ?? {

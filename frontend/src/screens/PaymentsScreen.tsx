@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { InstallmentResult, Transaction } from "../api/types";
+import { JULY_REVENUE_FORECAST } from "../domain-ui/caseScript";
 import { useApp } from "../state/AppState";
 import { formatDate, formatMoney, roughAnnuity } from "../utils/format";
 
@@ -35,16 +36,33 @@ export function PaymentsScreen() {
     }
   }
 
+  const revenue = dashboard.company.monthly_revenue_alfa;
+  const isRosters = dashboard.company.demo_key === "rosters";
+
   return (
     <>
-      <div className="page-header">
+      <div className="v2-row">
         <div>
-          <h1 className="figma-h1">Деньги</h1>
-          <p className="figma-lead">Операции по счёту и рассрочка</p>
+          <h1 className="v2-h1">Деньги</h1>
+          <p className="v2-lead">Выручка за октябрь {formatMoney(revenue)}</p>
         </div>
-        <button type="button" className="btn btn-ghost" onClick={() => goToScreen("home")}>
-          ← На главную
+        <button type="button" className="v2-btn primary" onClick={() => goToScreen("invoice")}>
+          Оплатить счёт поставщика
         </button>
+      </div>
+      <div className="v2-kpis">
+        <article className="v2-card">
+          <div className="v2-kpi-value">{formatMoney(dashboard.account_balance)}</div>
+          <div className="v2-kpi-caption">На счёте</div>
+        </article>
+        <article className="v2-card">
+          <div className="v2-kpi-value">{formatMoney(dashboard.cash_forecast.min_balance_rub)}</div>
+          <div className="v2-kpi-caption">Минимум, день {dashboard.cash_forecast.min_day}</div>
+        </article>
+        <article className="v2-card">
+          <div className="v2-kpi-value">{isRosters ? formatMoney(JULY_REVENUE_FORECAST) : formatMoney(revenue)}</div>
+          <div className="v2-kpi-caption">{isRosters ? "Июль, прогноз −38%" : "Выручка месяца"}</div>
+        </article>
       </div>
 
       {result && (
@@ -54,8 +72,9 @@ export function PaymentsScreen() {
         </div>
       )}
 
-      <section className="figma-panel">
-        <table className="ops-table">
+      <section className="v2-card" style={{ padding: 0 }}>
+        {rows.length === 0 ? <p className="v2-muted" style={{ padding: 16 }}>Операций за период нет</p> : null}
+        <table className="v2-table">
           <thead>
             <tr>
               <th>Дата</th>
@@ -86,7 +105,7 @@ export function PaymentsScreen() {
                   ) : row.can_installment ? (
                     <button
                       type="button"
-                      className="btn btn-ghost btn-sm"
+                      className="v2-btn dense"
                       onClick={() => {
                         setSelected(row);
                         setMonths(3);
@@ -173,7 +192,7 @@ export function PaymentsScreen() {
               </button>
               <button
                 type="button"
-                className="btn btn-primary"
+                className="v2-btn primary"
                 disabled={isBusy}
                 onClick={() => void confirmInstallment()}
               >

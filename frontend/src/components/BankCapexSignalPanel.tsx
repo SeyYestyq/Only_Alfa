@@ -1,3 +1,4 @@
+import { BALANCE_BEFORE_EQUIPMENT } from "../domain-ui/caseScript";
 import { formatMoney } from "../utils/format";
 
 export const CAPEX_PAYMENT_ROWS = [
@@ -82,7 +83,7 @@ export function BankCapexSignalPanel({
           <div className="signal-balance-row">
             <div>
               <span>Остаток 01.10</span>
-              <strong>728 000 ₽</strong>
+              <strong>{formatMoney(BALANCE_BEFORE_EQUIPMENT)}</strong>
             </div>
             <div>
               <span>Остаток 21.10</span>
