@@ -41,9 +41,9 @@ body {
 /* ── Nav: quieter chrome, sharper brand ─────────────────────────────── */
 .figma-topnav {
   height: 68px;
-  background: rgba(8, 8, 9, 0.72);
+  background: var(--nav-bg-clarity);
   backdrop-filter: blur(18px) saturate(1.2);
-  border-bottom-color: rgba(255, 255, 255, 0.06);
+  border-bottom-color: var(--glass-divider);
   gap: 28px;
 }
 
@@ -52,7 +52,7 @@ body {
   height: 34px;
   border-radius: 11px;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 0 1px var(--overlay-mid),
     0 8px 24px var(--accent-glow);
   transition: transform var(--dur-fast) var(--ease-out);
 }
@@ -85,8 +85,8 @@ body {
 
 .figma-search {
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--overlay-soft);
+  border-color: var(--overlay-mid);
   transition:
     border-color var(--dur-fast) ease,
     background var(--dur-fast) ease,
@@ -95,19 +95,19 @@ body {
 
 .figma-search:hover,
 button.figma-search.active {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--overlay-mid);
   border-color: rgba(239, 49, 36, 0.45);
   color: var(--text-primary);
 }
 
 .figma-profile {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--overlay-soft);
+  border-color: var(--overlay-mid);
 }
 
 .figma-avatar {
-  background: linear-gradient(145deg, #5a221c, #2a1210);
-  color: #ffb4ac;
+  background: linear-gradient(145deg, var(--accent-deep), var(--accent-deep-alt));
+  color: var(--badge-accent-text);
 }
 
 /* ── Type ───────────────────────────────────────────────────────────── */
@@ -148,25 +148,25 @@ button.figma-search.active {
 .btn-primary {
   background: var(--accent);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 1px 0 var(--overlay-strong) inset,
     0 10px 28px var(--accent-glow);
 }
 
 .btn-primary:hover:not(:disabled) {
   background: var(--accent-dark);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 1px 0 var(--overlay-strong) inset,
     0 14px 32px var(--accent-glow);
 }
 
 .btn-ghost {
   background: transparent;
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--overlay-strong);
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.22);
+  background: var(--overlay-soft);
+  border-color: var(--overlay-strong);
 }
 
 .primary-cta {
@@ -180,7 +180,7 @@ button.figma-search.active {
 .figma-panel,
 .figma-kpi {
   background: var(--surface-1);
-  border-color: rgba(255, 255, 255, 0.07);
+  border-color: var(--overlay-mid);
   border-radius: var(--radius-lg);
   box-shadow: none;
   transition:
@@ -189,7 +189,7 @@ button.figma-search.active {
 }
 
 .figma-kpi:hover {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--overlay-strong);
 }
 
 .figma-kpi-value {
@@ -207,11 +207,11 @@ button.figma-search.active {
   gap: 28px;
   margin-bottom: 20px;
   padding: 32px 36px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--overlay-mid);
   border-radius: var(--radius-xl);
   background:
     linear-gradient(135deg, rgba(239, 49, 36, 0.1) 0%, transparent 42%),
-    linear-gradient(180deg, #141416 0%, #101012 100%);
+    linear-gradient(180deg, var(--surface-1) 0%, var(--bg-base) 100%);
   overflow: hidden;
 }
 
@@ -244,7 +244,7 @@ button.figma-search.active {
 .home-hero-balance {
   margin-top: 28px;
   padding-top: 22px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--overlay-mid);
 }
 
 .home-hero-balance span {
@@ -262,7 +262,7 @@ button.figma-search.active {
   letter-spacing: -0.045em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  background: linear-gradient(180deg, #fff 20%, #d4d4d8 100%);
+  background: var(--text-shine);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -298,7 +298,7 @@ button.figma-search.active {
 
 .home-bento .figma-kpi {
   padding: 20px 22px;
-  background: rgba(16, 16, 18, 0.9);
+  background: var(--glass-bg);
 }
 
 .home-bento .figma-kpi-label {
@@ -318,20 +318,20 @@ button.figma-search.active {
 .attention-split {
   padding: 28px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 40%),
+    linear-gradient(180deg, var(--overlay-hover), transparent 40%),
     var(--surface-1);
 }
 
 .radar-item {
-  background: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.06);
+  background: var(--overlay-hover);
+  border-color: var(--overlay-soft);
   border-radius: 14px;
   transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
 
 .radar-item:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--overlay-soft);
+  border-color: var(--overlay-strong);
 }
 
 .obligation-row {
@@ -385,8 +385,8 @@ button.figma-search.active {
 }
 
 .stepper {
-  background: rgba(16, 16, 18, 0.85);
-  border-color: rgba(255, 255, 255, 0.07);
+  background: var(--glass-bg);
+  border-color: var(--overlay-mid);
 }
 
 .stepper-item.active .n {
@@ -394,8 +394,8 @@ button.figma-search.active {
 }
 
 .figma-demo {
-  background: rgba(8, 8, 9, 0.95);
-  border-bottom-color: rgba(255, 255, 255, 0.06);
+  background: var(--nav-bg);
+  border-bottom-color: var(--overlay-soft);
 }
 
 .status-tag.is-info {
@@ -485,10 +485,10 @@ button.figma-search.active {
 
 /* Panels */
 .figma-panel {
-  border-color: rgba(255, 255, 255, 0.07);
+  border-color: var(--overlay-mid);
   border-radius: var(--radius-lg);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 48%),
+    linear-gradient(180deg, var(--overlay-hover), transparent 48%),
     var(--surface-1);
 }
 
@@ -505,7 +505,7 @@ button.figma-search.active {
 
 .figma-offer-card {
   border-radius: var(--radius-lg);
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--overlay-mid);
   background: var(--surface-1);
   transition:
     border-color var(--dur-fast) ease,
@@ -514,7 +514,7 @@ button.figma-search.active {
 
 .figma-offer {
   border-radius: 16px;
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--overlay-mid);
   background: var(--surface-2);
   transition:
     border-color var(--dur) var(--ease-out),
@@ -524,7 +524,7 @@ button.figma-search.active {
 }
 
 .figma-offer:hover:not(:disabled) {
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: var(--overlay-strong);
   transform: translateY(-1px);
 }
 
@@ -549,8 +549,8 @@ button.figma-search.active {
 .control-select,
 .bank-search {
   border-radius: 12px;
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--overlay-strong);
+  background: var(--overlay-hover);
   transition:
     border-color var(--dur-fast) ease,
     box-shadow var(--dur-fast) ease,
@@ -563,7 +563,7 @@ button.figma-search.active {
 .search-input:focus,
 .bank-search:focus {
   border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--overlay-soft);
   box-shadow: 0 0 0 3px var(--accent-soft);
   outline: none;
 }
@@ -583,19 +583,19 @@ button.figma-search.active {
   font-size: 11px;
   letter-spacing: 0.07em;
   color: var(--text-faint);
-  border-bottom-color: rgba(255, 255, 255, 0.08);
+  border-bottom-color: var(--overlay-mid);
 }
 
 .table td,
 .queue-table td,
 .market-table td {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  border-bottom-color: var(--overlay-soft);
   color: var(--text-secondary);
 }
 
 .table tr:hover td,
 .queue-table tbody tr:hover td {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--overlay-hover);
 }
 
 .table .amount-in,
@@ -612,7 +612,7 @@ button.figma-search.active {
 }
 
 .credit-list-item:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--overlay-hover);
 }
 
 .credit-list-top strong {
@@ -636,16 +636,16 @@ button.figma-search.active {
 .metric-card,
 .dna-card {
   border-radius: 16px;
-  border-color: rgba(255, 255, 255, 0.07);
-  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--overlay-mid);
+  background: var(--overlay-hover);
   transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
 
 .passport-card:hover,
 .metric-card:hover,
 .dna-card:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.035);
+  border-color: var(--overlay-strong);
+  background: var(--overlay-hover);
 }
 
 .passport-value,
@@ -657,7 +657,7 @@ button.figma-search.active {
 .offer-card {
   border-radius: 16px;
   background: var(--surface-2);
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--overlay-mid);
 }
 
 .offer-card.selected {
@@ -667,13 +667,13 @@ button.figma-search.active {
 
 .signing-card {
   border-radius: var(--radius-lg);
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--overlay-mid);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 40%),
+    linear-gradient(180deg, var(--overlay-hover), transparent 40%),
     var(--surface-1);
 }
 
-/* Alerts — dark-safe (override light text colors) */
+/* Alerts — theme-aware status soft fills */
 .alert {
   border-radius: 14px;
   color: var(--text-primary);
@@ -682,31 +682,31 @@ button.figma-search.active {
 .alert-risk {
   background: var(--status-danger-soft);
   border-color: rgba(242, 107, 91, 0.35);
-  color: #ffb4ac;
+  color: var(--status-danger);
 }
 
 .alert-warn {
   background: var(--status-warning-soft);
   border-color: rgba(240, 180, 41, 0.35);
-  color: #f5d78a;
+  color: var(--status-warning);
 }
 
 .alert-good {
   background: var(--status-success-soft);
   border-color: rgba(61, 214, 140, 0.3);
-  color: #9aefc4;
+  color: var(--status-success);
 }
 
 .alert-info {
   background: var(--status-info-soft);
   border-color: rgba(122, 176, 255, 0.3);
-  color: #b7d2ff;
+  color: var(--status-info);
 }
 
 .banner-info {
   background: var(--status-info-soft);
   border-color: rgba(122, 176, 255, 0.3);
-  color: #b7d2ff;
+  color: var(--status-info);
 }
 
 .banner-error {
@@ -717,7 +717,7 @@ button.figma-search.active {
 .empty-state {
   padding: 56px 28px;
   border-radius: var(--radius-xl);
-  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border: 1px dashed var(--overlay-strong);
   background:
     radial-gradient(ellipse at 50% 0%, rgba(239, 49, 36, 0.08), transparent 55%),
     var(--surface-1);
@@ -734,7 +734,7 @@ button.figma-search.active {
 }
 
 .spinner {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--overlay-strong);
   border-top-color: var(--accent);
   box-shadow: 0 0 12px var(--accent-glow);
 }
@@ -743,7 +743,7 @@ button.figma-search.active {
 .inv-kpi-card,
 .inv-list-pane,
 .inv-detail-pane {
-  border-color: rgba(255, 255, 255, 0.07);
+  border-color: var(--overlay-mid);
   border-radius: var(--radius-lg);
   background: var(--surface-1);
 }
@@ -784,8 +784,8 @@ button.figma-search.active {
 .invoice-drop,
 .dropzone {
   border-radius: 16px;
-  border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--overlay-strong);
+  background: var(--overlay-hover);
   transition:
     border-color var(--dur) ease,
     background var(--dur) ease,
@@ -821,7 +821,7 @@ button.figma-search.active {
 .credit-badge {
   border-radius: 18px;
   background:
-    linear-gradient(145deg, #1a1a1e 0%, #121214 60%, #2a1210 140%);
+    linear-gradient(145deg, var(--surface-2) 0%, var(--surface-1) 60%, var(--accent-deep-alt) 140%);
   border: 1px solid rgba(239, 49, 36, 0.25);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
 }
@@ -844,7 +844,7 @@ button.figma-search.active {
   min-width: 200px;
   height: 42px;
   padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--overlay-strong);
   color: var(--text-primary);
 }
 
@@ -853,15 +853,15 @@ button.figma-search.active {
 }
 
 .ops-row {
-  border-color: rgba(255, 255, 255, 0.07);
+  border-color: var(--overlay-mid);
   border-radius: 16px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 50%),
+    linear-gradient(180deg, var(--overlay-hover), transparent 50%),
     var(--surface-1);
 }
 
 .ops-row:hover {
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: var(--overlay-strong);
   background: var(--surface-2);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
@@ -894,11 +894,11 @@ button.figma-search.active {
 
 .bank-case-bar,
 .app-desk-bar {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--overlay-mid);
   border-radius: 16px;
-  background: rgba(12, 12, 14, 0.92);
+  background: var(--glass-bg);
   backdrop-filter: blur(16px) saturate(1.15);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-popover);
 }
 
 .app-desk-section {
@@ -910,7 +910,7 @@ button.figma-search.active {
 
 .app-desk-section:hover {
   color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: var(--overlay-strong);
 }
 
 .bank-decision-card {
@@ -926,8 +926,8 @@ button.figma-search.active {
 .bank-value-cards article,
 .bank-decision-metrics > div {
   border-radius: 14px;
-  border-color: rgba(255, 255, 255, 0.07);
-  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--overlay-mid);
+  background: var(--overlay-hover);
 }
 
 .bank-pnl-metric strong,
@@ -938,7 +938,7 @@ button.figma-search.active {
 }
 
 .signal-offer-hero strong {
-  background: linear-gradient(180deg, #fff 10%, #d0d0d4 100%);
+  background: var(--text-shine);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -946,16 +946,16 @@ button.figma-search.active {
 
 /* Modals / sheets */
 .sheet-backdrop {
-  background: rgba(0, 0, 0, 0.62);
+  background: var(--overlay-scrim);
   backdrop-filter: blur(6px);
 }
 
 .sheet-card,
 .credit-chat-modal {
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #121214;
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--overlay-strong);
+  background: var(--surface-1);
+  box-shadow: var(--shadow);
 }
 
 .sheet-head h2 {
@@ -972,7 +972,7 @@ button.figma-search.active {
 }
 
 .term-card:hover {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: var(--overlay-strong);
 }
 
 .term-card.active {
@@ -1012,8 +1012,8 @@ button.figma-search.active {
   gap: 6px;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--overlay-soft);
+  border: 1px solid var(--overlay-mid);
 }
 
 .bank-chip {
@@ -1043,7 +1043,7 @@ button.figma-search.active {
   border-radius: 12px;
   border: 1px solid rgba(240, 180, 41, 0.35);
   background: var(--status-warning-soft);
-  color: #f5d78a;
+  color: var(--status-warning);
 }
 
 .figma-grid-2 {
@@ -1056,13 +1056,13 @@ button.figma-search.active {
 }
 
 .bank-back-link:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--overlay-soft);
 }
 
 /* Messages / chat threads */
 .chat-compose,
 .msg-compose {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--overlay-mid);
   background: var(--surface-1);
   border-radius: 16px;
 }
@@ -1070,7 +1070,7 @@ button.figma-search.active {
 /* Footer */
 .footer {
   color: var(--text-faint);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--overlay-soft);
   margin-top: 12px;
   padding-top: 20px;
 }

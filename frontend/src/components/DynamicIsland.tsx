@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useTheme } from "../hooks/useTheme";
 import { useApp } from "../state/AppState";
 import { useDemoStore } from "../state/demoStore";
 import { formatMoney, roleLabel } from "../utils/format";
@@ -54,6 +55,7 @@ export function DynamicIsland() {
   } = useApp();
 
   const noticeCount = useDemoStore((state) => state.clientNotices.length);
+  const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [flash, setFlash] = useState(false);
   const [inn, setInn] = useState("");
@@ -202,6 +204,9 @@ export function DynamicIsland() {
             ·
           </span>
           <span className="dyn-island-status">{statusLine}</span>
+          <span className="dyn-island-theme-cue" aria-hidden title={theme === "light" ? "Светлая" : "Тёмная"}>
+            {theme === "light" ? "☀" : "☾"}
+          </span>
           <span className="dyn-island-chevron" aria-hidden>
             {open ? "▴" : "▾"}
           </span>
@@ -387,6 +392,25 @@ export function DynamicIsland() {
                   ) : null}
                 </div>
               ) : null}
+
+              <div className="dyn-island-theme-toggle" role="group" aria-label="Тема оформления">
+                <button
+                  type="button"
+                  className={theme === "light" ? "active" : ""}
+                  aria-pressed={theme === "light"}
+                  onClick={() => setTheme("light")}
+                >
+                  Светлая
+                </button>
+                <button
+                  type="button"
+                  className={theme === "dark" ? "active" : ""}
+                  aria-pressed={theme === "dark"}
+                  onClick={() => setTheme("dark")}
+                >
+                  Тёмная
+                </button>
+              </div>
 
               <div className="figma-view-toggle">
                 <button

@@ -1,11 +1,9 @@
-import type { SupplierDealRisk } from "../../api/types";
 import {
   INVOICE_INSTANT_FINANCING_RATIO,
   invoiceStatusLabel,
   type UnpaidInvoiceRow,
 } from "../../domain-ui/invoiceFinancing";
 import { formatMoney, formatMoneyExact, roughAnnuity } from "../../utils/format";
-import { SupplierRiskPanel } from "./SupplierRiskPanel";
 
 interface InvoiceDetailPaneProps {
   invoice: UnpaidInvoiceRow;
@@ -16,9 +14,6 @@ interface InvoiceDetailPaneProps {
   onFinance: () => void;
   onPayFromAccount?: () => void;
   paidFromAccount?: boolean;
-  supplierRisk: SupplierDealRisk | null;
-  supplierRiskLoading: boolean;
-  supplierRiskError?: string | null;
 }
 
 const TERM_MONTHS = 6;
@@ -33,9 +28,6 @@ export function InvoiceDetailPane({
   onFinance,
   onPayFromAccount,
   paidFromAccount,
-  supplierRisk,
-  supplierRiskLoading,
-  supplierRiskError,
 }: InvoiceDetailPaneProps) {
   const pct = Math.round(INVOICE_INSTANT_FINANCING_RATIO * 100);
   const paymentHint = roughAnnuity(invoice.financing_rub, TERM_MONTHS);
@@ -84,14 +76,6 @@ export function InvoiceDetailPane({
           <strong>{formatMoneyExact(invoice.financing_rub)}</strong>
         </div>
       </div>
-
-      <SupplierRiskPanel
-        risk={supplierRisk}
-        isLoading={supplierRiskLoading}
-        error={supplierRiskError}
-        supplierName={invoice.supplier_name}
-        supplierInn={invoice.supplier_inn}
-      />
 
       <aside className="inv-finance-offer">
         <div className="inv-finance-offer-copy">

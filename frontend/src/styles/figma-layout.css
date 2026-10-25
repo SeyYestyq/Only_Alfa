@@ -41,12 +41,12 @@
      to 100% (browsers can't interpolate it; mid-frames + overflow clip the body) */
   width: max-content;
   max-width: 100%;
-  background: rgba(23, 23, 26, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-radius: 999px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-island);
   transition:
     border-radius 0.28s var(--ease-out),
     background 0.2s ease,
@@ -69,7 +69,7 @@
 
 .dyn-island.is-alert {
   border-color: rgba(242, 107, 91, 0.55);
-  background: rgba(42, 18, 16, 0.88);
+  background: var(--glass-bg-alert);
 }
 
 .dyn-island.is-flash {
@@ -84,7 +84,7 @@
     box-shadow: 0 0 0 8px rgba(239, 49, 36, 0);
   }
   100% {
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    box-shadow: var(--shadow-island);
   }
 }
 
@@ -135,13 +135,21 @@
 
 .dyn-island-badge {
   background: var(--accent-soft);
-  color: #ff8a80;
+  color: var(--badge-accent-text);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.6px;
   padding: 2px 7px;
   border-radius: 6px;
   flex-shrink: 0;
+}
+
+.dyn-island-theme-cue {
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.72;
+  flex-shrink: 0;
+  margin-left: 2px;
 }
 
 .dyn-island-mode {
@@ -186,7 +194,7 @@
 
 .dyn-island-body {
   padding: 0 14px 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--glass-divider);
   overflow: visible;
   min-width: 0;
 }
@@ -228,6 +236,31 @@
   margin-left: auto;
 }
 
+.dyn-island-theme-toggle {
+  display: inline-flex;
+  background: var(--control-bg);
+  border: 1px solid var(--figma-border);
+  border-radius: 999px;
+  padding: 2px;
+}
+
+.dyn-island-theme-toggle button {
+  border: none;
+  background: transparent;
+  color: var(--figma-muted);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.dyn-island-theme-toggle button.active {
+  background: var(--control-bg-active);
+  color: var(--text-primary);
+}
+
 /* popovers must paint above island chrome / nearby nav */
 .dyn-island .demo-popover,
 .dyn-island .demo-inn-toast {
@@ -238,7 +271,7 @@
 .figma-demo {
   position: relative;
   z-index: 30;
-  background: #0e0e10;
+  background: var(--input-deep);
   border-bottom: 1px solid var(--figma-border);
   min-height: 44px;
   display: flex;
@@ -249,7 +282,7 @@
 }
 
 .figma-demo-badge {
-  background: #2a0f0c;
+  background: var(--accent-deep);
   color: #ff4a3d;
   font-size: 10px;
   font-weight: 700;
@@ -262,7 +295,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #17171a;
+  background: var(--control-bg);
   border: 1px solid var(--figma-border);
   border-radius: 999px;
   padding: 4px 10px;
@@ -271,7 +304,7 @@
 }
 
 .figma-pill .tag {
-  background: #202024;
+  background: var(--control-bg-active);
   color: var(--text-secondary);
   font-size: 10px;
   font-weight: 700;
@@ -290,7 +323,7 @@
 
 .figma-view-toggle {
   display: inline-flex;
-  background: #17171a;
+  background: var(--control-bg);
   border: 1px solid var(--figma-border);
   border-radius: 999px;
   padding: 2px;
@@ -304,10 +337,11 @@
   font-weight: 500;
   padding: 3px 12px;
   border-radius: 999px;
+  cursor: pointer;
 }
 
 .figma-view-toggle button.active {
-  background: #202024;
+  background: var(--control-bg-active);
   color: var(--text-primary);
 }
 
@@ -336,7 +370,7 @@
   align-items: center;
   gap: 8px;
   border: 1px solid var(--figma-border);
-  background: #17171a;
+  background: var(--control-bg);
   color: var(--text-primary);
   border-radius: 999px;
   padding: 4px 10px 4px 6px;
@@ -355,7 +389,7 @@
   width: 22px;
   height: 22px;
   border-radius: 7px;
-  background: #202024;
+  background: var(--control-bg-active);
   display: grid;
   place-items: center;
   font-size: 10px;
@@ -381,7 +415,7 @@
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  background: #202024;
+  background: var(--control-bg-active);
   color: var(--text-secondary);
   display: grid;
   place-items: center;
@@ -431,10 +465,10 @@
   width: 280px;
   padding: 10px;
   border-radius: 14px;
-  background: #141416;
+  background: var(--popover-bg);
   color: var(--text-primary);
   border: 1px solid var(--figma-border);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  box-shadow: var(--shadow-popover);
 }
 
 .demo-user-menu {
@@ -455,7 +489,7 @@
   width: 100%;
   border: 1px solid var(--figma-border);
   border-radius: 10px;
-  background: #0e0e10;
+  background: var(--input-deep);
   color: var(--text-primary);
   font: inherit;
   font-size: 13px;
@@ -495,14 +529,14 @@
 
 .demo-popover-list button:hover,
 .demo-popover-list button.active {
-  background: #1c1c20;
+  background: var(--control-bg-hover);
 }
 
 .demo-list-mark {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: #202024;
+  background: var(--control-bg-active);
   display: grid;
   place-items: center;
   font-size: 9px;
@@ -552,7 +586,7 @@
 .demo-inn-field input {
   width: 132px;
   border: 1px solid var(--figma-border);
-  background: #17171a;
+  background: var(--control-bg);
   color: var(--text-primary);
   border-radius: 12px;
   padding: 7px 32px 7px 12px;
@@ -563,7 +597,7 @@
 }
 
 .demo-inn-field input:focus {
-  border-color: #3a3a42;
+  border-color: var(--border-strong);
 }
 
 .demo-inn-spinner {
@@ -571,15 +605,15 @@
   right: 10px;
   width: 14px;
   height: 14px;
-  border: 2px solid #3a3a42;
-  border-top-color: #f5f5f7;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--text-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
 .demo-inn-btn {
   border: 1px solid var(--figma-border);
-  background: #17171a;
+  background: var(--control-bg);
   color: var(--text-primary);
   border-radius: 12px;
   padding: 7px 14px;
@@ -604,16 +638,16 @@
   align-items: flex-start;
   padding: 12px 14px;
   border-radius: 14px;
-  background: #17171a;
+  background: var(--control-bg);
   border: 1px solid var(--figma-border);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-popover);
 }
 
 .demo-inn-toast-ico {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #0a0a0c;
+  background: var(--bg-base);
   display: grid;
   place-items: center;
   font-size: 12px;
@@ -664,25 +698,25 @@
 
 .status-tag.is-risk {
   background: var(--status-danger-soft);
-  color: #ffb4ab;
+  color: var(--status-danger);
   border-color: rgba(242, 107, 91, 0.28);
 }
 
 .status-tag.is-warn {
   background: var(--status-warning-soft);
-  color: #f7d39a;
+  color: var(--status-warning);
   border-color: rgba(242, 179, 61, 0.28);
 }
 
 .status-tag.is-good {
   background: var(--status-success-soft);
-  color: #8fe0b3;
+  color: var(--status-success);
   border-color: rgba(52, 199, 123, 0.25);
 }
 
 .status-tag.is-info {
   background: var(--status-info-soft);
-  color: #a8c9ff;
+  color: var(--status-info);
   border-color: rgba(108, 168, 255, 0.25);
 }
 
@@ -827,7 +861,7 @@
   align-items: center;
   gap: 20px;
   padding: 0 var(--figma-page-x);
-  background: rgba(11, 11, 12, 0.88);
+  background: var(--nav-bg);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -889,7 +923,7 @@
 
 .figma-nav-item:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--overlay-hover);
 }
 
 .figma-nav-item.active {
@@ -930,7 +964,7 @@
 }
 
 .figma-search {
-  background: #17171a;
+  background: var(--control-bg);
   border: 1px solid var(--figma-border);
   border-radius: 12px;
   padding: 8px 14px;
@@ -959,7 +993,7 @@ button.figma-search.active {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #17171a;
+  background: var(--control-bg);
   border: 1px solid var(--figma-border);
   border-radius: 999px;
   padding: 6px 12px 6px 6px;
@@ -969,7 +1003,7 @@ button.figma-search.active {
   width: 28px;
   height: 28px;
   border-radius: 14px;
-  background: #3a2420;
+  background: var(--accent-deep-alt);
   display: grid;
   place-items: center;
   font-size: 11px;
@@ -1086,8 +1120,8 @@ button.figma-search.active {
 }
 
 .figma-panel {
-  background: rgba(17, 17, 19, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--glass-bg);
+  border: 1px solid var(--overlay-mid);
   border-radius: var(--figma-radius-lg);
   padding: 32px;
   backdrop-filter: blur(12px);
@@ -1116,7 +1150,7 @@ button.figma-search.active {
 }
 
 .figma-offer-card {
-  background: #2a0f0c;
+  background: var(--accent-deep);
   border: 1px solid rgba(239, 49, 36, 0.35);
   border-radius: 16px;
   padding: 16px;
@@ -1184,7 +1218,7 @@ button.figma-search.active {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #202024;
+  background: var(--control-bg-active);
   font-size: 11px;
 }
 
@@ -1350,7 +1384,7 @@ button.figma-search.active {
 .product-offer-card.is-featured .product-offer-icon {
   background: var(--accent-soft);
   border-color: rgba(239, 49, 36, 0.35);
-  color: #ff7a6e;
+  color: var(--status-danger);
 }
 
 .product-offer-badge {
@@ -1528,7 +1562,7 @@ button.figma-search.active {
 
 .figma-offer {
   position: relative;
-  background: linear-gradient(180deg, rgba(23, 23, 26, 0.95) 0%, rgba(17, 17, 19, 0.95) 100%);
+  background: linear-gradient(180deg, var(--glass-bg) 0%, var(--panel-deep) 100%);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 18px;
@@ -1549,7 +1583,7 @@ button.figma-search.active {
 .figma-offer.selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent), 0 8px 24px rgba(239, 49, 36, 0.22);
-  background: linear-gradient(180deg, rgba(239, 49, 36, 0.1) 0%, rgba(23, 23, 26, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(239, 49, 36, 0.1) 0%, var(--glass-bg) 100%);
 }
 
 .figma-offer-title {
@@ -1652,7 +1686,7 @@ button.figma-search.active {
 }
 
 .revenue-pair .bar.prev {
-  background: #202024;
+  background: var(--control-bg-active);
 }
 
 .revenue-pair .bar.curr {
@@ -1709,7 +1743,7 @@ button.figma-search.active {
 
 .collateral-switch button {
   border: 1px solid var(--figma-border);
-  background: #17171a;
+  background: var(--control-bg);
   color: var(--text-secondary);
   border-radius: 12px;
   padding: 12px 14px;
@@ -1731,7 +1765,7 @@ button.figma-search.active {
 
 .collateral-switch button.active {
   border-color: var(--accent);
-  background: #2a0f0c;
+  background: var(--accent-deep);
   color: var(--text-primary);
 }
 
@@ -1743,7 +1777,7 @@ button.figma-search.active {
 
 .collateral-type {
   border: 1px solid var(--figma-border);
-  background: #17171a;
+  background: var(--control-bg);
   border-radius: 12px;
   padding: 12px;
   text-align: left;
@@ -1805,7 +1839,7 @@ button.figma-search.active {
   padding: 14px;
   border-radius: 12px;
   border: 1px solid var(--accent);
-  background: #2a0f0c;
+  background: var(--accent-deep);
 }
 
 .pay-account strong {
@@ -1834,7 +1868,7 @@ button.figma-search.active {
   padding: 14px;
   border-radius: 14px;
   border: 1px solid var(--figma-border);
-  background: #17171a;
+  background: var(--control-bg);
   color: inherit;
   font: inherit;
   cursor: pointer;
@@ -1842,7 +1876,7 @@ button.figma-search.active {
 
 .pay-source-row.offer {
   border-color: rgba(239, 49, 36, 0.4);
-  background: #2a0f0c;
+  background: var(--accent-deep);
 }
 
 .pay-source-row.active {
@@ -1883,7 +1917,7 @@ button.figma-search.active {
   font-weight: 650;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #f0a39c;
+  color: var(--status-danger);
 }
 
 .pay-source-meta {
@@ -1894,7 +1928,7 @@ button.figma-search.active {
 
 .pay-source-warn {
   font-size: 12px;
-  color: #f0b429;
+  color: var(--status-warning);
   margin-top: 4px;
 }
 
@@ -1958,7 +1992,7 @@ button.figma-search.active {
   height: 28px;
   border-radius: 8px;
   background: rgba(240, 180, 41, 0.2);
-  color: #f0b429;
+  color: var(--status-warning);
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -2096,7 +2130,7 @@ button.figma-profile {
   flex: 1;
   height: 6px;
   border-radius: 99px;
-  background: #202024;
+  background: var(--control-bg-active);
 }
 
 .readiness-bars i.pass {
@@ -2148,7 +2182,7 @@ button.figma-profile {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  background: #17171a;
+  background: var(--control-bg);
   border-radius: 14px;
   padding: 14px;
   margin-top: 12px;
@@ -2158,7 +2192,7 @@ button.figma-profile {
   width: 36px;
   height: 44px;
   border-radius: 8px;
-  background: #2a1210;
+  background: var(--accent-deep-alt);
   color: var(--accent);
   display: grid;
   place-items: center;
@@ -2186,7 +2220,7 @@ button.figma-profile {
   height: 56px;
   border-radius: 12px;
   border: 1px solid var(--figma-border);
-  background: #17171a;
+  background: var(--control-bg);
   display: grid;
   place-items: center;
   font-size: 22px;
@@ -2224,9 +2258,9 @@ button.figma-profile {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #3a3a42;
+  background: var(--border-strong);
   margin-bottom: 8px;
-  box-shadow: 0 0 0 3px #121214;
+  box-shadow: 0 0 0 3px var(--surface-1);
   position: relative;
   z-index: 1;
 }
@@ -2242,7 +2276,7 @@ button.figma-profile {
   left: 4px;
   right: 4px;
   height: 2px;
-  background: #2a2a30;
+  background: var(--border-strong);
 }
 
 .path-step.done .dot {
@@ -2312,7 +2346,7 @@ button.figma-offer:disabled {
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid rgba(239, 49, 36, 0.45);
-  background: #2a0f0c;
+  background: var(--accent-deep);
   color: var(--text-primary);
   font: inherit;
   cursor: pointer;
@@ -2339,7 +2373,7 @@ button.figma-offer:disabled {
   height: 26px;
   border-radius: 999px;
   border: none;
-  background: #2a2a30;
+  background: var(--border-strong);
   position: relative;
   flex-shrink: 0;
   cursor: pointer;
@@ -2353,7 +2387,8 @@ button.figma-offer:disabled {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #f5f5f7;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
   transition: transform 0.15s ease;
 }
 
@@ -2400,7 +2435,7 @@ button.figma-offer:disabled {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #3a3a42;
+  background: var(--border-strong);
 }
 
 .status-track .done {
@@ -2462,15 +2497,15 @@ button.figma-offer:disabled {
 }
 
 .chat-thread-item.active {
-  background: #17171a;
+  background: var(--control-bg);
 }
 
 .chat-avatar {
   width: 36px;
   height: 36px;
   border-radius: 18px;
-  background: #2a1210;
-  color: #ff8a7a;
+  background: var(--accent-deep-alt);
+  color: var(--badge-accent-text);
   display: grid;
   place-items: center;
   font-size: 12px;
@@ -2537,13 +2572,13 @@ button.figma-offer:disabled {
 }
 
 .chat-bubble.in {
-  background: #17171a;
+  background: var(--control-bg);
   border: 1px solid var(--figma-border);
   align-self: flex-start;
 }
 
 .chat-bubble.out {
-  background: #2a0f0c;
+  background: var(--accent-deep);
   border: 1px solid rgba(239, 49, 36, 0.35);
   align-self: flex-end;
 }
@@ -2570,12 +2605,12 @@ button.figma-offer:disabled {
   padding: 14px;
   border-radius: 14px;
   border: 1px solid var(--figma-border);
-  background: #111113;
+  background: var(--panel-deep);
 }
 
 .chat-card.offer {
   border-color: rgba(239, 49, 36, 0.35);
-  background: #2a0f0c;
+  background: var(--accent-deep);
 }
 
 .chat-typing {
@@ -2595,7 +2630,7 @@ button.figma-offer:disabled {
   height: 40px;
   border-radius: 12px;
   border: 1px solid var(--figma-border);
-  background: #17171a;
+  background: var(--control-bg);
   padding: 0 12px;
   outline: none;
 }
@@ -2605,7 +2640,7 @@ button.figma-offer:disabled {
   height: 40px;
   border-radius: 12px;
   border: 1px solid var(--figma-border);
-  background: #17171a;
+  background: var(--control-bg);
   color: var(--text-secondary);
   font-size: 20px;
 }
@@ -2861,7 +2896,7 @@ button.figma-offer:disabled {
 
 .inv-status-pill.status-viewed {
   background: var(--accent-soft);
-  color: #ff8a80;
+  color: var(--badge-accent-text);
 }
 
 .inv-status-pill.status-overdue {
@@ -2976,7 +3011,7 @@ button.figma-offer:disabled {
 }
 
 .inv-totals-finance strong {
-  color: #ff8a80;
+  color: var(--badge-accent-text);
 }
 
 .supplier-risk-panel {
@@ -3201,13 +3236,13 @@ button.figma-offer:disabled {
   border-radius: 16px;
   padding: 28px 16px;
   text-align: center;
-  background: #17171a;
+  background: var(--control-bg);
   cursor: pointer;
 }
 
 .invoice-drop.dragging {
   border-color: var(--accent);
-  background: #2a0f0c;
+  background: var(--accent-deep);
 }
 
 .invoice-pdf-badge {
@@ -3216,7 +3251,7 @@ button.figma-offer:disabled {
   width: 40px;
   height: 48px;
   border-radius: 8px;
-  background: #2a1210;
+  background: var(--accent-deep-alt);
   color: var(--accent);
   font-size: 11px;
   font-weight: 700;
@@ -3233,7 +3268,7 @@ button.figma-offer:disabled {
 .demo-invoice {
   text-align: left;
   border: 1px solid var(--figma-border);
-  background: #17171a;
+  background: var(--control-bg);
   border-radius: 12px;
   padding: 12px 14px;
   color: inherit;
@@ -3276,7 +3311,7 @@ button.figma-offer:disabled {
 }
 
 .supplier-checks div {
-  background: #17171a;
+  background: var(--control-bg);
   border-radius: 12px;
   padding: 12px;
 }
@@ -3309,7 +3344,7 @@ button.figma-offer:disabled {
 .sheet-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--overlay-scrim);
   display: grid;
   place-items: end center;
   z-index: 40;
@@ -3318,7 +3353,7 @@ button.figma-offer:disabled {
 
 .sheet-card {
   width: min(560px, 100%);
-  background: #111113;
+  background: var(--panel-deep);
   border: 1px solid var(--figma-border);
   border-radius: 20px;
   padding: 20px;
@@ -3343,17 +3378,17 @@ button.figma-offer:disabled {
 }
 
 .period-chart-canvas .recharts-tooltip-cursor {
-  stroke: rgba(255, 255, 255, 0.88);
+  stroke: var(--text-primary);
 }
 
 .period-chart-tooltip {
-  background: rgba(17, 17, 19, 0.78);
+  background: var(--glass-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--overlay-strong);
   border-radius: 12px;
   padding: 12px 14px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-popover);
   min-width: 148px;
   pointer-events: none;
 }
@@ -3533,7 +3568,7 @@ button.figma-offer:disabled {
 /* ── Credit tab + chat modal ──────────────────────────────────────────── */
 .credit-bank-message {
   border-color: rgba(239, 49, 36, 0.35);
-  background: linear-gradient(180deg, #2a0f0c 0%, var(--figma-card) 48%);
+  background: linear-gradient(180deg, var(--accent-deep) 0%, var(--figma-card) 48%);
 }
 
 .credit-bank-message-layout {
@@ -3660,7 +3695,7 @@ button.figma-offer:disabled {
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid rgba(239, 49, 36, 0.35);
-  background: #2a0f0c;
+  background: var(--accent-deep);
 }
 
 .credit-chat-banner p {
@@ -3690,7 +3725,7 @@ button.figma-offer:disabled {
   display: inline-flex;
   padding: 6px 10px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--overlay-soft);
   font-size: 12px;
   font-weight: 600;
 }
@@ -3715,7 +3750,7 @@ button.figma-offer:disabled {
   margin-top: 16px;
   padding: 12px;
   border-radius: 12px;
-  background: #17171a;
+  background: var(--control-bg);
 }
 
 .term-cards {
@@ -3728,7 +3763,7 @@ button.figma-offer:disabled {
 .term-card {
   text-align: left;
   border: 1px solid var(--figma-border);
-  background: #17171a;
+  background: var(--control-bg);
   border-radius: 14px;
   padding: 14px;
   color: inherit;
@@ -3740,7 +3775,7 @@ button.figma-offer:disabled {
 
 .term-card.active {
   border-color: var(--accent);
-  background: #2a0f0c;
+  background: var(--accent-deep);
 }
 
 .sheet-actions {
@@ -4651,7 +4686,7 @@ button.figma-offer:disabled {
   align-items: center;
   gap: 8px;
   border: 1px solid var(--figma-border);
-  background: #17171a;
+  background: var(--control-bg);
   color: var(--text-secondary);
   border-radius: 999px;
   padding: 8px 12px;
@@ -4661,7 +4696,7 @@ button.figma-offer:disabled {
 }
 
 .bank-chip span {
-  background: #2a2a30;
+  background: var(--border-strong);
   border-radius: 999px;
   padding: 1px 7px;
   font-size: 12px;
@@ -4671,7 +4706,7 @@ button.figma-offer:disabled {
 
 .bank-chip.active {
   border-color: var(--accent);
-  background: #2a0f0c;
+  background: var(--accent-deep);
   color: var(--text-primary);
 }
 
@@ -4680,7 +4715,7 @@ button.figma-offer:disabled {
   min-width: 220px;
   border-radius: 12px;
   border: 1px solid var(--figma-border);
-  background: #17171a;
+  background: var(--control-bg);
   color: inherit;
   padding: 0 12px;
   outline: none;
@@ -4714,7 +4749,7 @@ button.figma-offer:disabled {
 .score-meter {
   height: 8px;
   border-radius: 99px;
-  background: #202024;
+  background: var(--control-bg-active);
   overflow: hidden;
 }
 
@@ -4926,7 +4961,7 @@ button.figma-offer:disabled {
   min-width: 44px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #1a1a1e;
+  background: var(--surface-2);
   border: 1px solid var(--figma-border);
   font-size: 11px;
   font-weight: 600;
@@ -4964,7 +4999,7 @@ button.figma-offer:disabled {
 .xray-base-heat {
   padding: 14px;
   border-radius: 12px;
-  background: #17171a;
+  background: var(--control-bg);
   border: 1px solid var(--figma-border);
 }
 
@@ -4982,7 +5017,7 @@ button.figma-offer:disabled {
 }
 
 .xray-base-side-con .xray-base-side-title {
-  color: #ff8a7a;
+  color: var(--badge-accent-text);
 }
 
 .xray-base-bars {
@@ -5021,7 +5056,7 @@ button.figma-offer:disabled {
   display: block;
   height: 8px;
   border-radius: 2px;
-  background: #2a2a30;
+  background: var(--border-strong);
 }
 
 .xray-base-side-pro .xray-base-bar-track i.on {
@@ -5110,7 +5145,7 @@ button.figma-offer:disabled {
   gap: 12px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #17171a;
+  background: var(--control-bg);
   font-size: 14px;
 }
 
@@ -5124,7 +5159,7 @@ button.figma-offer:disabled {
 .decision-bar .track {
   height: 8px;
   border-radius: 99px;
-  background: #202024;
+  background: var(--control-bg-active);
   overflow: hidden;
   margin-top: 6px;
 }
@@ -5149,7 +5184,7 @@ button.figma-offer:disabled {
 .bank-client-card {
   border-left: 1px solid var(--figma-border);
   padding: 20px 16px;
-  background: #0e0e10;
+  background: var(--input-deep);
 }
 
 @media (max-width: 1280px) {
@@ -5384,7 +5419,7 @@ button.figma-offer:disabled {
 /* —— Skeleton / loading states (Figma copy 11–14) —— */
 .sk-bone {
   display: block;
-  background: linear-gradient(90deg, #1a1a1e 0%, #2a2a30 45%, #1a1a1e 100%);
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--border-strong) 45%, var(--surface-2) 100%);
   background-size: 200% 100%;
   animation: sk-shimmer 1.25s ease-in-out infinite;
 }
@@ -5482,7 +5517,7 @@ button.figma-offer:disabled {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #2a2a30;
+  background: var(--border-strong);
   justify-self: center;
 }
 
@@ -5517,7 +5552,7 @@ button.figma-offer:disabled {
 .bank-empty {
   margin-top: 16px;
   border-color: var(--figma-border);
-  background: #121214;
+  background: var(--surface-1);
 }
 
 .bank-empty h3 {

@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { ApiError, api } from "../api/client";
-import type { SupplierDealRisk } from "../api/types";
 import { InvoicePanel, InvoiceRecognizedSummary } from "../components/InvoicePanel";
 import { InvoiceDetailPane } from "../components/invoice/InvoiceDetailPane";
 import { InvoiceKpiStrip } from "../components/invoice/InvoiceKpiStrip";
@@ -37,9 +35,6 @@ export function InvoiceScreen() {
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [paidFromAccount, setPaidFromAccount] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
-  const [supplierRisk, setSupplierRisk] = useState<SupplierDealRisk | null>(null);
-  const [supplierRiskLoading, setSupplierRiskLoading] = useState(false);
-  const [supplierRiskError, setSupplierRiskError] = useState<string | null>(null);
 
   const unpaidRows = useMemo(() => templates.map(toUnpaidInvoiceRow), [templates]);
 
@@ -61,52 +56,6 @@ export function InvoiceScreen() {
   const company = dashboard?.company;
   const balance = dashboard?.account_balance ?? 0;
   const bankView = viewMode === "bank";
-
-  useEffect(() => {
-    if (!selected || !company) {
-      setSupplierRisk(null);
-      setSupplierRiskError(null);
-      return;
-    }
-
-    const supplierInn = selected.supplier_inn;
-    const amountRub = selected.amount_rub;
-    const supplierName = selected.supplier_name;
-    const companyId = company.id;
-
-    let cancelled = false;
-    setSupplierRiskLoading(true);
-    setSupplierRiskError(null);
-
-    void api
-      .getSupplierDealRisk(supplierInn, {
-        buyerCompanyId: companyId,
-        invoiceAmountRub: amountRub,
-        displayName: supplierName,
-      })
-      .then((payload) => {
-        if (!cancelled) {
-          setSupplierRisk(payload);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setSupplierRisk(null);
-          setSupplierRiskError(
-            err instanceof ApiError ? err.detail : "Не удалось загрузить аналитику поставщика",
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setSupplierRiskLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selected?.code, selected?.supplier_inn, selected?.amount_rub, selected?.supplier_name, company?.id]);
 
   async function startFinancing(code: string, amountRub: number) {
     setApplyPrefillAmount(instantFinancingAmount(amountRub));
@@ -193,9 +142,6 @@ export function InvoiceScreen() {
               onFinance={() => void financeSelected()}
               onPayFromAccount={() => setPaidFromAccount(true)}
               paidFromAccount={paidFromAccount}
-              supplierRisk={supplierRisk}
-              supplierRiskLoading={supplierRiskLoading}
-              supplierRiskError={supplierRiskError}
             />
           ) : (
             <div className="inv-list-empty">
