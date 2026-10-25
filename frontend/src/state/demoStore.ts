@@ -22,6 +22,8 @@ export interface ClientNotice {
   targetScreen: ScreenId;
   primaryLabel: string;
   secondaryLabel: string;
+  /** Кому показывать. Пусто — всем ролям клиента. */
+  forRole?: ActorRole;
 }
 
 export type MonitoringPhase = "none" | "early" | "restructure" | "limit";
@@ -37,6 +39,8 @@ export interface ChatLine {
 interface StoryPersist {
   offerSent: Record<string, boolean>;
   released: Record<string, boolean>;
+  /** Время, когда система сама уведомила подписанта. Ключ — id заявки. */
+  ceoNotifiedAt: Record<string, string>;
   monitoring: Record<string, MonitoringPhase>;
   restructureOn: Record<string, boolean>;
   chat: Record<string, ChatLine[]>;
@@ -49,6 +53,7 @@ function readStory(): StoryPersist {
   const empty: StoryPersist = {
     offerSent: {},
     released: {},
+    ceoNotifiedAt: {},
     monitoring: {},
     restructureOn: {},
     chat: {},
@@ -84,6 +89,7 @@ interface DemoStore {
   noticesOpen: boolean;
   offerSent: Record<string, boolean>;
   released: Record<string, boolean>;
+  ceoNotifiedAt: Record<string, string>;
   monitoring: Record<string, MonitoringPhase>;
   restructureOn: Record<string, boolean>;
   chat: Record<string, ChatLine[]>;
@@ -103,6 +109,7 @@ interface DemoStore {
   markOfferSent: (companyId: string) => void;
   releaseDecision: (applicationId: string) => void;
   unreleaseDecision: (applicationId: string) => void;
+  markCeoNotified: (applicationId: string, role?: ActorRole) => string;
   setMonitoring: (companyId: string, phase: MonitoringPhase) => void;
   setRestructureOn: (companyId: string, on: boolean) => void;
   pushChat: (companyId: string, line: Omit<ChatLine, "id" | "at">) => void;
@@ -138,6 +145,7 @@ function noticeFromStatus(
       targetScreen: "signing",
       primaryLabel: "Подписать",
       secondaryLabel: "Позже",
+      forRole: "CEO_OWNER",
     };
   }
   if (status === "REJECTED") {
@@ -252,6 +260,31 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
     set({ released });
     persist(get());
   },
+  markCeoNotified: (applicationId, role = "CEO_OWNER") => {
+    const existing = get().ceoNotifiedAt[applicationId];
+    if (existing) {
+      return existing;
+    }
+    const at = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    set({ ceoNotifiedAt: { ...get().ceoNotifiedAt, [applicationId]: at } });
+    persist(get());
+    const already = get().clientNotices.some(
+      (row) => row.applicationId === applicationId && row.kind === "sign",
+    );
+    if (!already) {
+      get().pushClientNotice({
+        kind: "sign",
+        title: "Ждёт вашей подписи",
+        text: `Договор готов. Уведомление отправлено в ${at}.`,
+        applicationId,
+        targetScreen: "signing",
+        primaryLabel: "Подписать",
+        secondaryLabel: "Позже",
+        forRole: role,
+      });
+    }
+    return at;
+  },
   setMonitoring: (companyId, phase) => {
     const monitoring = { ...get().monitoring, [companyId]: phase };
     set({ monitoring });
@@ -295,6 +328,7 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
     set({
       offerSent: {},
       released: {},
+      ceoNotifiedAt: {},
       monitoring: {},
       restructureOn: {},
       chat: {},
@@ -311,6 +345,7 @@ function persist(state: DemoStore): void {
   writeStory({
     offerSent: state.offerSent,
     released: state.released,
+    ceoNotifiedAt: state.ceoNotifiedAt,
     monitoring: state.monitoring,
     restructureOn: state.restructureOn,
     chat: state.chat,
@@ -319,6 +354,11 @@ function persist(state: DemoStore): void {
 }
 
 /** Хелпер: положить уведомление клиенту по статусу заявки. */
+/** Уведомление с forRole видит только эта роль. Остальные — все роли клиента. */
+export function noticesForRole(notices: ClientNotice[], role: string | undefined): ClientNotice[] {
+  return notices.filter((notice) => !notice.forRole || notice.forRole === role);
+}
+
 export function notifyClientAboutStatus(
   status: string,
   applicationId: string,

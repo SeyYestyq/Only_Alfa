@@ -1,10 +1,11 @@
 import { useApp } from "../state/AppState";
-import { useDemoStore } from "../state/demoStore";
+import { noticesForRole, useDemoStore } from "../state/demoStore";
 
 /** Уведомление клиенту: одобрение / отказ / документы — клик ведёт на решение. */
 export function ClientNoticeBanner() {
-  const { viewMode, openApplication, goToScreen } = useApp();
-  const notices = useDemoStore((state) => state.clientNotices);
+  const { viewMode, userRole, openApplication, goToScreen } = useApp();
+  const allNotices = useDemoStore((state) => state.clientNotices);
+  const notices = noticesForRole(allNotices, userRole);
   const dismiss = useDemoStore((state) => state.dismissClientNotice);
 
   if (viewMode === "bank" || notices.length === 0) {

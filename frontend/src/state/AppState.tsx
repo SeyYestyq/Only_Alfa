@@ -635,6 +635,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       setApplication(updated);
       await loadXray(updated.application_id);
+      if (updated.status === "AWAITING_CEO_APPROVAL") {
+        const signer = updated.company.legal_form === "OOO" ? "CEO_OWNER" : "IP_OWNER";
+        useDemoStore.getState().markCeoNotified(updated.application_id, signer);
+      }
       setScreen("signing");
     } catch (cause) {
       handleError(cause);

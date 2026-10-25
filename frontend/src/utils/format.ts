@@ -85,6 +85,11 @@ export function statusTone(status: string): "GOOD" | "WARN" | "RISK" | "NEUTRAL"
 }
 
 /** «Фамилия Имя Отчество» → имя, иначе первое слово. */
+/** «Фамилия Имя Отчество» → фамилия. */
+export function familyName(fullName: string | undefined): string {
+  return fullName?.trim().split(/\s+/)[0] || "Подписант";
+}
+
 export function givenName(fullName: string | undefined): string {
   const parts = fullName?.trim().split(/\s+/) ?? [];
   if (parts.length >= 3) {

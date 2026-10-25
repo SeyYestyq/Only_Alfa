@@ -86,7 +86,7 @@ export function ClientDecision() {
                 disabled={isBusy}
                 onClick={() => void acceptOffer(offer.index)}
               >
-                {index === 0 ? "Выбрать и передать на подпись" : "Выбрать"}
+                {index === 0 ? "Выбрать этот вариант" : "Выбрать"}
               </button>
             </article>
           ))}

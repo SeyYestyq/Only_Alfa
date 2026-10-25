@@ -1,7 +1,7 @@
 import { NoticeBell } from "./NoticeBell";
 import { useApp } from "../state/AppState";
 import type { ScreenId } from "../api/types";
-import { useDemoStore } from "../state/demoStore";
+import { noticesForRole, useDemoStore } from "../state/demoStore";
 import { roleLabel } from "../utils/format";
 
 type NavLink = { id: ScreenId; label: string; badge?: number };
@@ -43,7 +43,8 @@ export function AppNav() {
     viewMode === "bank" ? "Елена Орлова" : (user?.full_name ?? "Пользователь");
   const displayRole =
     viewMode === "bank" ? "Кредитный инспектор" : roleLabel(userRole);
-  const noticeCount = useDemoStore((state) => state.clientNotices.length);
+  const allNotices = useDemoStore((state) => state.clientNotices);
+  const noticeCount = noticesForRole(allNotices, userRole).length;
   const creditBadge =
     noticeCount > 0
       ? noticeCount

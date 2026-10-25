@@ -7,12 +7,14 @@ import { INSPECTOR_NAME, PEP_CODE, ROSTERS_PSK_LABEL } from "../../domain-ui/cas
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
 import { useUiStore } from "../../state/uiStore";
-import { formatMoney, formatPercent, shortPerson } from "../../utils/format";
+import { familyName, formatMoney, formatPercent } from "../../utils/format";
 
 export function ClientSign() {
   const { application, dashboard, signApplication, isBusy, goToScreen, userRole, setUserRole, companyId } = useApp();
-  const pushChat = useDemoStore((state) => state.pushChat);
   const pushToast = useUiStore((state) => state.pushToast);
+  const markCeoNotified = useDemoStore((state) => state.markCeoNotified);
+  const notifiedAt = useDemoStore((state) =>
+    application ? state.ceoNotifiedAt[application.application_id] : undefined);
   const [digits, setDigits] = useState(PEP_CODE.split(""));
   const [activeCell, setActiveCell] = useState(PEP_CODE.length - 1);
   const [attemptsLeft, setAttemptsLeft] = useState(3);
@@ -31,6 +33,17 @@ export function ClientSign() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  useEffect(() => {
+    if (!application) {
+      return;
+    }
+    const signer = application.company.legal_form === "OOO" ? "CEO_OWNER" : "IP_OWNER";
+    const waiting = ["APPROVED", "AWAITING_CEO_APPROVAL"].includes(application.status) && userRole !== signer;
+    if (waiting) {
+      markCeoNotified(application.application_id, signer);
+    }
+  }, [application, markCeoNotified, userRole]);
 
   if (!application || !companyId) {
     return (
@@ -149,8 +162,16 @@ export function ClientSign() {
     <>
       <div className="v2-crumb">Кредиты / Подпись</div>
       <div className="v2-row">
-        <h1 className="v2-h1">Подпишите договор — деньги придут сразу</h1>
-        <span className="v2-pill warn">{canSign ? "Ждёт вашей подписи" : "Нет права подписи"}</span>
+        <h1 className="v2-h1">
+          {canSign
+            ? "Подпишите договор — деньги придут сразу"
+            : legalForm === "OOO"
+              ? "Ждёт подписи гендиректора"
+              : "Ждёт подписи предпринимателя"}
+        </h1>
+        <span className={`v2-pill ${canSign ? "warn" : "good"}`}>
+          {canSign ? "Ждёт вашей подписи" : "Уведомление отправлено"}
+        </span>
       </div>
       <Stepper active={3} />
       <div className="v2-split case">
@@ -189,6 +210,7 @@ export function ClientSign() {
               <div className="v2-kicker">Простая электронная подпись</div>
               <h2>Подпись ПЭП</h2>
               <p className="v2-muted">Код показан здесь: в рабочей версии его присылает удостоверяющий центр. Эмуляция.</p>
+              {notifiedAt ? <p className="v2-note">Уведомление пришло в {notifiedAt}.</p> : null}
               <CodeCells
                 digits={digits}
                 active={activeCell}
@@ -228,36 +250,16 @@ export function ClientSign() {
               <p className="v2-note">Повторное нажатие после выдачи не создаст второй перевод.</p>
             </section>
           ) : (
-            <section className="v2-card v2-lock">
-              <span className="v2-pill bad">403 · нет права подписи</span>
-              <h2 style={{ marginTop: 10 }}>Подписать может только {legalForm === "OOO" ? "гендиректор" : "сам предприниматель"}</h2>
-              <p className="v2-muted">
-                {shortPerson(director?.full_name)} получит задачу. Вы остаётесь в переписке.
+            <section className="v2-card">
+              <div className="v2-kicker">Подпись</div>
+              <h2 style={{ marginTop: 8 }}>
+                Ждёт подписи {legalForm === "OOO" ? "гендиректора" : "предпринимателя"} · {familyName(director?.full_name)} получил уведомление
+              </h2>
+              <p className="v2-muted" style={{ marginTop: 8 }}>
+                {notifiedAt ? `Отправлено в ${notifiedAt}.` : "Уведомление уходит само, как только заявка доходит до подписи."} Подписать может только {legalForm === "OOO" ? "гендиректор" : "предприниматель"}.
               </p>
-              <button
-                type="button"
-                className="v2-btn primary"
-                onClick={() => {
-                  if (director) {
-                    setUserRole(director.role);
-                  }
-                  pushChat(companyId, {
-                    author: "Кабинет",
-                    side: "client",
-                    text: "Бухгалтер передал договор на подпись руководителю.",
-                  });
-                }}
-              >
-                Передать {director ? shortPerson(director.full_name).split(" ")[0] : "руководителю"}
-              </button>
             </section>
           )}
-          {canSign && legalForm === "OOO" ? (
-            <section className="v2-card v2-lock" style={{ marginTop: 12 }}>
-              <span className="v2-pill bad">403 · так этот экран видит бухгалтер</span>
-              <p className="v2-muted">Кнопка подписи скрыта. Есть передача гендиректору и чат с банком.</p>
-            </section>
-          ) : null}
         </div>
       </div>
     </>

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { COLLATERAL_LABELS } from "../api/client";
 import { CreditChatModal } from "../components/CreditChatModal";
 import { FlowStepper, stepFromStatus } from "../components/FlowStepper";
@@ -8,7 +8,7 @@ import { RiskScoreGauge } from "../components/RiskScoreGauge";
 import { StatusTrack } from "../components/StatusTrack";
 import { useApp } from "../state/AppState";
 import { useDemoStore } from "../state/demoStore";
-import { formatMoney, formatPercent } from "../utils/format";
+import { familyName, formatMoney, formatPercent } from "../utils/format";
 
 /** К4 — Решение: что банк посмотрел, жёлтые флаги, подтверждение / загрузка документов. */
 export function DecisionScreen() {
@@ -16,6 +16,20 @@ export function DecisionScreen() {
   const setApplyIntent = useDemoStore((state) => state.setApplyIntent);
   const creditDocs = useDemoStore((state) => state.creditDocs);
   const addCreditDoc = useDemoStore((state) => state.addCreditDoc);
+  const markCeoNotified = useDemoStore((state) => state.markCeoNotified);
+  const notifiedAt = useDemoStore((state) =>
+    application ? state.ceoNotifiedAt[application.application_id] : undefined);
+
+  useEffect(() => {
+    if (!application) {
+      return;
+    }
+    const signer = application.company.legal_form === "OOO" ? "CEO_OWNER" : "IP_OWNER";
+    const waiting = ["APPROVED", "AWAITING_CEO_APPROVAL"].includes(application.status) && effectiveRole !== signer;
+    if (waiting) {
+      markCeoNotified(application.application_id, signer);
+    }
+  }, [application, effectiveRole, markCeoNotified]);
   const [chatOpen, setChatOpen] = useState(false);
   const [confirmedFacts, setConfirmedFacts] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -32,10 +46,10 @@ export function DecisionScreen() {
     );
   }
 
-  const canSign = effectiveRole === "CEO_OWNER" || effectiveRole === "IP_OWNER";
-  const director =
-    application.company.users.find((user) => user.role === "CEO_OWNER" || user.role === "IP_OWNER")
-      ?.full_name ?? "подписанту";
+  const signerRole = application.company.legal_form === "OOO" ? "CEO_OWNER" : "IP_OWNER";
+  const canSign = effectiveRole === signerRole;
+  const who = application.company.legal_form === "OOO" ? "гендиректора" : "предпринимателя";
+  const directorName = application.company.users.find((user) => user.role === signerRole)?.full_name;
 
   const docRequests =
     application.rejection_checklist.length > 0
@@ -198,23 +212,6 @@ export function DecisionScreen() {
         </section>
       )}
 
-      {application.status === "AWAITING_CEO_APPROVAL" && (
-        <section className="figma-panel figma-panel-sm" style={{ marginBottom: 24 }}>
-          <div className="figma-panel-heading">Ожидает {director}</div>
-          <p className="muted" style={{ marginTop: 8 }}>
-            Условия отправлены подписанту. Напомнить можно в чате по этой заявке.
-          </p>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            style={{ marginTop: 16 }}
-            onClick={() => setChatOpen(true)}
-          >
-            Напомнить сейчас
-          </button>
-        </section>
-      )}
-
       {isBusy && application.counter_offers.length === 0 && application.status !== "REJECTED" && (
         <section className="figma-panel figma-panel-sm" style={{ marginBottom: 24 }}>
           <div className="figma-panel-heading">Банк готовит варианты…</div>
@@ -358,45 +355,42 @@ export function DecisionScreen() {
                     : ""}
                 </div>
               </>
+            ) : application.status === "AWAITING_CEO_APPROVAL" || application.status === "APPROVED" ? (
+              <>
+                <strong>
+                  Ждёт подписи {who} · {familyName(directorName)} получил уведомление
+                </strong>
+                <div className="muted" style={{ fontSize: 13 }}>
+                  {notifiedAt ? `Отправлено в ${notifiedAt}.` : "Уведомление уходит само."} Писать руководителю не нужно.
+                </div>
+              </>
             ) : (
               <>
-                <strong>Подписать может только гендиректор</strong>
+                <strong>Подпись — у {who}</strong>
                 <div className="muted" style={{ fontSize: 13 }}>
-                  Напишите {director} в чате по этой заявке.
+                  Когда заявка дойдёт до подписи, уведомление уйдёт само.
                 </div>
               </>
             )}
           </div>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          disabled={
-            canSign &&
-            application.status === "COUNTER_OFFER" &&
-            !application.selected_offer_index
-          }
-          onClick={() => {
-            if (canSign) {
-              goToScreen("signing");
-            } else {
-              setChatOpen(true);
-            }
-          }}
-        >
-          {canSign ? "Подписать договор" : "Написать гендиректору"}
-        </button>
+        {canSign ? (
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={application.status === "COUNTER_OFFER" && !application.selected_offer_index}
+            onClick={() => goToScreen("signing")}
+          >
+            Подписать договор
+          </button>
+        ) : null}
       </div>
 
       {chatOpen && (
         <CreditChatModal
           application={application}
           onClose={() => setChatOpen(false)}
-          initialDraft={
-            application.status === "AWAITING_CEO_APPROVAL"
-              ? `Напоминание: условия кредита готовы к подписи для ${director}.`
-              : ""
-          }
+          initialDraft=""
         />
       )}
     </>

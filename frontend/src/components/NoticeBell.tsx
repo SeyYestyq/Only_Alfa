@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useApp } from "../state/AppState";
-import { useDemoStore, type ClientNotice } from "../state/demoStore";
+import { noticesForRole, useDemoStore, type ClientNotice } from "../state/demoStore";
 
 function kindLabel(kind: ClientNotice["kind"]): string {
   if (kind === "approved") {
@@ -23,8 +23,9 @@ function kindLabel(kind: ClientNotice["kind"]): string {
 
 /** Колокольчик в шапке: список уведомлений по кредиту, пока ждёте банк. */
 export function NoticeBell() {
-  const { viewMode, openApplication, goToScreen } = useApp();
-  const notices = useDemoStore((state) => state.clientNotices);
+  const { viewMode, userRole, openApplication, goToScreen } = useApp();
+  const allNotices = useDemoStore((state) => state.clientNotices);
+  const notices = noticesForRole(allNotices, userRole);
   const open = useDemoStore((state) => state.noticesOpen);
   const setOpen = useDemoStore((state) => state.setNoticesOpen);
   const dismiss = useDemoStore((state) => state.dismissClientNotice);

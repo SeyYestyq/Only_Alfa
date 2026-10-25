@@ -1,5 +1,5 @@
 import { useApp } from "../state/AppState";
-import { useDemoStore, type ClientNotice } from "../state/demoStore";
+import { noticesForRole, useDemoStore, type ClientNotice } from "../state/demoStore";
 
 function toneClass(kind: ClientNotice["kind"]): string {
   if (kind === "approved" || kind === "sign") {
@@ -32,8 +32,9 @@ function kindMeta(kind: ClientNotice["kind"]): string {
 
 /** Плавающие тосты: пользователь ушёл с заявки — может открыть, подписать, прикрепить. */
 export function CreditNoticeToasts() {
-  const { viewMode, screen, openApplication, goToScreen } = useApp();
-  const notices = useDemoStore((state) => state.clientNotices);
+  const { viewMode, screen, userRole, openApplication, goToScreen } = useApp();
+  const allNotices = useDemoStore((state) => state.clientNotices);
+  const notices = noticesForRole(allNotices, userRole);
   const dismiss = useDemoStore((state) => state.dismissClientNotice);
 
   if (viewMode === "bank" || notices.length === 0) {

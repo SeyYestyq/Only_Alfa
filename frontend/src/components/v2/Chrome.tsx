@@ -52,6 +52,8 @@ export function Chrome() {
   const [innNote, setInnNote] = useState<string | null>(null);
   const searchQuery = useUiStore((state) => state.searchQuery);
   const setSearchQuery = useUiStore((state) => state.setSearchQuery);
+  const notifiedAt = useDemoStore((state) =>
+    application ? state.ceoNotifiedAt[application.application_id] : undefined);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -275,6 +277,19 @@ export function Chrome() {
           </div>
         </div>
       </header>
+      {viewMode === "business" &&
+      notifiedAt &&
+      application &&
+      (application.status === "AWAITING_CEO_APPROVAL" || application.status === "APPROVED") &&
+      userRole === (company?.legal_form === "IP" ? "IP_OWNER" : "CEO_OWNER") &&
+      screen !== "signing" ? (
+        <div className="v2-sign-note" role="status">
+          <span>Ждёт вашей подписи · уведомление в {notifiedAt}</span>
+          <button type="button" className="v2-btn dense" onClick={() => goToScreen("signing")}>
+            К подписи
+          </button>
+        </div>
+      ) : null}
       {error ? (
         <div className="v2-main" style={{ paddingBottom: 0 }}>
           <div className="v2-error">

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useApp } from "../state/AppState";
-import { useDemoStore } from "../state/demoStore";
+import { noticesForRole, useDemoStore } from "../state/demoStore";
 import { formatMoney, roleLabel } from "../utils/format";
 
 type InnToast =
@@ -53,7 +53,8 @@ export function DynamicIsland() {
     setViewMode,
   } = useApp();
 
-  const noticeCount = useDemoStore((state) => state.clientNotices.length);
+  const allNotices = useDemoStore((state) => state.clientNotices);
+  const noticeCount = noticesForRole(allNotices, userRole).length;
   const [open, setOpen] = useState(false);
   const [flash, setFlash] = useState(false);
   const [inn, setInn] = useState("");

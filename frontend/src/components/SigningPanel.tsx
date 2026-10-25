@@ -1,22 +1,29 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import type { Application } from "../api/types";
-import { CreditChatModal } from "./CreditChatModal";
 import { useApp } from "../state/AppState";
-import { formatDateTime, formatMoney, formatPercent } from "../utils/format";
+import { useDemoStore } from "../state/demoStore";
+import { familyName, formatDateTime, formatMoney, formatPercent } from "../utils/format";
 
 const SIGNING_STATUSES = ["APPROVED", "AWAITING_CEO_APPROVAL"];
 
 /** Подписание: условия слева, код ПЭП справа. */
 export function SigningPanel({ application }: { application: Application }) {
   const { signApplication, isBusy, effectiveRole, viewMode } = useApp();
-  const [chatOpen, setChatOpen] = useState(false);
+  const markCeoNotified = useDemoStore((state) => state.markCeoNotified);
+  const notifiedAt = useDemoStore((state) => state.ceoNotifiedAt[application.application_id]);
   const legalForm = application.company.legal_form;
-  const isSigningRole = legalForm === "OOO" ? effectiveRole === "CEO_OWNER" : effectiveRole === "IP_OWNER";
+  const signerRole = legalForm === "OOO" ? "CEO_OWNER" : "IP_OWNER";
+  const isSigningRole = effectiveRole === signerRole;
   const canSign = SIGNING_STATUSES.includes(application.status) && isSigningRole && viewMode !== "bank";
   const digits = ["4", "8", "1", "7", "", ""];
-  const director =
-    application.company.users.find((user) => user.role === "CEO_OWNER" || user.role === "IP_OWNER")
-      ?.full_name ?? "гендиректору";
+  const directorName = application.company.users.find((user) => user.role === signerRole)?.full_name;
+  const who = legalForm === "OOO" ? "гендиректора" : "предпринимателя";
+
+  useEffect(() => {
+    if (SIGNING_STATUSES.includes(application.status) && !isSigningRole) {
+      markCeoNotified(application.application_id, signerRole);
+    }
+  }, [application.application_id, application.status, isSigningRole, markCeoNotified, signerRole]);
 
   return (
     <>
@@ -104,21 +111,15 @@ export function SigningPanel({ application }: { application: Application }) {
           ) : !canSign ? (
             <>
               <h2 style={{ fontSize: 22, fontWeight: 650, margin: "8px 0" }}>
-                Подписать может только генеральный директор
+                {SIGNING_STATUSES.includes(application.status)
+                  ? `Ждёт подписи ${who} · ${familyName(directorName)} получил уведомление`
+                  : "Сначала выберите вариант на экране решения"}
               </h2>
               <p className="muted" style={{ fontSize: 14, lineHeight: 1.45 }}>
-                {application.status === "COUNTER_OFFER"
-                  ? "Сначала выберите вариант на экране решения."
-                  : "У роли бухгалтера нет права подписи по ООО. Отправьте условия подписанту."}
+                {SIGNING_STATUSES.includes(application.status)
+                  ? `${notifiedAt ? `Отправлено в ${notifiedAt}.` : "Уведомление уходит само."} Писать руководителю не нужно.`
+                  : "Когда заявка дойдёт до подписи, уведомление уйдёт само."}
               </p>
-              <button
-                type="button"
-                className="btn btn-primary btn-block"
-                style={{ marginTop: 16 }}
-                onClick={() => setChatOpen(true)}
-              >
-                Отправить гендиректору
-              </button>
             </>
           ) : (
             <>
@@ -148,14 +149,6 @@ export function SigningPanel({ application }: { application: Application }) {
           )}
         </section>
       </div>
-
-      {chatOpen && (
-        <CreditChatModal
-          application={application}
-          onClose={() => setChatOpen(false)}
-          initialDraft={`Прошу направить условия кредита на подпись: ${director}.`}
-        />
-      )}
     </>
   );
 }

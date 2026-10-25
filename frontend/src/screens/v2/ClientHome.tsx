@@ -15,7 +15,7 @@ import {
 } from "../../domain-ui/caseScript";
 import { useApp } from "../../state/AppState";
 import { useDemoStore } from "../../state/demoStore";
-import { formatMoney, formatPercent, givenName, roughAnnuity } from "../../utils/format";
+import { familyName, formatMoney, formatPercent, givenName, roughAnnuity } from "../../utils/format";
 
 function fcfFromDna(value: string | undefined): number | null {
   if (!value) {
@@ -33,6 +33,8 @@ export function ClientHome() {
   const phase = useDemoStore((state) => (companyId ? state.monitoring[companyId] ?? "none" : "none"));
   const restructureOn = useDemoStore((state) => (companyId ? Boolean(state.restructureOn[companyId]) : false));
   const setRestructureOn = useDemoStore((state) => state.setRestructureOn);
+  const notifiedAt = useDemoStore((state) =>
+    application ? state.ceoNotifiedAt[application.application_id] : undefined);
 
   if (!dashboard || !companyId) {
     return <SkeletonLines lines={5} />;
@@ -67,12 +69,20 @@ export function ClientHome() {
     nextCta = "К выдаче";
     nextGo = () => goToScreen("signing");
   } else if (application?.status === "AWAITING_CEO_APPROVAL" || application?.status === "APPROVED") {
-    nextTitle = userRole === "CEO_OWNER" || userRole === "IP_OWNER"
-      ? "Подпишите договор — деньги придут сразу"
-      : "Подписать может только гендиректор";
-    nextText = "Бухгалтер готовит, подпись — у руководителя. ИП подписывает сам.";
-    nextCta = "К подписи";
-    nextGo = () => goToScreen("signing");
+    const signer = application.company.legal_form === "OOO" ? userRole === "CEO_OWNER" : userRole === "IP_OWNER";
+    const director = application.company.users.find((user) => user.role === "CEO_OWNER" || user.role === "IP_OWNER");
+    if (signer) {
+      nextTitle = "Подпишите договор — деньги придут сразу";
+      nextText = notifiedAt ? `Уведомление пришло в ${notifiedAt}.` : "Договор уже в кабинете.";
+      nextCta = "К подписи";
+      nextGo = () => goToScreen("signing");
+    } else {
+      const who = application.company.legal_form === "OOO" ? "гендиректора" : "предпринимателя";
+      nextTitle = `Ждёт подписи ${who} · ${familyName(director?.full_name)} получил уведомление`;
+      nextText = notifiedAt ? `Отправлено в ${notifiedAt}. Писать руководителю не нужно.` : "Уведомление уходит само.";
+      nextCta = "";
+      nextGo = () => undefined;
+    }
   } else if (application?.status === "COUNTER_OFFER" && released) {
     nextTitle = "Банк предлагает другие условия — выберите вариант";
     nextText = "После выбора заявка уйдёт гендиректору на подпись.";
@@ -151,14 +161,16 @@ export function ClientHome() {
           <strong>{nextTitle}</strong>
           <p>{nextText}</p>
         </div>
-        <button
-          type="button"
-          className={`v2-btn ${offerVisible && isRosters && !application && nextCta === "Посмотреть условия" ? "ghost" : "primary"}`}
-          onClick={nextGo}
-          disabled={restructureOn && phase === "restructure"}
-        >
-          {nextCta}
-        </button>
+        {nextCta ? (
+          <button
+            type="button"
+            className={`v2-btn ${offerVisible && isRosters && !application && nextCta === "Посмотреть условия" ? "ghost" : "primary"}`}
+            onClick={nextGo}
+            disabled={restructureOn && phase === "restructure"}
+          >
+            {nextCta}
+          </button>
+        ) : null}
       </section>
 
       {(phase === "restructure" || phase === "limit") && application?.status === "FUNDED" ? (
