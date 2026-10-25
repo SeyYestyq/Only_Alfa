@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+- `reset-demo`: миграции колонок/таблиц на лету, повторное создание `system_actions` после сброса; тесты `test_reset_demo_migrations.py`.
+- Клиентская навигация «Сообщения»; фиксация ответа клиента на проактив в NewsFeed.
 - Документация приёмки: `docs/USER_JOURNEY.md`, `docs/ACCEPTANCE_MATRIX.md`.
 - Письмо к офферу дублируется в переписку (`correspondence` в API, чат клиента и банковский `bankMessagesStore.syncApplicationCorrespondence`).
 - Баллы за дозапрос документов через доменные факторы `DOC_*` в `supplement_factors.py` и `verified_supplements_json` на компании (без ручной «подкрутки» в сервисе).

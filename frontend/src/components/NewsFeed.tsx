@@ -30,6 +30,7 @@ export function NewsFeed({ items }: { items: NewsItem[] }) {
                 const actionId = meta.system_action_id as string | undefined;
                 if (companyId && actionId) {
                   void api.openSystemAction(companyId, actionId);
+                  void api.respondSystemAction(companyId, actionId, item.cta);
                 }
                 const target = (meta.target_screen as string) || "";
                 if (target === "signing" || target === "decision" || target === "apply" || target === "passport") {

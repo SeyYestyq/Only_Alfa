@@ -72,6 +72,13 @@ class CompanyService:
 
     def reset_demo(self) -> dict:
         """Сброс всех сценариев к исходному состоянию (заявки, события, балансы, проверки)."""
+        from app.infra.database import _ensure_application_columns, engine
+        from app.infra.models import Base
+
+        # Старый процесс мог подняться до миграции колонок — сброс не должен падать с 500.
+        _ensure_application_columns()
+        Base.metadata.create_all(bind=engine)
+
         self.session.query(ApplicationEvent).delete()
         self.session.query(ApplicationCheck).delete()
         self.session.query(Application).delete()
@@ -88,6 +95,15 @@ class CompanyService:
                 comp.declared_monthly_revenue = profile.declared_monthly_revenue
                 comp.verified_supplements_json = []
                 self.companies.save_dna(comp.id, profile)
+
+        proactive = ProactiveService(self.session)
+        for profile in DEMO_COMPANIES.values():
+            company = self.session.query(Company).filter(Company.inn == profile.inn).first()
+            if company is None:
+                continue
+            domain = self.companies.get_by_id(company.id)
+            if domain is not None:
+                proactive.ensure_demo_actions(domain)
 
         self.session.commit()
         return {"ok": True, "message": "Все демо-сценарии успешно сброшены к исходному состоянию"}

@@ -19,6 +19,7 @@ const CREDIT_SCREENS: ScreenId[] = [
 const CLIENT_LINKS: NavLink[] = [
   { id: "home", label: "Главная" },
   { id: "applications", label: "Кредиты" },
+  { id: "messages", label: "Сообщения" },
   { id: "invoice", label: "Оплатить счёт" },
 ];
 
