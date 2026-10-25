@@ -256,6 +256,74 @@ class MultibankInfoSchema(BaseModel):
     external_revenue_rub: float
 
 
+class ClientBriefSchema(BaseModel):
+    where: str
+    what_next: str
+    why_facts: list[str]
+    next_action: str
+    pre_decision_warnings: list[str] = Field(default_factory=list)
+    decision_letter: Optional[dict[str, Any]] = None
+    tone: str
+
+
+class OfferLetterSchema(BaseModel):
+    kind: str = "PRIMARY"
+    product_type: str
+    product_label: str
+    amount_rub: float
+    term_months: int
+    rate_pct: float
+    monthly_payment_rub: float
+    headline: str
+    why_this_product: str
+    top_factors: list[dict[str, Any]]
+    why_terms: str
+    if_no_action: str
+    score: int
+
+
+class ClientProductRequestBody(BaseModel):
+    product_type: ProductTypeLiteral
+    requested_amount_rub: float = Field(..., gt=0)
+    term_months: int = Field(..., ge=1, le=120)
+    comment: Optional[str] = None
+    actor_role: ActorRoleLiteral = "ACCOUNTANT"
+
+
+class ClientRequestDecisionBody(BaseModel):
+    action: Literal["APPROVE", "REQUEST_DATA", "SEND_COUNTER"]
+    actor_role: ActorRoleLiteral = "UNDERWRITER"
+    comment: Optional[str] = None
+    document_code: Optional[str] = None
+
+
+class SupplementUploadBody(BaseModel):
+    document_code: Literal[
+        "MULTIBANK_STATEMENT", "SUPPLY_CONTRACT", "COLLATERAL_DOC", "EQUIPMENT_INVOICE"
+    ]
+    file_name: Optional[str] = None
+    actor_role: ActorRoleLiteral = "ACCOUNTANT"
+
+
+class SystemActionSchema(BaseModel):
+    id: str
+    rule_code: str
+    title: str
+    explanation: str
+    client_text: str
+    status: str
+    target_screen: str
+    payload: dict[str, Any]
+    visible_to_client_at: Optional[str] = None
+    client_opened_at: Optional[str] = None
+    client_response: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class SystemActionListResponse(BaseModel):
+    actions: list[SystemActionSchema]
+
+
 class ApplicationSchema(BaseModel):
     application_id: str
     company: CompanyBriefSchema
@@ -295,6 +363,11 @@ class ApplicationSchema(BaseModel):
     account_balance: float
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
+    client_brief: Optional[ClientBriefSchema] = None
+    offer_letters: list[OfferLetterSchema] = Field(default_factory=list)
+    client_product_request: Optional[dict[str, Any]] = None
+    score_changes: list[dict[str, Any]] = Field(default_factory=list)
+    applied_supplements: list[str] = Field(default_factory=list)
 
 
 class MultibankVerifyResponse(BaseModel):

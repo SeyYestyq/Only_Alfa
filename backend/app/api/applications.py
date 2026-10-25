@@ -9,11 +9,14 @@ from app.api.schemas import (
     ApplicationCreateRequest,
     ApplicationSchema,
     CeoApproveRequest,
+    ClientProductRequestBody,
+    ClientRequestDecisionBody,
     InstallmentRequest,
     InstallmentResponse,
     InvoiceTemplateSchema,
     MultibankVerifyResponse,
     ParseInvoiceResponse,
+    SupplementUploadBody,
     UnderwriterActionRequest,
     XrayResponse,
 )
@@ -117,6 +120,36 @@ def ceo_approve(
 ) -> dict:
     """Подписание ПЭП: ООО — только CEO_OWNER (иначе 403), невалидный статус — 409."""
     return ApplicationService(session).ceo_approve(application_id, body.actor_role)
+
+
+@router.post("/applications/{application_id}/client-product-request", response_model=ApplicationSchema)
+def client_product_request(
+    application_id: str,
+    body: ClientProductRequestBody,
+    session: Session = Depends(get_session),
+) -> dict:
+    """Клиент просит другой продукт внутри той же заявки."""
+    return ApplicationService(session).submit_client_product_request(application_id, body)
+
+
+@router.post("/applications/{application_id}/client-request-decision", response_model=ApplicationSchema)
+def client_request_decision(
+    application_id: str,
+    body: ClientRequestDecisionBody,
+    session: Session = Depends(get_session),
+) -> dict:
+    """Пилот одобряет встречный запрос, запрашивает данные или отправляет свой вариант."""
+    return ApplicationService(session).decide_client_product_request(application_id, body)
+
+
+@router.post("/applications/{application_id}/supplement-document", response_model=ApplicationSchema)
+def supplement_document(
+    application_id: str,
+    body: SupplementUploadBody,
+    session: Session = Depends(get_session),
+) -> dict:
+    """Дозагрузка документа и пересчёт скоринга на бэкенде."""
+    return ApplicationService(session).upload_supplement(application_id, body)
 
 
 @router.get("/applications/{application_id}/xray", response_model=XrayResponse)

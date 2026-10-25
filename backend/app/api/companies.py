@@ -10,10 +10,12 @@ from app.api.schemas import (
     DashboardResponse,
     LookupInnRequest,
     LookupInnResponse,
+    SystemActionListResponse,
 )
 from app.infra.database import get_session
 from app.services.application_service import ApplicationService
 from app.services.company_service import CompanyService
+from app.services.proactive_service import ProactiveService
 
 router = APIRouter(tags=["companies"])
 
@@ -40,6 +42,32 @@ def reset_demo(session: Session = Depends(get_session)) -> dict:
 def company_dashboard(company_id: str, session: Session = Depends(get_session)) -> dict:
     """Данные Экрана 1: ДНК, прогноз кассы, радар, новости, выписка, чипсы."""
     return CompanyService(session).dashboard(company_id)
+
+
+@router.get("/companies/{company_id}/system-actions", response_model=SystemActionListResponse)
+def company_system_actions(company_id: str, session: Session = Depends(get_session)) -> dict:
+    """Лента «система решила» для пилота банка."""
+    return ProactiveService(session).list_for_company(company_id)
+
+
+@router.post("/companies/{company_id}/system-actions/{action_id}/publish")
+def publish_system_action(
+    company_id: str,
+    action_id: str,
+    session: Session = Depends(get_session),
+) -> dict:
+    """Отправить проактивное действие клиенту (из PENDING в SENT)."""
+    return ProactiveService(session).publish(action_id)
+
+
+@router.post("/companies/{company_id}/system-actions/{action_id}/cancel")
+def cancel_system_action(
+    company_id: str,
+    action_id: str,
+    session: Session = Depends(get_session),
+) -> dict:
+    """Остановить исходящее действие до показа клиенту."""
+    return ProactiveService(session).cancel(action_id)
 
 
 @router.get("/companies/{company_id}/applications", response_model=ApplicationListResponse)

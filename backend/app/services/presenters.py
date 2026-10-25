@@ -5,9 +5,11 @@ from datetime import date, datetime, timedelta, timezone
 
 from app.domain.cash_forecast import build_cash_forecast, detect_radar_triggers, find_cash_gap
 from app.domain.dna import build_dna_payload
+from app.domain.enrichment.briefs import build_client_brief, build_offer_letter
 from app.domain.finances import calculate_credit_limit
 from app.domain.types import ApplicationStatus, CompanyProfile
 from app.infra.models import Application, ApplicationCheck, ApplicationEvent, NewsFeedItem, Transaction
+from app.services.application_context import get_context
 
 STATUS_LABELS = {
     ApplicationStatus.DRAFT_BY_EMPLOYEE.value: "Черновик от сотрудника",
@@ -239,6 +241,50 @@ def application_detail(
         if application.final_rate_pct > 0
         else 0.0
     )
+    factors = [factor_row(factor) for factor in application.factors_breakdown_json]
+    ctx = get_context(application)
+    client_brief = build_client_brief(
+        status=application.status,
+        outcome=application.outcome,
+        profile=profile,
+        score=application.risk_score,
+        factors=factors,
+        monthly_payment=application.monthly_payment_rub,
+        max_payment=application.max_payment_rub,
+        approved_amount=application.approved_amount_rub or application.requested_amount_rub,
+        rate_pct=application.final_rate_pct,
+        term_months=application.term_months,
+        product_type=application.product_type,
+        product_label=PRODUCT_LABELS.get(application.product_type, application.product_type),
+        rejection_checklist=application.rejection_checklist_json or [],
+        hard_stop_reason=application.hard_stop_reason,
+        is_hard_stop=application.is_hard_stop,
+    )
+    primary_letter = None
+    if application.status in (
+        ApplicationStatus.APPROVED.value,
+        ApplicationStatus.COUNTER_OFFER.value,
+        ApplicationStatus.AWAITING_CEO_APPROVAL.value,
+        ApplicationStatus.FUNDED.value,
+    ):
+        amount = application.approved_amount_rub or application.requested_amount_rub
+        primary_letter = build_offer_letter(
+            profile,
+            application.product_type,
+            PRODUCT_LABELS.get(application.product_type, application.product_type),
+            amount,
+            application.term_months,
+            application.final_rate_pct,
+            application.monthly_payment_rub,
+            application.risk_score,
+            factors,
+            application.product_type,
+            PRODUCT_LABELS.get(application.product_type, application.product_type),
+        )
+    stored_letters = list(ctx.get("offer_letters") or [])
+    if primary_letter and not stored_letters:
+        stored_letters = [primary_letter]
+
     return {
         "application_id": application.id,
         "company": company_brief(profile),
@@ -267,7 +313,7 @@ def application_detail(
         "max_payment_rub": money(application.max_payment_rub),
         "limit_rub": money(credit_limit),
         "k_sector": application.k_sector,
-        "factors_breakdown": [factor_row(factor) for factor in application.factors_breakdown_json],
+        "factors_breakdown": factors,
         "counter_offers": counter_offer_rows(application.counter_offers_json),
         "rejection_checklist": application.rejection_checklist_json,
         "selected_offer_index": application.selected_offer_index,
@@ -292,6 +338,11 @@ def application_detail(
         "account_balance": money(profile.account_balance),
         "created_at": iso(application.created_at),
         "updated_at": iso(application.updated_at),
+        "client_brief": client_brief,
+        "offer_letters": stored_letters,
+        "client_product_request": ctx.get("client_product_request"),
+        "score_changes": ctx.get("score_changes") or [],
+        "applied_supplements": ctx.get("applied_supplements") or [],
     }
 
 

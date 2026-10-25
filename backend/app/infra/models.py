@@ -134,6 +134,7 @@ class Application(Base):
     rejection_checklist_json: Mapped[list[str]] = mapped_column(JSONType, default=list)
     invoice_json: Mapped[dict[str, Any] | None] = mapped_column(JSONType, nullable=True)
     selected_offer_index: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    context_json: Mapped[dict[str, Any]] = mapped_column(JSONType, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
@@ -163,6 +164,29 @@ class ApplicationEvent(Base):
     previous_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
     new_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
     details: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class SystemAction(Base):
+    """Исходящие проактивные действия для ленты «система решила» (пилот)."""
+
+    __tablename__ = "system_actions"
+
+    id: Mapped[str] = mapped_column(String(48), primary_key=True)
+    company_id: Mapped[str] = mapped_column(ForeignKey("companies.id", ondelete="CASCADE"), index=True)
+    application_id: Mapped[str | None] = mapped_column(
+        ForeignKey("applications.id", ondelete="SET NULL"), index=True, nullable=True
+    )
+    rule_code: Mapped[str] = mapped_column(String(48))
+    title: Mapped[str] = mapped_column(String(255))
+    explanation: Mapped[str] = mapped_column(Text)
+    client_text: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(24), default="PENDING")
+    target_screen: Mapped[str] = mapped_column(String(32), default="home")
+    payload_json: Mapped[dict[str, Any]] = mapped_column(JSONType, default=dict)
+    visible_to_client_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    client_opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    client_response: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

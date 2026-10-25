@@ -48,6 +48,18 @@ from app.infra.models import Application
 from app.repositories.application_repository import ApplicationRepository
 from app.repositories.company_repository import CompanyRepository
 from app.repositories.transaction_repository import TransactionRepository
+from app.domain.enrichment.briefs import build_offer_letter
+from app.domain.enrichment.client_request import (
+    ClientProductRequestPayload,
+    evaluate_client_product_request,
+)
+from app.domain.enrichment.supplements import (
+    SUPPLEMENT_REGISTRY,
+    ScoreChangeSnapshot,
+    apply_supplement_and_rescore,
+)
+from app.domain.decision.decision_engine import calculate_rate
+from app.services.application_context import append_offer_letter, get_context, save_context
 from app.services.presenters import PRODUCT_LABELS, STATUS_LABELS, application_detail, money
 
 _UNDERWRITER_ACTIONS = {"APPROVE", "COUNTER_OFFER", "NEED_MORE_INFO", "REJECT"}
@@ -164,6 +176,7 @@ class ApplicationService:
         )
         self._persist_pipeline(application, profile, pipeline, body)
         self._write_checks(application, pipeline)
+        self._store_primary_offer_letter(application, profile)
         self.companies.sync_financial_state(
             profile.id,
             account_balance=profile.account_balance,
@@ -599,6 +612,205 @@ class ApplicationService:
         self.session.commit()
         return self.detail(application.id)
 
+    def submit_client_product_request(self, application_id: str, body) -> dict:
+        application = self._get_application(application_id)
+        profile = self._profile(application)
+        if application.status not in (
+            ApplicationStatus.COUNTER_OFFER.value,
+            ApplicationStatus.APPROVED.value,
+            ApplicationStatus.AWAITING_CEO_APPROVAL.value,
+        ):
+            raise InvalidTransition(
+                "Встречный запрос на продукт доступен после предложения банка"
+            )
+        payload = ClientProductRequestPayload(
+            product_type=body.product_type,
+            requested_amount_rub=body.requested_amount_rub,
+            term_months=body.term_months,
+            comment=body.comment or "",
+        )
+        verdict = evaluate_client_product_request(profile, application.product_type, payload)
+        save_context(
+            application,
+            client_product_request={
+                "status": "UNDER_BANK_REVIEW",
+                "request": payload.as_dict(),
+                "verdict": verdict.as_dict(),
+                "submitted_at": application.updated_at.isoformat() if application.updated_at else None,
+            },
+        )
+        self.applications.add_event(
+            application_id=application.id,
+            company_id=profile.id,
+            event_type="CLIENT_PRODUCT_REQUEST",
+            actor_role=body.actor_role,
+            details=f"Клиент запросил {payload.product_type} на {payload.requested_amount_rub:,.0f} ₽",
+        )
+        self.session.commit()
+        return self.detail(application.id)
+
+    def decide_client_product_request(self, application_id: str, body) -> dict:
+        application = self._get_application(application_id)
+        profile = self._profile(application)
+        ctx = get_context(application)
+        current = ctx.get("client_product_request")
+        if not current:
+            raise InvalidRequest("Нет активного встречного запроса клиента")
+        role = UserRole(body.actor_role)
+        if role != UserRole.UNDERWRITER:
+            from app.core.exceptions import RoleViolation
+
+            raise RoleViolation("Решение по встречному запросу — только для UNDERWRITER")
+
+        action = body.action
+        request = current.get("request") or {}
+        if action == "APPROVE":
+            product = ProductType(request["product_type"])
+            score = calculate_risk_score(profile)
+            decision = make_decision(
+                profile,
+                score,
+                request["requested_amount_rub"],
+                product,
+                request["term_months"],
+                key_rate_pct=settings.cbr_key_rate,
+            )
+            new_status = _status_from_decision(decision.outcome)
+            if new_status == ApplicationStatus.REJECTED:
+                raise InvalidRequest("Запрос не проходит Decision Engine — выберите другой вариант")
+            apply_transition(
+                ApplicationStatus(application.status),
+                new_status,
+                role,
+                profile.legal_form,
+            )
+            rate = calculate_rate(score.final_score, product, settings.cbr_key_rate)
+            monthly = calculate_annuity_payment(
+                request["requested_amount_rub"], rate, request["term_months"]
+            )
+            self.applications.update(
+                application,
+                status=new_status.value,
+                product_type=product.value,
+                outcome=decision.outcome.value,
+                requested_amount_rub=request["requested_amount_rub"],
+                approved_amount_rub=decision.approved_amount_rub or request["requested_amount_rub"],
+                term_months=request["term_months"],
+                final_rate_pct=rate,
+                monthly_payment_rub=monthly,
+                risk_score=score.final_score,
+                factors_breakdown_json=[asdict(f) for f in score.factors_breakdown],
+            )
+            letter = build_offer_letter(
+                profile,
+                product.value,
+                PRODUCT_LABELS.get(product.value, product.value),
+                application.approved_amount_rub,
+                application.term_months,
+                application.final_rate_pct,
+                application.monthly_payment_rub,
+                application.risk_score,
+                application.factors_breakdown_json,
+                application.product_type,
+                PRODUCT_LABELS.get(application.product_type, application.product_type),
+            )
+            append_offer_letter(application, letter)
+            current["status"] = "APPROVED_BY_PILOT"
+        elif action == "REQUEST_DATA":
+            doc = body.document_code or "MULTIBANK_STATEMENT"
+            supplement = SUPPLEMENT_REGISTRY.get(doc)
+            current["status"] = "WAITING_CLIENT_DOCS"
+            current["requested_document"] = supplement.hint() if supplement else {"code": doc}
+        else:
+            current["status"] = "PILOT_COUNTER_SENT"
+
+        save_context(application, client_product_request=current)
+        self.applications.add_event(
+            application_id=application.id,
+            company_id=profile.id,
+            event_type=f"CLIENT_REQUEST_{action}",
+            actor_role=role.value,
+            details=body.comment or action,
+        )
+        self.session.commit()
+        return self.detail(application.id)
+
+    def upload_supplement(self, application_id: str, body) -> dict:
+        application = self._get_application(application_id)
+        profile = self._profile(application)
+        ctx = get_context(application)
+        applied = set(ctx.get("applied_supplements") or [])
+        updated_profile, snapshot, score_result = apply_supplement_and_rescore(
+            profile, body.document_code, already_applied=applied
+        )
+        doc = SUPPLEMENT_REGISTRY[body.document_code]
+        if body.document_code != "MULTIBANK_STATEMENT":
+            boosted = min(1000, score_result.final_score + doc.score_delta)
+            score_result.final_score = boosted
+            snapshot = ScoreChangeSnapshot(
+                previous_score=snapshot.previous_score,
+                new_score=boosted,
+                score_delta=boosted - snapshot.previous_score,
+                shifted_factors=snapshot.shifted_factors,
+                document_code=snapshot.document_code,
+                document_label=snapshot.document_label,
+            )
+
+        self.companies.sync_financial_state(
+            profile.id,
+            account_balance=updated_profile.account_balance,
+            monthly_revenue_multibank=updated_profile.monthly_revenue_multibank,
+            is_multibank_verified=updated_profile.is_multibank_verified,
+            declared_monthly_revenue=updated_profile.declared_monthly_revenue,
+        )
+        applied.add(body.document_code)
+        changes = list(ctx.get("score_changes") or [])
+        changes.append(snapshot.as_dict())
+        factors = [asdict(f) for f in score_result.factors_breakdown]
+        if body.document_code != "MULTIBANK_STATEMENT":
+            factors.append(
+                {
+                    "group": "G4",
+                    "code": body.document_code,
+                    "label": doc.label,
+                    "score_delta": doc.score_delta,
+                    "condition": doc.reason,
+                }
+            )
+        self.applications.update(
+            application,
+            risk_score=score_result.final_score,
+            raw_score=score_result.raw_score,
+            factors_breakdown_json=factors,
+        )
+        client_req = ctx.get("client_product_request")
+        if client_req and client_req.get("status") == "WAITING_CLIENT_DOCS":
+            payload = ClientProductRequestPayload(
+                product_type=client_req["request"]["product_type"],
+                requested_amount_rub=client_req["request"]["requested_amount_rub"],
+                term_months=client_req["request"]["term_months"],
+                comment=client_req["request"].get("comment", ""),
+            )
+            client_req["verdict"] = evaluate_client_product_request(
+                updated_profile, application.product_type, payload
+            ).as_dict()
+            client_req["status"] = "UNDER_BANK_REVIEW"
+        save_context(
+            application,
+            applied_supplements=list(applied),
+            score_changes=changes,
+            client_product_request=client_req,
+        )
+        self.applications.add_event(
+            application_id=application.id,
+            company_id=profile.id,
+            event_type="SUPPLEMENT_UPLOADED",
+            actor_role=body.actor_role,
+            details=f"Загружен {doc.label}: балл {snapshot.previous_score} → {snapshot.new_score}",
+        )
+        self.session.commit()
+        return self.detail(application.id)
+
     # ── Внутренние методы ─────────────────────────────────────────────────
     def detail(self, application_id: str) -> dict:
         application = self._get_application(application_id)
@@ -617,6 +829,28 @@ class ApplicationService:
         if profile is None:
             raise EntityNotFound("Компания заявки не найдена")
         return profile
+
+    def _store_primary_offer_letter(self, application: Application, profile: CompanyProfile) -> None:
+        if application.status not in (
+            ApplicationStatus.APPROVED.value,
+            ApplicationStatus.COUNTER_OFFER.value,
+        ):
+            return
+        amount = application.approved_amount_rub or application.requested_amount_rub
+        letter = build_offer_letter(
+            profile,
+            application.product_type,
+            PRODUCT_LABELS.get(application.product_type, application.product_type),
+            amount,
+            application.term_months,
+            application.final_rate_pct,
+            application.monthly_payment_rub,
+            application.risk_score,
+            application.factors_breakdown_json,
+            application.product_type,
+            PRODUCT_LABELS.get(application.product_type, application.product_type),
+        )
+        append_offer_letter(application, letter)
 
     def _run_pipeline(
         self,

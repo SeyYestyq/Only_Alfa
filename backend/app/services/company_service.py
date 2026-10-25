@@ -7,12 +7,13 @@ from app.core.exceptions import EntityNotFound
 from app.domain.types import CompanyProfile
 from app.infra.demo_content import SEARCH_CHIPS_BY_CLUSTER, SEARCH_CHIPS_BY_DEMO_KEY
 from app.infra.demo_profiles import DEMO_COMPANIES
-from app.infra.models import Application, ApplicationCheck, ApplicationEvent, Company, Transaction
+from app.infra.models import Application, ApplicationCheck, ApplicationEvent, Company, SystemAction, Transaction
 from app.infra.registry_simulator import simulate_company, validate_inn
 from app.repositories.catalog_repository import CatalogRepository
 from app.repositories.company_repository import CompanyRepository
 from app.repositories.transaction_repository import TransactionRepository
 from app.services.presenters import company_brief, company_detail, dashboard_payload
+from app.services.proactive_service import ProactiveService
 
 
 def cluster_key(profile: CompanyProfile) -> str:
@@ -64,6 +65,9 @@ class CompanyService:
             cluster_key(profile),
             SEARCH_CHIPS_BY_CLUSTER["HORECA"],
         )
+        ProactiveService(self.session).ensure_demo_actions(profile)
+        self.session.commit()
+        news = self.catalog.list_news(company_id)
         return dashboard_payload(profile, transactions, news, chips)
 
     def reset_demo(self) -> dict:
@@ -71,6 +75,7 @@ class CompanyService:
         self.session.query(ApplicationEvent).delete()
         self.session.query(ApplicationCheck).delete()
         self.session.query(Application).delete()
+        self.session.query(SystemAction).delete()
 
         self.session.query(Transaction).update({"installment_taken": False})
 

@@ -16,6 +16,7 @@ _APPLICATION_COLUMNS = {
     "collateral_type": "VARCHAR(24) DEFAULT 'NONE'",
     "collateral_value_rub": "FLOAT DEFAULT 0",
     "collateral_status": "VARCHAR(24) DEFAULT 'NONE'",
+    "context_json": "JSON DEFAULT '{}'",
 }
 
 
