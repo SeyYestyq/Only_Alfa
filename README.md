@@ -2,18 +2,25 @@
 
 Демо-проект команды **Only_Alfa** для хакатона «Альфа-Будущее». Кабинет проводит предпринимателя от 360°-портрета бизнеса до подписанной заявки на кредит, а банку показывает экономику сделки, риск и аудит решений.
 
-Стек: **React 18 + Vite + TypeScript** · **Python 3.12 + FastAPI + SQLAlchemy 2.0** · **PostgreSQL 16** · запуск через `docker compose up --build`.
+Стек: **React 18 + Vite + TypeScript** · **Python 3.12 + FastAPI + SQLAlchemy 2.0** · **PostgreSQL 16** · запуск через `./start.sh`, `start.bat` или `docker compose up --build`.
+
+> 🚀 **Экспресс-запуск для жюри в 1 клик:**
+> - **macOS / Linux:** `./start.sh` (автоматически настраивает окружение, БД и открывает браузер)
+> - **Windows:** запустить `start.bat`
+> - **Docker Compose:** `docker compose up --build` (или `./start.sh --docker`)
+> - **Гид экспресс-прогона на 3 минуты:** [`docs/07_QA_Acceptance_and_Test_Scenarios.md`](./docs/07_QA_Acceptance_and_Test_Scenarios.md#3-минутный-регламент-экспресс-прогона-для-жюри)
 
 ## Содержание
 
-- [Навигатор для жюри и аналитиков («Не обижайте Ольгу!»)](#навигатор-для-жюри-и-аналитиков-не-обижайте-ольгу)
+- [🚀 Экспресс-запуск для жюри (1 клик)](#-экспресс-запуск-для-жюри-1-клик)
+- [Навигатор по системной документации](#навигатор-по-системной-документации)
 - [Что это](#что-это)
 - [Три экрана](#три-экрана)
 - [Сводные таблицы SLA и упрощений](#сводные-таблицы-sla-и-упрощений)
 - [Быстрый старт в Docker](#быстрый-старт-в-docker)
 - [Локальный запуск без Docker](#локальный-запуск-без-docker)
 - [Переменные окружения](#переменные-окружения)
-- [Пять демо-сценариев и экспресс-прогон на 3 минуты](#пять-демо-сценариев-и-экспресс-прогон-на-3-минуты)
+- [Пять демо-сценариев](#пять-демо-сценариев)
 - [API](#api)
 - [Тесты и проверка](#тесты-и-проверка)
 - [Структура репозитория](#структура-репозитория)
@@ -40,17 +47,17 @@
 
 Сверху — **Demo Control Bar**: переключение компании, роли, экрана и режима «глазами бизнеса / глазами банка». Палитра: `#EF3124`, `#1A1D24`, `#F8FAFC`.
 
-## Навигатор для жюри и аналитиков («Не обижайте Ольгу!»)
+## Навигатор по системной документации
 
-По правилу установочного вебинара аналитики не обязаны погружаться в исходный код бэкенда. Специально для экспертов жюри подготовлена папка системных артефактов **[`docs/`](./docs/README.md)**:
+Аналитики и архитекторы не обязаны погружаться в исходный код бэкенда. Специально для экспертов жюри подготовлена папка системных артефактов **[`docs/`](./docs/README.md)**:
 
-| Эксперт / Профиль жюри | Целевой документ | Что изучить |
+| Профиль анализа / Экспертиза | Целевой документ | Что изучить |
 |---|---|---|
-| **Ольга Урсул**<br/>(Системный и бизнес-анализ) | **[01. Исследование, JTBD и CJM](./docs/01_Product_Research_JTBD_CJM.md)**<br/>**[03. FSM и скоринг](./docs/03_State_Machine_and_Scoring_Rules.md)**<br/>**[04. Модель данных ERD](./docs/04_ERD_Data_Model.md)** | • Сквозная Mermaid CJM диаграмма клиентского пути<br/>• Диаграмма состояний FSM (21 переход, роли, HTTP-коды)<br/>• Правовая специфика ИП vs ООО (Maker-Checker vs Solo)<br/>• Модель данных ERD на 10 сущностей и словарь данных |
-| **Антон Рабин & Денис Мишенков**<br/>(Архитектура, Инфраструктура, Финансы) | **[02. Архитектура и SLA](./docs/02_System_Architecture_and_SLA.md)**<br/>**[06. Реестр упрощений](./docs/06_Simplifications_and_Mocks_Registry.md)** | • C4 диаграммы в Mermaid (Context, Container, Component)<br/>• Эксплуатационная матрица SLA Tier-0/1/2<br/>• Circuit Breaker и детерминированные симуляторы<br/>• Формула процентной ставки от Ключевой ставки ЦБ РФ |
-| **Данила Звягин**<br/>(AI, LLM, OCR) | **[02. Архитектура (раздел 5)](./docs/02_System_Architecture_and_SLA.md#5-архитектура-ии-ассистента-и-требование-open-weights)**<br/>**[THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)** | • Open Weights: ссылка на Hugging Face (Qwen2.5-7B)<br/>• Конфигурация `.env: LLM_BASE_URL` (OpenAI-compatible)<br/>• Исключение платных OCR; нативный pdfplumber |
-| **Евгений Оконсов & Николай Детантов**<br/>(Бэкенд, Риск-ценность) | **[05. Банковская ценность и антифрод](./docs/05_Bank_Risk_Value_and_AntiFraud.md)** | • Антифрод счетов поставщиков до выдачи кредита<br/>• 60-дневный прогноз кассы и предотвращение NPL<br/>• Финансовая модель P&L сделки на экране инспектора |
-| **Александр Кузьмичев & Алексей Григорьев**<br/>(QA, Приёмка) | **[07. Матрица приёмки и QA](./docs/07_QA_Acceptance_and_Test_Scenarios.md)**<br/>**[Postman_Collection.json](./Postman_Collection.json)** | • 3-минутный регламент экспресс-прогона для жюри<br/>• Тестовые сценарии 5 контрастных заемщиков<br/>• Запуск 35 автотестов pytest (56 passed) |
+| **Системный и бизнес-анализ**<br/>(Lead SA / BA) | **[01. Исследование, JTBD и CJM](./docs/01_Product_Research_JTBD_CJM.md)**<br/>**[03. FSM и скоринг](./docs/03_State_Machine_and_Scoring_Rules.md)**<br/>**[04. Модель данных ERD](./docs/04_ERD_Data_Model.md)** | • Сквозная Mermaid CJM диаграмма клиентского пути<br/>• Диаграмма состояний FSM (21 переход, роли, HTTP-коды)<br/>• Правовая специфика ИП vs ООО (Maker-Checker vs Solo)<br/>• Модель данных ERD на 10 сущностей и словарь данных |
+| **Архитектура, Инфраструктура, Финансы**<br/>(Enterprise / Solution Architects) | **[02. Архитектура и SLA](./docs/02_System_Architecture_and_SLA.md)**<br/>**[06. Реестр упрощений](./docs/06_Simplifications_and_Mocks_Registry.md)** | • C4 диаграммы в Mermaid (Context, Container, Component)<br/>• Эксплуатационная матрица SLA Tier-0/1/2<br/>• Circuit Breaker и детерминированные симуляторы<br/>• Формула процентной ставки от Ключевой ставки ЦБ РФ |
+| **AI, LLM, OCR-контур**<br/>(AI / ML Tech Lead) | **[02. Архитектура (раздел 5)](./docs/02_System_Architecture_and_SLA.md#5-архитектура-ии-ассистента-и-требование-open-weights)**<br/>**[THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)** | • Open Weights: ссылка на Hugging Face (Qwen2.5-7B)<br/>• Конфигурация `.env: LLM_BASE_URL` (OpenAI-compatible)<br/>• Исключение платных OCR; нативный pdfplumber |
+| **Бэкенд-разработка и Риск-ценность**<br/>(Backend Lead, Risk Officers) | **[05. Банковская ценность и антифрод](./docs/05_Bank_Risk_Value_and_AntiFraud.md)** | • Антифрод счетов поставщиков до выдачи кредита<br/>• 60-дневный прогноз кассы и предотвращение NPL<br/>• Финансовая модель P&L сделки на экране инспектора |
+| **QA-инженерия и Приёмка**<br/>(QA Tech Lead, Acceptance) | **[07. Матрица приёмки и QA](./docs/07_QA_Acceptance_and_Test_Scenarios.md)**<br/>**[Postman_Collection.json](./Postman_Collection.json)** | • 3-минутный регламент экспресс-прогона для жюри<br/>• Тестовые сценарии 5 контрастных заемщиков<br/>• Запуск 56 автотестов pytest (100% passed) |
 
 ---
 
@@ -78,17 +85,36 @@
 
 ---
 
+## 🚀 Экспресс-запуск для жюри (1 клик)
+
+Для максимального удобства проверки подготовлены 1-клик скрипты запуска:
+
+### Вариант 1. Нативный 1-клик запуск без Docker (Рекомендуется)
+```bash
+# macOS / Linux:
+./start.sh
+
+# Windows (двойной клик или в cmd):
+start.bat
+```
+*Скрипт автоматически подготовит окружение, проверит зависимости, инициализирует БД SQLite, засеет 5 эталонных компаний, поднимет FastAPI Backend (`:8000`) и React SPA (`:5173`) и автоматически откроет веб-интерфейс в браузере.*
+
+### Вариант 2. Запуск в Docker Compose (PostgreSQL 16)
 ```bash
 cp .env.example .env
 docker compose up --build
+# или: ./start.sh --docker
 ```
 
-| Сервис | URL |
-|---|---|
-| SPA | http://localhost:8080 |
-| Swagger | http://localhost:8000/docs |
-| Health | http://localhost:8000/health |
-| OpenAPI | [openapi.yaml](./openapi.yaml) |
+| Сервис | URL в Docker | URL без Docker (start.sh) |
+|---|---|---|
+| SPA (веб-кабинет) | http://localhost:8080 | http://localhost:5173 |
+| Swagger API | http://localhost:8000/docs | http://localhost:8000/docs |
+| Healthcheck | http://localhost:8000/health | http://localhost:8000/health |
+| OpenAPI 3.0 | [openapi.yaml](./openapi.yaml) | [openapi.yaml](./openapi.yaml) |
+| Гид экспресс-прогона (3 мин) | [07_QA_Acceptance.md](./docs/07_QA_Acceptance_and_Test_Scenarios.md#3-минутный-регламент-экспресс-прогона-для-жюри) | [07_QA_Acceptance.md](./docs/07_QA_Acceptance_and_Test_Scenarios.md#3-минутный-регламент-экспресс-прогона-для-жюри) |
+
+## Быстрый старт в Docker
 
 Норматив памяти трёх контейнеров — **≤ 4 ГБ ОЗУ**; проверка: `docker stats --no-stream`.
 
@@ -234,7 +260,7 @@ npm run dev
 ## Тесты и проверка
 
 ```bash
-# Backend: 35 тестов
+# Backend: 56 тестов (100% покрытие бизнес-сценариев)
 cd backend && ../.venv/bin/python -m pytest -q
 
 # Frontend: типы и сборка
@@ -259,7 +285,7 @@ docker stats --no-stream
 - умный поиск: точность 100% на контрольном наборе, `classification_ms ≤ 50`;
 - идемпотентность сидера.
 
-Ожидаемый результат: **35 passed**.
+Ожидаемый результат: **56 passed**.
 
 ## Структура репозитория
 
@@ -315,7 +341,7 @@ docker stats --no-stream
 
 | Артефакт | Назначение и состав |
 |---|---|
-| **[docs/README.md](./docs/README.md)** | **Единый навигатор по документации** с ролевым гидом для членов жюри («Не обижайте Ольгу!») |
+| **[docs/README.md](./docs/README.md)** | **Единый навигатор по документации** с ролевым гидом по профилям жюри и архитекторов |
 | **[01_Product_Research_JTBD_CJM.md](./docs/01_Product_Research_JTBD_CJM.md)** | Исследование болей МСП, JTBD-фреймворк, 5 персон, **полный сквозной Mermaid CJM диаграмма клиентского пути** |
 | **[02_System_Architecture_and_SLA.md](./docs/02_System_Architecture_and_SLA.md)** | C4 архитектурные диаграммы (Mermaid), матрица SLA Tier-0/1/2, Circuit Breaker, бюджеты задержек, Open Weights |
 | **[03_State_Machine_and_Scoring_Rules.md](./docs/03_State_Machine_and_Scoring_Rules.md)** | Mermaid State Machine заявки (21 переход), специфика ИП vs ООО, 4 коридора скоринга, формула ставки от КС ЦБ РФ |
