@@ -7,10 +7,23 @@
     <script>
       (function () {
         try {
-          var t = localStorage.getItem("only-alfa-theme");
-          if (t !== "light" && t !== "dark") t = "dark";
+          var pref = localStorage.getItem("only-alfa-theme-preference");
+          var sysDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var t;
+          if (pref === "light") {
+            t = "light";
+          } else if (pref === "dark") {
+            t = "dark";
+          } else {
+            // По умолчанию - синхронизация с системной темой ОС пользователя
+            t = sysDark ? "dark" : "light";
+          }
           document.documentElement.setAttribute("data-theme", t);
           document.documentElement.style.colorScheme = t;
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) {
+            meta.setAttribute("content", t === "light" ? "#F5F5F7" : "#080809");
+          }
         } catch (e) {
           document.documentElement.setAttribute("data-theme", "dark");
         }

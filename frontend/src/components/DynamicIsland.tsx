@@ -56,7 +56,7 @@ export function DynamicIsland() {
   } = useApp();
 
   const noticeCount = useDemoStore((state) => state.clientNotices.length);
-  const { theme, setTheme } = useTheme();
+  const { theme, preference, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [flash, setFlash] = useState(false);
   const [resetToast, setResetToast] = useState<ResetToast>(null);
@@ -271,8 +271,18 @@ export function DynamicIsland() {
                 ·
               </span>
               <span className="dyn-island-status">{statusLine}</span>
-              <span className="dyn-island-theme-cue" aria-hidden title={theme === "light" ? "Светлая" : "Тёмная"}>
-                {theme === "light" ? "☀" : "☾"}
+              <span
+                className="dyn-island-theme-cue"
+                aria-hidden
+                title={
+                  preference === "auto"
+                    ? `Тема: авто/система (${theme === "light" ? "светлая" : "тёмная"})`
+                    : theme === "light"
+                      ? "Светлая тема"
+                      : "Тёмная тема"
+                }
+              >
+                {preference === "auto" ? "⚙" : theme === "light" ? "☀" : "☾"}
               </span>
               <span className={`dyn-island-chevron ${open ? "is-expanded" : ""}`} aria-hidden>
                 ▾
@@ -446,17 +456,28 @@ export function DynamicIsland() {
               <div className="dyn-island-theme-toggle" role="group" aria-label="Тема оформления">
                 <button
                   type="button"
-                  className={theme === "light" ? "active" : ""}
-                  aria-pressed={theme === "light"}
+                  className={preference === "auto" ? "active" : ""}
+                  aria-pressed={preference === "auto"}
+                  onClick={() => setTheme("auto")}
+                  title={`Следовать теме ОС (сейчас: ${theme === "light" ? "светлая" : "тёмная"})`}
+                >
+                  Авто
+                </button>
+                <button
+                  type="button"
+                  className={preference === "light" ? "active" : ""}
+                  aria-pressed={preference === "light"}
                   onClick={() => setTheme("light")}
+                  title="Принудительно светлая тема"
                 >
                   Светлая
                 </button>
                 <button
                   type="button"
-                  className={theme === "dark" ? "active" : ""}
-                  aria-pressed={theme === "dark"}
+                  className={preference === "dark" ? "active" : ""}
+                  aria-pressed={preference === "dark"}
                   onClick={() => setTheme("dark")}
+                  title="Принудительно тёмная тема"
                 >
                   Тёмная
                 </button>

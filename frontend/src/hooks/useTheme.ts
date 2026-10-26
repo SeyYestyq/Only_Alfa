@@ -1,22 +1,36 @@
 import { useCallback, useEffect, useState } from "react";
 
 export type ThemeMode = "dark" | "light";
+export type ThemePreference = "auto" | "dark" | "light";
 
-const STORAGE_KEY = "only-alfa-theme";
+export const THEME_STORAGE_KEY = "only-alfa-theme-preference";
 
-function readStoredTheme(): ThemeMode {
+/**
+ * Определение текущей системной темы ОС пользователя (macOS, Windows, iOS, Android).
+ */
+export function getSystemTheme(): ThemeMode {
+  if (typeof window !== "undefined" && window.matchMedia) {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return "dark";
+}
+
+/**
+ * Считывание сохранённого предпочтения: по умолчанию 'auto' (системная тема).
+ */
+export function readStoredPreference(): ThemePreference {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === "light" || raw === "dark") {
+    const raw = localStorage.getItem(THEME_STORAGE_KEY);
+    if (raw === "light" || raw === "dark" || raw === "auto") {
       return raw;
     }
   } catch {
     /* private mode / blocked storage */
   }
-  return "dark";
+  return "auto";
 }
 
-function applyTheme(theme: ThemeMode): void {
+export function applyTheme(theme: ThemeMode): void {
   document.documentElement.setAttribute("data-theme", theme);
   document.documentElement.style.colorScheme = theme;
   const meta = document.querySelector('meta[name="theme-color"]');
@@ -25,36 +39,82 @@ function applyTheme(theme: ThemeMode): void {
   }
 }
 
-/** Sync theme attribute before first paint when possible (call from main). */
+/**
+ * Синхронизация темы перед первым рендером (вызывается из main.tsx).
+ */
 export function initTheme(): ThemeMode {
-  const theme = readStoredTheme();
+  const pref = readStoredPreference();
+  const theme = pref === "auto" ? getSystemTheme() : pref;
   applyTheme(theme);
   return theme;
 }
 
 /**
- * Theme preference: persists in localStorage, default dark.
- * Applies `data-theme` on `document.documentElement`.
+ * Хук темы:
+ * - По умолчанию автоматически следует системным настройкам ОС пользователя (prefers-color-scheme).
+ * - Реагирует в реальном времени при смене темы в ОС (например, при наступлении вечера или переключении в Control Center).
+ * - Предоставляет ручное переключение: 'auto' | 'light' | 'dark'.
  */
 export function useTheme() {
-  const [theme, setThemeState] = useState<ThemeMode>(() => readStoredTheme());
+  const [preference, setPreferenceState] = useState<ThemePreference>(() => readStoredPreference());
+  const [systemTheme, setSystemTheme] = useState<ThemeMode>(() => getSystemTheme());
 
+  // Слушатель системной темы ОС в реальном времени
   useEffect(() => {
-    applyTheme(theme);
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      setSystemTheme(e.matches ? "dark" : "light");
+    };
+
+    setSystemTheme(mediaQuery.matches ? "dark" : "light");
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    } else if ("addListener" in mediaQuery) {
+      // Поддержка старых браузеров
+      (mediaQuery as any).addListener(handleChange);
+      return () => (mediaQuery as any).removeListener(handleChange);
+    }
+  }, []);
+
+  const activeTheme: ThemeMode = preference === "auto" ? systemTheme : preference;
+
+  // Применение темы к DOM и сохранение пользовательского выбора
+  useEffect(() => {
+    applyTheme(activeTheme);
     try {
-      localStorage.setItem(STORAGE_KEY, theme);
+      localStorage.setItem(THEME_STORAGE_KEY, preference);
     } catch {
       /* ignore */
     }
-  }, [theme]);
+  }, [activeTheme, preference]);
 
-  const setTheme = useCallback((next: ThemeMode) => {
-    setThemeState(next);
+  const setPreference = useCallback((next: ThemePreference) => {
+    setPreferenceState(next);
+  }, []);
+
+  const setTheme = useCallback((next: ThemeMode | "auto") => {
+    setPreferenceState(next);
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
+    setPreferenceState((prev) => {
+      const current = prev === "auto" ? getSystemTheme() : prev;
+      return current === "dark" ? "light" : "dark";
+    });
   }, []);
 
-  return { theme, setTheme, toggleTheme, isLight: theme === "light" };
+  return {
+    theme: activeTheme,
+    preference,
+    setPreference,
+    setTheme,
+    toggleTheme,
+    isLight: activeTheme === "light",
+    isDark: activeTheme === "dark",
+    isAuto: preference === "auto",
+  };
 }
