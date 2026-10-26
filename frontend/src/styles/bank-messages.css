@@ -507,6 +507,9 @@
 }
 
 .bank-quick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 12px;
   border-radius: 8px;
   border: 1px solid var(--border, #2a2a34);
@@ -603,3 +606,64 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Light Theme Overrides ──────────────────────────────────────────────── */
+[data-theme="light"] .bank-chat-bubble.out {
+  background: linear-gradient(135deg, rgba(239, 49, 36, 0.12) 0%, rgba(239, 49, 36, 0.04) 100%);
+  border: 1px solid rgba(239, 49, 36, 0.3);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .bank-chat-bubble.out .bank-chat-bubble-author {
+  color: var(--accent);
+}
+
+[data-theme="light"] .bank-chat-doc-name {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .bank-chat-offer-card {
+  background: linear-gradient(135deg, rgba(239, 49, 36, 0.08) 0%, #ffffff 100%);
+  border: 1px solid rgba(239, 49, 36, 0.35);
+}
+
+[data-theme="light"] .bank-chat-offer-body {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .bank-chat-offer-metrics {
+  border-top-color: var(--border);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .bank-chat-typing {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+[data-theme="light"] .bank-quick-btn:hover {
+  background: rgba(239, 49, 36, 0.1);
+  color: var(--accent);
+}
+
+[data-theme="light"] .bank-chat-compose {
+  background: #ffffff;
+  border-top-color: var(--border);
+}
+
+[data-theme="light"] .bank-chat-attach-btn {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+[data-theme="light"] .bank-chat-attach-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+[data-theme="light"] .bank-chat-input {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+

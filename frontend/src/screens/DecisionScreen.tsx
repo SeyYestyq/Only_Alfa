@@ -7,7 +7,6 @@ import { ApplicationBriefPanel } from "../components/ApplicationBriefPanel";
 import { ClientProductRequestPanel } from "../components/ClientProductRequestPanel";
 import { OfferLetterPanel } from "../components/OfferLetterPanel";
 import { ProductOfferCards } from "../components/offers/ProductOfferCards";
-import { RiskScoreGauge } from "../components/RiskScoreGauge";
 import { StatusTrack } from "../components/StatusTrack";
 import { useApp } from "../state/AppState";
 import { useDemoStore } from "../state/demoStore";
@@ -49,6 +48,7 @@ export function DecisionScreen() {
 
   function openCollateralForm() {
     setApplyIntent("collateral", true);
+    useDemoStore.getState().setApplySource("plain");
     goToScreen("apply");
   }
 
@@ -88,24 +88,7 @@ export function DecisionScreen() {
 
       {application.client_brief && <ApplicationBriefPanel brief={application.client_brief} />}
 
-      {/* Проверки — только на Паспорте; здесь лишь итог скоринга и ссылка назад. */}
-      <div className="decision-score-bar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, padding: "16px 24px", background: "var(--surface-1)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-          <RiskScoreGauge score={application.risk_score} size="sm" showCorridors={false} />
-          <div>
-            <div className="figma-panel-title">Итог кредитной оценки</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", marginTop: 4 }}>
-              Лимит: {formatMoney(application.limit_rub)}
-            </div>
-            <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
-              Статус: {application.status_label} · {application.outcome_label}
-            </div>
-          </div>
-        </div>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("passport")}>
-          Что проверяли →
-        </button>
-      </div>
+
 
       {application.status === "ANOMALY_VERIFICATION" && (
         <div style={{ marginBottom: 24 }}>

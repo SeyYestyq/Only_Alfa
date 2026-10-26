@@ -23,9 +23,10 @@ def seed_companies(session: Session) -> int:
 
 
 def seed_catalog(session: Session) -> int:
-    if session.scalar(select(func.count()).select_from(SearchCatalogItem)) or 0:
-        return 0
+    created = 0
     for row in CATALOG_SEED:
+        if session.get(SearchCatalogItem, row.id) is not None:
+            continue
         session.add(SearchCatalogItem(
             id=row.id,
             okved_cluster=row.cluster,
@@ -41,8 +42,9 @@ def seed_catalog(session: Session) -> int:
             keywords=row.keywords,
             news_insight=row.news_insight,
         ))
+        created += 1
     session.commit()
-    return len(CATALOG_SEED)
+    return created
 
 
 def seed_database(session: Session) -> dict[str, int]:

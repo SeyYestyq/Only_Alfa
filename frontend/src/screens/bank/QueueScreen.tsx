@@ -251,8 +251,8 @@ export function QueueScreen() {
           placeholder="ИНН или название"
           aria-label="Поиск по очереди"
         />
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("bank-signal")}>
-          Сигнал CAPEX
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => goToScreen("bank-profile")}>
+          Карточка клиента
         </button>
       </div>
 

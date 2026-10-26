@@ -1,7 +1,6 @@
 import { TransactionsPanel } from "../components/TransactionsPanel";
 import { PeriodChart } from "../components/PeriodChart";
 import { useApp } from "../state/AppState";
-import { useDemoStore } from "../state/demoStore";
 import { formatMoney, formatPercent, givenName } from "../utils/format";
 
 function greeting(): string {
@@ -15,20 +14,9 @@ function greeting(): string {
   return "Добрый вечер";
 }
 
-const ROSTERS_OBLIGATIONS = [
-  { date: "25.10", title: "Зарплата, 2-я часть", amount: 410_000, accent: false },
-  { date: "28.10", title: "ЕНП", amount: 176_000, accent: false },
-  { date: "01.11", title: "Аренда, ул. Покровка, 17", amount: 140_000, accent: false },
-  { date: "10.11", title: "Зерно · ООО «Арабика Трейд»", amount: 240_000, accent: false },
-  { date: "28.11", title: "ЕНП", amount: 182_000, accent: true },
-];
-
 /** К1 — Главная: баланс крупно, KPI, внимание+оплаты, счёт. */
 export function DashboardScreen() {
-  const { dashboard, goToScreen, userRole } = useApp();
-  const setApplyIntent = useDemoStore((state) => state.setApplyIntent);
-  const offersMuted = useDemoStore((state) => state.offersMuted);
-  const setOffersMuted = useDemoStore((state) => state.setOffersMuted);
+  const { dashboard, goToScreen, openPlainApply, userRole } = useApp();
 
   if (!dashboard) {
     return (
@@ -40,29 +28,21 @@ export function DashboardScreen() {
 
   const company = dashboard.company;
   const user = company.users.find((row) => row.role === userRole) ?? company.users[0];
-  const isRosters = company.demo_key === "rosters";
   const important = dashboard.radar_triggers;
-  const fcfDisplay = isRosters ? 260_000 : Math.max(0, Math.round(company.monthly_revenue_alfa * 0.12));
-  const obligationsTotal = isRosters
-    ? 1_148_000
-    : dashboard.transactions
-        .filter((row) => row.direction === "OUT")
-        .slice(0, 6)
-        .reduce((sum, row) => sum + Math.abs(row.amount_rub), 0);
-  const obligations = isRosters
-    ? ROSTERS_OBLIGATIONS
-    : dashboard.transactions
-        .filter((row) => row.direction === "OUT")
-        .slice(0, 5)
-        .map((row) => ({
-          date: new Date(row.occurred_at).toLocaleDateString("ru-RU", {
-            day: "2-digit",
-            month: "2-digit",
-          }),
-          title: row.description,
-          amount: Math.abs(row.amount_rub),
-          accent: false,
-        }));
+  const fcfDisplay = Math.max(0, Math.round(company.monthly_revenue_alfa * 0.12));
+  const outgoing = dashboard.transactions.filter((row) => row.direction === "OUT");
+  const obligationsTotal = outgoing
+    .slice(0, 6)
+    .reduce((sum, row) => sum + Math.abs(row.amount_rub), 0);
+  const obligations = outgoing.slice(0, 5).map((row) => ({
+    date: new Date(row.occurred_at).toLocaleDateString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+    }),
+    title: row.description,
+    amount: Math.abs(row.amount_rub),
+    accent: false,
+  }));
 
   const importantItems =
     important.length > 0
@@ -82,11 +62,6 @@ export function DashboardScreen() {
           },
         ];
 
-  function startCredit() {
-    setApplyIntent("standard");
-    goToScreen("apply");
-  }
-
   return (
     <>
       <section className="home-hero clarity-rise">
@@ -103,21 +78,19 @@ export function DashboardScreen() {
             {greeting()}, {givenName(user?.full_name)}
           </h1>
           <p className="figma-lead">
-            Счёт, ближайшие платежи и финансирование — без лишних экранов.
+            Остаток, ближайшие оплаты и счета к оплате — на этом экране.
           </p>
           <div className="home-hero-balance">
             <span>На счёте сейчас</span>
             <strong>{formatMoney(dashboard.account_balance)}</strong>
-            <small>
-              {isRosters ? "−418 600 ₽ за 30 дней на оборудование" : "расчётный счёт в Альфе"}
-            </small>
+            <small>расчётный счёт в Альфе</small>
           </div>
         </div>
         <div className="home-hero-cta">
           <button type="button" className="btn btn-primary primary-cta" onClick={() => goToScreen("invoice")}>
-            Счета → финансирование
+            Счета к оплате
           </button>
-          <button type="button" className="btn btn-ghost" onClick={startCredit}>
+          <button type="button" className="btn btn-ghost" onClick={openPlainApply}>
             Оформить кредит
           </button>
         </div>
@@ -127,7 +100,7 @@ export function DashboardScreen() {
         <div className="figma-kpi">
           <div className="figma-kpi-label">Выручка в октябре</div>
           <div className="figma-kpi-value">
-            {isRosters ? "2,10 млн ₽" : formatMoney(company.monthly_revenue_alfa)}
+            {formatMoney(company.monthly_revenue_alfa)}
           </div>
           <div className={`figma-kpi-delta ${company.revenue_growth_pct >= 0 ? "green" : "red"}`}>
             {company.revenue_growth_pct >= 0 ? "+" : ""}
@@ -147,7 +120,7 @@ export function DashboardScreen() {
       </div>
 
       <div className="home-section clarity-rise clarity-rise-d2">
-        <PeriodChart monthlyRevenue={isRosters ? 2_100_000 : company.monthly_revenue_alfa} />
+        <PeriodChart monthlyRevenue={company.monthly_revenue_alfa} />
       </div>
 
       <section className="figma-panel attention-split home-section clarity-rise clarity-rise-d3">
@@ -184,37 +157,6 @@ export function DashboardScreen() {
           </div>
         </div>
       </section>
-
-      {!offersMuted && (
-        <section className="home-offer-quiet home-section clarity-rise clarity-rise-d4">
-          <div className="home-offer-body">
-            <span className="status-tag is-info">Предложение банка</span>
-            <strong>900 000 ₽ · 24 мес. · ≈ 44 930 ₽ / мес.</strong>
-            <p className="muted">Вернуть деньги за оборудование и закрыть кассовый разрыв</p>
-          </div>
-          <div className="home-offer-actions">
-            <button type="button" className="btn btn-secondary btn-sm" onClick={startCredit}>
-              Условия
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => setOffersMuted(true)}
-            >
-              Скрыть
-            </button>
-          </div>
-        </section>
-      )}
-
-      {offersMuted && (
-        <div className="silence-restore">
-          <span className="muted">Предложения банка скрыты</span>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOffersMuted(false)}>
-            Показать снова
-          </button>
-        </div>
-      )}
 
       <TransactionsPanel transactions={dashboard.transactions} variant="figma" />
     </>

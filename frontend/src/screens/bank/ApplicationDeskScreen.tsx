@@ -1,29 +1,38 @@
 import { useState } from "react";
+import { EnvelopeIcon, StarIcon } from "../../components/icons";
 import { COLLATERAL_LABELS } from "../../api/client";
+import type { Application, ApplicationSummary } from "../../api/types";
 import { BankBentoCockpit } from "../../components/BankBentoCockpit";
-import { BankCapexSignalPanel } from "../../components/BankCapexSignalPanel";
 import { BankDealEconomics } from "../../components/BankDealEconomics";
 import { EventLog } from "../../components/EventLog";
 import { GeoPanel } from "../../components/GeoPanel";
 import { BankEmptyState, XrayRecalcPanel, XraySkeleton } from "../../components/Skeleton";
 import { PilotClientRequestCard } from "../../components/PilotClientRequestCard";
-import { SystemDecidedFeed } from "../../components/SystemDecidedFeed";
-import { OfferLetterPanel } from "../../components/OfferLetterPanel";
-import { UnderwriterActions } from "../../components/UnderwriterActions";
-import { RiskScoreGauge } from "../../components/RiskScoreGauge";
-import { XrayBaseDecomposition } from "../../components/XrayBaseDecomposition";
 import { useApp } from "../../state/AppState";
 import { useBankMessagesStore } from "../../state/bankMessagesStore";
-import { formatMoney, formatPercent } from "../../utils/format";
+import { formatMoney } from "../../utils/format";
 
 type DeskSection = "decision" | "evidence" | "analytics" | "audit" | "cockpit" | "collateral";
 
-const SECTIONS: Array<{ id: DeskSection; label: string; icon: string }> = [
-  { id: "cockpit", label: "0. Кокпит (Bento)", icon: "⚡" },
-  { id: "evidence", label: "1. CAPEX & Выписка", icon: "🔍" },
-  { id: "analytics", label: "2. X-Ray & Экономика", icon: "📊" },
-  { id: "audit", label: "3. Журнал аудита", icon: "🛡️" },
+const PATH_STEPS: Array<{ id: DeskSection; label: string }> = [
+  { id: "decision", label: "Решение" },
+  { id: "evidence", label: "Доказательства" },
+  { id: "analytics", label: "Аналитика" },
 ];
+
+/** Статусы, которые считаем уже поданной заявкой. Черновик не считается. */
+const PRIOR_APPLICATION_STATUSES = new Set([
+  "SUBMITTED",
+  "MANUAL_REVIEW",
+  "NEED_MORE_INFO",
+  "COUNTER_OFFER",
+  "ANOMALY_VERIFICATION",
+  "ANOMALY_DETECTED",
+  "AWAITING_CEO_APPROVAL",
+  "APPROVED",
+  "FUNDED",
+  "REJECTED",
+]);
 
 function decisionTone(status: string): "good" | "warn" | "risk" {
   if (status === "APPROVED" || status === "FUNDED") {
@@ -35,20 +44,39 @@ function decisionTone(status: string): "good" | "warn" | "risk" {
   return "warn";
 }
 
-function decisionTitle(status: string): string {
-  if (status === "APPROVED" || status === "FUNDED") {
-    return "Контроль выдачи кредита";
+/**
+ * В API нет флага «новый клиент».
+ * Другая заявка компании в сессии уже подана, одобрена или выдана — повторное обращение.
+ * Иначе это первое обращение: «Новый клиент».
+ */
+function clientArrivalChip(
+  application: Application,
+  applications: readonly ApplicationSummary[],
+): { label: string; pill: string; title: string } {
+  const prior = applications.filter(
+    (row) =>
+      row.application_id !== application.application_id &&
+      PRIOR_APPLICATION_STATUSES.has(row.status),
+  );
+  if (prior.length > 0) {
+    if (application.status === "APPROVED" || application.status === "FUNDED") {
+      return {
+        label: application.status_label,
+        pill: "pill-good",
+        title: `У компании уже была заявка: ${prior[0]?.status_label ?? application.status_label}`,
+      };
+    }
+    return {
+      label: "Повторное обращение",
+      pill: "pill-warn",
+      title: `У компании уже есть заявка: ${prior[0]?.status_label ?? "в работе"}`,
+    };
   }
-  if (status === "REJECTED") {
-    return "Отказ зафиксирован (стоп-фактор)";
-  }
-  if (status === "NEED_MORE_INFO") {
-    return "Требуются документы заёмщика";
-  }
-  if (status === "COUNTER_OFFER") {
-    return "Встречный оффер конвейера";
-  }
-  return "Решение по заявке (ручной разбор)";
+  return {
+    label: "Новый клиент",
+    pill: "pill-neutral",
+    title: "В текущей сессии нет другой поданной, одобренной или выданной заявки этой компании",
+  };
 }
 
 function scrollToSection(id: string) {
@@ -56,23 +84,12 @@ function scrollToSection(id: string) {
   document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function getInitials(name: string): string {
-  return name
-    .replace(/^(ООО|ИП|АО|ПАО)\s+/i, "")
-    .replace(/[«»"']/g, "")
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0] ?? "")
-    .join("")
-    .toUpperCase() || "КР";
-}
-
 /**
- * Единый командный пункт кредитного андеррайтера (BRD Экран 3).
- * Высокотехнологичный кокпит: Решение конвейера → Пульт инспектора → CAPEX-факты → X-Ray → ACID Ledger.
+ * Стол разбора: решение → доказательства → аналитика.
+ * Пульт одобрения, встречного оффера и запроса документов остаётся в кокпите.
  */
 export function ApplicationDeskScreen() {
-  const { application, xray, cbrRate, dashboard, goToScreen, isBusy } = useApp();
+  const { application, applications, xray, dashboard, goToScreen, isBusy } = useApp();
   const setActiveThread = useBankMessagesStore((state) => state.setActiveThread);
   const [activeSection, setActiveSection] = useState<DeskSection>("decision");
 
@@ -95,16 +112,15 @@ export function ApplicationDeskScreen() {
   }
 
   const waitingXray = isBusy && !xray;
-  const ageMonths = dashboard?.company.age_months ?? 40;
   const score = application.risk_score;
-  const counter = application.counter_offers[0];
   const tone = decisionTone(application.status);
-  const limitLabel = formatMoney(application.max_payment_rub || application.approved_amount_rub || 0);
+  const amountLabel = formatMoney(
+    application.approved_amount_rub || application.requested_amount_rub || 0,
+  );
   const companyName = application.company.name;
-  const isRosters = dashboard?.company.demo_key === "rosters";
+  const caseNo = application.application_id.slice(-8).toUpperCase();
+  const arrival = clientArrivalChip(application, applications);
   const demoKey = (dashboard?.company.demo_key || dashboard?.company.id || "rosters").replace("cmp_", "");
-  const inn = application.company.inn;
-  const initials = getInitials(companyName);
 
   function openChatWithClient() {
     setActiveThread(demoKey);
@@ -133,27 +149,52 @@ export function ApplicationDeskScreen() {
             style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
             onClick={openChatWithClient}
           >
-            💬 Чат с клиентом
+            <EnvelopeIcon size={14} />
+            <span>Чат с клиентом</span>
           </button>
         </div>
       </div>
 
-      {/* ── 1. Bento Command Cockpit (Hero Radar + 2x2 Vitals + 3 Modular Cards) ── */}
-      <SystemDecidedFeed />
+      <nav className="desk-path" aria-label="Ход разбора">
+        {PATH_STEPS.map((step, index) => (
+          <span key={step.id} style={{ display: "contents" }}>
+            {index > 0 ? (
+              <span className="desk-path-sep" aria-hidden="true">
+                →
+              </span>
+            ) : null}
+            <button
+              type="button"
+              className={activeSection === step.id || (step.id === "decision" && activeSection === "cockpit") ? "is-active" : ""}
+              onClick={() => {
+                setActiveSection(step.id);
+                scrollToSection(step.id);
+              }}
+            >
+              {step.label}
+            </button>
+          </span>
+        ))}
+      </nav>
 
-      <PilotClientRequestCard application={application} />
+      <section id="desk-decision">
+        <header className={`desk-step-head is-${tone}`}>
+          <div className="desk-step-kicker">Заявка от клиента · № {caseNo}</div>
+          <div className="desk-identity">
+            <h2 className="desk-step-title">{companyName}</h2>
+            <span className={`pill ${arrival.pill}`} title={arrival.title}>
+              {arrival.label}
+            </span>
+          </div>
+          <p className="muted desk-step-lead">
+            {amountLabel} · балл {score} · {application.status_label}
+          </p>
+        </header>
 
-      {application.offer_letters && application.offer_letters[0] && (
-        <OfferLetterPanel letter={application.offer_letters[0]} />
-      )}
+        <PilotClientRequestCard application={application} />
 
-      <BankBentoCockpit
-        onNavigateSection={(id) => {
-          setActiveSection(id.replace("desk-", "") as DeskSection);
-          scrollToSection(id);
-        }}
-        activeSection={activeSection}
-      />
+        <BankBentoCockpit />
+      </section>
 
       {/* Баннер залогового покрытия, если есть */}
       {application.collateral_type !== "NONE" && (
@@ -169,9 +210,12 @@ export function ApplicationDeskScreen() {
             padding: "16px 20px",
           }}
         >
-          <span>
-            💎 <strong>Залоговое обеспечение:</strong> {COLLATERAL_LABELS[application.collateral_type]} · Оценка:{" "}
-            <strong>{formatMoney(application.collateral_value_rub)}</strong> · Статус: {application.collateral_status}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <StarIcon size={14} />
+            <span>
+              <strong>Залоговое обеспечение:</strong> {COLLATERAL_LABELS[application.collateral_type]} · Оценка:{" "}
+              <strong>{formatMoney(application.collateral_value_rub)}</strong> · Статус: {application.collateral_status}
+            </span>
           </span>
           <span className="pill pill-good">Покрытие ≥ 50%</span>
         </section>
@@ -179,115 +223,57 @@ export function ApplicationDeskScreen() {
 
       {/* ── 4. ШАГ 2: Доказательства целевого расходования (CAPEX-сигналы) ── */}
       <section className="figma-panel app-desk-block" id="desk-evidence" style={{ borderRadius: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+        <header className="desk-step-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
           <div>
-            <div className="figma-panel-title">Шаг 2 · Доказательства целевого расходования (CAPEX & Платежи)</div>
-            <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
-              Защита от нецелевого использования: подтверждение реальной закупки оборудования по цепочке транзакций
+            <div className="desk-step-kicker">Шаг 2 · Доказательства</div>
+            <h2 className="desk-step-title">Целевое расходование</h2>
+            <p className="muted desk-step-lead">
+              Платежи поставщику, которые подтверждают, на что уходят деньги.
             </p>
           </div>
           <span className="pill pill-good">Целевое подтверждение 100%</span>
-        </div>
+        </header>
 
-        {isRosters ? (
-          <BankCapexSignalPanel
-            showStatuses
-            onSendOffer={openChatWithClient}
-          />
-        ) : (
-          <div className="figma-panel figma-panel-sm" style={{ background: "rgba(255, 255, 255, 0.02)" }}>
-            <p className="muted" style={{ margin: 0 }}>
-              По компании {companyName} целевой CAPEX-сигнал синхронизирован с финансовой отчётностью.
-            </p>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              style={{ marginTop: 12 }}
-              onClick={() => goToScreen("bank-signal")}
-            >
-              Посмотреть демо-сигнал Ростерс (оборудование) →
-            </button>
-          </div>
-        )}
+        <div className="figma-panel figma-panel-sm" style={{ background: "var(--surface-2)" }}>
+          <p className="muted" style={{ margin: 0 }}>
+            Сигнал по платежам — в карточке клиента, сразу после прогноза кассы.
+          </p>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            style={{ marginTop: 12 }}
+            onClick={() => goToScreen("bank-profile")}
+          >
+            Открыть в карточке клиента
+          </button>
+        </div>
       </section>
 
       {/* ── 5. ШАГ 3: Финансовый X-Ray & Экономика сделки ── */}
       <section className="app-desk-block" id="desk-analytics">
         <div className="figma-panel" style={{ borderRadius: 20, marginBottom: 20 }}>
-          <div className="figma-panel-title" style={{ marginBottom: 4 }}>
-            Шаг 3 · Финансовый X-Ray и доходность сделки для банка
-          </div>
-          <p className="muted" style={{ margin: "0 0 16px", fontSize: 13 }}>
-            Комплексный скоринг, маржинальность кредита до выдачи и пространственный анализ локации
-          </p>
+          <header className="desk-step-head">
+            <div className="desk-step-kicker">Шаг 3 · Аналитика</div>
+            <h2 className="desk-step-title">Доходность и экономика сделки</h2>
+            <p className="muted desk-step-lead">
+              Маржинальность кредита до выдачи, стоимость риска и пространственный анализ.
+            </p>
+          </header>
 
           <BankDealEconomics xray={xray} productLabel={application.product_label} />
 
           {waitingXray ? <XrayRecalcPanel /> : null}
 
-          {/* Визуальный спидометр RiskScore + Ключевые цифры */}
-          <div className="xray-top" style={{ marginTop: 20 }}>
-            <section
-              className="figma-panel figma-panel-sm"
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                background: "rgba(255, 255, 255, 0.02)",
-                borderRadius: 16,
-              }}
-            >
-              <div className="figma-panel-title" style={{ width: "100%", textAlign: "left" }}>
-                Калиброванный спидометр RiskScore
-              </div>
-              <div style={{ marginTop: 12, marginBottom: 12 }}>
-                <RiskScoreGauge score={score} size="md" showCorridors={true} />
-              </div>
-            </section>
-
-            <section
-              className="figma-panel figma-panel-sm"
-              style={{ background: "rgba(255, 255, 255, 0.02)", borderRadius: 16 }}
-            >
-              <div className="figma-panel-title">Ключевые риск-параметры сделки</div>
-              <div className="kv-list" style={{ marginTop: 12 }}>
-                <div className="meta-row">
-                  <span>Гео-оценка (BuyerScore)</span>
-                  <strong>{xray ? `${xray.geo.geo_score} / 100 · конкурентов ${xray.geo.competitors_count}` : "—"}</strong>
-                </div>
-                <div className="meta-row">
-                  <span>Среднемесячная выручка</span>
-                  <strong>{formatMoney(application.monthly_revenue_alfa)}</strong>
-                </div>
-                <div className="meta-row">
-                  <span>Макс. безопасный платёж</span>
-                  <strong>{formatMoney(application.max_payment_rub)}</strong>
-                </div>
-                <div className="meta-row">
-                  <span>Финальная процентная ставка</span>
-                  <strong style={{ color: "#ffb020" }}>{formatPercent(application.final_rate_pct)}</strong>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* Раскрывающийся блок гео-аналитики OpenStreetMap и декомпозиции базы 500 */}
+          {/* Раскрывающийся блок гео-аналитики OpenStreetMap */}
           <details className="bank-collapse" style={{ marginTop: 20, borderRadius: 16 }}>
             <summary style={{ padding: "16px 20px" }}>
               <span>
-                🗺️ <strong>Карта OpenStreetMap / BuyerScore и Waterfall 5 факторов риска</strong>
-                <span className="muted"> · углублённая декомпозиция модели</span>
+                <strong>Карта OpenStreetMap / BuyerScore</strong>
+                <span className="muted"> · гео-оценка локации и конкурентное окружение</span>
               </span>
             </summary>
             <div className="bank-collapse-body" style={{ padding: 20 }}>
               {xray ? <GeoPanel xray={xray} /> : <div className="muted">Гео загружается…</div>}
-              <div style={{ marginTop: 20 }}>
-                <XrayBaseDecomposition
-                  application={application}
-                  company={dashboard?.company ?? null}
-                  xray={xray}
-                />
-              </div>
             </div>
           </details>
         </div>
@@ -297,9 +283,10 @@ export function ApplicationDeskScreen() {
       <section className="figma-panel app-desk-block" id="desk-audit" style={{ borderRadius: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div className="figma-panel-title">Шаг 4 · Неизменяемый журнал аудита (ACID Audit Trail)</div>
-            <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
-              Криптографический таймлайн событий application_events — фиксация действий скоринга, инспектора и заёмщика
+            <div className="desk-step-kicker">Журнал</div>
+            <h2 className="desk-step-title">Аудит решений</h2>
+            <p className="muted desk-step-lead">
+              События скоринга, инспектора и заёмщика по этой заявке.
             </p>
           </div>
           <span className="pill pill-outline">SHA-256 Verified</span>

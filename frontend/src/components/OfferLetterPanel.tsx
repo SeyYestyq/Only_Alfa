@@ -12,10 +12,12 @@ export function OfferLetterPanel({ letter, compact }: { letter: OfferLetter; com
           <div className="figma-kpi-label">Ставка</div>
           <div className="figma-kpi-value">{formatPercent(letter.rate_pct)}</div>
         </div>
-        <div className="figma-kpi">
-          <div className="figma-kpi-label">Платёж</div>
-          <div className="figma-kpi-value">{formatMoney(letter.monthly_payment_rub)}</div>
-        </div>
+        {letter.monthly_payment_rub > 0 ? (
+          <div className="figma-kpi">
+            <div className="figma-kpi-label">Платёж</div>
+            <div className="figma-kpi-value">{formatMoney(letter.monthly_payment_rub)}</div>
+          </div>
+        ) : null}
         <div className="figma-kpi">
           <div className="figma-kpi-label">Балл</div>
           <div className="figma-kpi-value">{letter.score}</div>

@@ -42,7 +42,7 @@ export function attentionRows(
       id: rosters.id,
       name: SHORT_NAME.rosters,
       reason: rostersReason(liveStatus),
-      screen: liveStatus && liveStatus !== "REJECTED" ? "bank-xray" : "bank-signal",
+      screen: liveStatus && liveStatus !== "REJECTED" ? "bank-xray" : "bank-profile",
       primary: null,
     });
   }
@@ -65,7 +65,7 @@ function pushStatic(
     id: company.id,
     name,
     reason,
-    screen: "bank-signal",
+    screen: "bank-profile",
     primary: null,
   });
 }

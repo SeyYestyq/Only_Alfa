@@ -4,8 +4,8 @@ import type { CollateralType, ProductType } from "../api/types";
 import { CollateralPicker } from "../components/CollateralPicker";
 import { FlowStepper, stepFromStatus } from "../components/FlowStepper";
 import { useApp } from "../state/AppState";
+import { ownFundsForInvoice } from "../domain-ui/invoiceFinancing";
 import { useDemoStore } from "../state/demoStore";
-import { INVOICE_INSTANT_FINANCING_RATIO } from "../domain-ui/invoiceFinancing";
 import { formatMoney, formatPercent, roleLabel } from "../utils/format";
 
 function suggestedCollateral(amount: number): number {
@@ -50,8 +50,8 @@ export function ApplyScreen() {
   const applyIntent = useDemoStore((state) => state.applyIntent);
   const prefillCollateral = useDemoStore((state) => state.prefillCollateral);
   const applyPrefillAmount = useDemoStore((state) => state.applyPrefillAmount);
+  const applySource = useDemoStore((state) => state.applySource);
   const setApplyIntent = useDemoStore((state) => state.setApplyIntent);
-  const setApplyPrefillAmount = useDemoStore((state) => state.setApplyPrefillAmount);
   const [collateralType, setCollateralType] = useState<CollateralType>(
     applyIntent === "collateral" ? "REAL_ESTATE" : "NONE",
   );
@@ -73,30 +73,40 @@ export function ApplyScreen() {
     if (!company || applyIntent === "collateral" || seededAmount.current) {
       return;
     }
-    const badge = searchResult?.credit_badge;
-    // Invoice-to-Credit: 85% суммы счёта из кабинета; иначе полная сумма распознанного счёта.
-    const fromFinancing = applyPrefillAmount;
-    const fromInvoice = invoiceResult?.invoice.amount_rub;
-    if (fromFinancing == null && fromInvoice == null && !badge) {
+    if (applySource === "invoice") {
+      if (!invoiceResult?.invoice) {
+        return;
+      }
+      const invoiceAmount = invoiceResult.invoice.amount_rub;
+      const shortfall =
+        applyPrefillAmount ??
+        Math.max(0, invoiceAmount - (dashboard?.account_balance ?? 0));
+      setAmount(shortfall);
+      setTerm(6);
+      if (invoiceResult.invoice.purpose) {
+        setPurpose(invoiceResult.invoice.purpose);
+      }
+      seededAmount.current = true;
       return;
     }
-    setAmount(fromFinancing ?? fromInvoice ?? badge?.amount_rub ?? 2_500_000);
-    setTerm(fromFinancing != null ? 6 : (badge?.term_months ?? 12));
-    setProduct(badge?.product_type ?? "INVEST_LEASING");
-    if (invoiceResult?.invoice.purpose) {
-      setPurpose(invoiceResult.invoice.purpose);
-    }
-    seededAmount.current = true;
-    if (fromFinancing != null) {
-      setApplyPrefillAmount(null);
+    if (applySource === "badge") {
+      const badge = searchResult?.credit_badge;
+      if (!badge) {
+        return;
+      }
+      setAmount(badge.amount_rub);
+      setTerm(badge.term_months);
+      setProduct(badge.product_type);
+      seededAmount.current = true;
     }
   }, [
     company,
+    dashboard?.account_balance,
     searchResult,
     invoiceResult,
     applyIntent,
     applyPrefillAmount,
-    setApplyPrefillAmount,
+    applySource,
   ]);
 
   useEffect(() => {
@@ -125,13 +135,15 @@ export function ApplyScreen() {
     return { maxPayment, seasonal, roughPayment };
   }, [amount, term, application?.max_payment_rub, searchResult?.credit_badge?.max_payment_rub]);
 
-  const bankSuggested = searchResult?.credit_badge?.amount_rub ?? 900_000;
-  const invoice = invoiceResult?.invoice;
-  const invoiceFinancingTarget = invoice
-    ? Math.round(invoice.amount_rub * INVOICE_INSTANT_FINANCING_RATIO)
-    : null;
-  const isInvoiceFinancing =
-    invoiceFinancingTarget != null && Math.abs(amount - invoiceFinancingTarget) < 1;
+  const badge = searchResult?.credit_badge ?? null;
+  const invoice = applySource === "invoice" ? invoiceResult?.invoice : null;
+  const isInvoiceFinancing = invoice != null;
+  const ownFunds = invoice
+    ? ownFundsForInvoice(invoice.amount_rub, dashboard?.account_balance ?? 0)
+    : 0;
+  const shortfallShown =
+    applyPrefillAmount ??
+    (invoice ? Math.max(0, invoice.amount_rub - (dashboard?.account_balance ?? 0)) : 0);
 
   if (!company) {
     return (
@@ -175,8 +187,6 @@ export function ApplyScreen() {
       problems[0]?.();
       return;
     }
-    // Всегда сначала «Проверки» (паспорт), даже если бэкенд уже вернул решение —
-    // иначе 3-й шаг степпера пролетает мимо.
     await createApplication(
       {
         product_type: collateralType === "NONE" ? product : "VKL_SEC",
@@ -185,9 +195,8 @@ export function ApplyScreen() {
         declared_monthly_revenue: company.declared_monthly_revenue,
         collateral_type: collateralType,
         collateral_value_rub: collateralType === "NONE" ? 0 : collateralValue,
-        draft_application_id: invoiceResult?.draft.application_id,
+        draft_application_id: invoice ? invoiceResult?.draft.application_id : undefined,
       },
-      "passport",
     );
   }
 
@@ -218,29 +227,21 @@ export function ApplyScreen() {
     <>
       <section className="home-hero">
         <div className="home-hero-main">
-          <div className="figma-eyebrow">
-            {company.name} · {isInvoiceFinancing ? "Invoice-to-Credit" : "Кредит"}
-          </div>
+          <div className="figma-eyebrow">{company.name} · Кредит</div>
           <h1 className="figma-h1">
             {isInvoiceFinancing ? "Финансирование счёта" : "Проверьте условия кредита"}
           </h1>
           <p className="figma-lead">
-            Сумма, срок и данные компании уже подставлены
             {isInvoiceFinancing
-              ? " из счёта (85%)"
-              : invoice
-                ? " из счёта и выписки"
-                : " из выписки"}
-            . Справа — нагрузка по платежу и безопасный вариант.
+              ? "В сумму подставлена недостача. Срок, цель и сумму можно изменить до отправки."
+              : "Сумма, срок и цель редактируются. Справа — нагрузка по платежу и безопасный вариант."}
           </p>
-          {isInvoiceFinancing || invoice ? (
+          {invoice ? (
             <div className="home-hero-balance">
-              <span>{isInvoiceFinancing ? "К финансированию" : "Сумма счёта"}</span>
+              <span>Сумма заявки</span>
               <strong>{formatMoney(amount)}</strong>
               <small>
-                {invoice
-                  ? `${invoice.supplier_name} · ${invoice.purpose}`
-                  : "условия можно скорректировать ниже"}
+                {invoice.supplier_name} · {invoice.purpose}
               </small>
             </div>
           ) : null}
@@ -280,13 +281,20 @@ export function ApplyScreen() {
                 <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
                   ИНН {invoice.supplier_inn} · {invoice.purpose}
                 </div>
-                <div style={{ marginTop: 8, fontWeight: 650 }}>{formatMoney(invoice.amount_rub)}</div>
-                {isInvoiceFinancing ? (
-                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                    В заявку подставлено финансирование{" "}
-                    {Math.round(INVOICE_INSTANT_FINANCING_RATIO * 100)}% · {formatMoney(amount)}
+                <div className="apply-invoice-lines">
+                  <div>
+                    <span>Сумма счёта</span>
+                    <strong>{formatMoney(invoice.amount_rub)}</strong>
                   </div>
-                ) : null}
+                  <div>
+                    <span>Свои средства</span>
+                    <strong>{formatMoney(ownFunds)}</strong>
+                  </div>
+                  <div>
+                    <span>Кредит на недостачу</span>
+                    <strong>{formatMoney(shortfallShown)}</strong>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
@@ -329,9 +337,15 @@ export function ApplyScreen() {
                 }}
                 required
               />
-              <span className="faint" style={{ fontSize: 12 }}>
-                Банк предлагал {formatMoney(bankSuggested)}
-              </span>
+              {applySource === "badge" && badge ? (
+                <span className="faint" style={{ fontSize: 12 }}>
+                  Из поиска: {formatMoney(badge.amount_rub)}
+                </span>
+              ) : (
+                <span className="faint" style={{ fontSize: 12 }}>
+                  сумму можно изменить
+                </span>
+              )}
               {amountError && (
                 <span className="red" style={{ fontSize: 12 }}>
                   {amountError}
@@ -521,9 +535,9 @@ export function ApplyScreen() {
                 ? "1 200 000 ₽ на 24 мес. ≈ 59 900 ₽ / мес."
                 : "Либо оставьте полную сумму с залогом и отправьте её на рассмотрение."}
             </p>
-            {searchResult?.credit_badge && (
+            {applySource === "badge" && badge && (
               <p style={{ marginBottom: 12 }}>
-                Ставка поиска: {formatPercent(searchResult.credit_badge.rate_pct)}
+                Ставка поиска: {formatPercent(badge.rate_pct)}
               </p>
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

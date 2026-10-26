@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowCounterClockwiseIcon } from "./icons";
 import { useTheme } from "../hooks/useTheme";
 import { useApp } from "../state/AppState";
 import { useDemoStore } from "../state/demoStore";
 import { formatMoney, roleLabel } from "../utils/format";
 
-type InnToast =
+type ResetToast =
   | { kind: "ok"; title: string; text: string }
   | { kind: "err"; title: string; text: string }
   | null;
@@ -49,7 +50,6 @@ export function DynamicIsland() {
     clearError,
     application,
     selectCompany,
-    lookupInn,
     setUserRole,
     setViewMode,
     resetAllScenarios,
@@ -59,8 +59,7 @@ export function DynamicIsland() {
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [flash, setFlash] = useState(false);
-  const [inn, setInn] = useState("");
-  const [innToast, setInnToast] = useState<InnToast>(null);
+  const [resetToast, setResetToast] = useState<ResetToast>(null);
   const [companyOpen, setCompanyOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [companyQuery, setCompanyQuery] = useState("");
@@ -125,12 +124,12 @@ export function DynamicIsland() {
   }, []);
 
   useEffect(() => {
-    if (!innToast) {
+    if (!resetToast) {
       return;
     }
-    const timer = window.setTimeout(() => setInnToast(null), 5000);
+    const timer = window.setTimeout(() => setResetToast(null), 5000);
     return () => window.clearTimeout(timer);
-  }, [innToast]);
+  }, [resetToast]);
 
   useEffect(() => {
     if (viewMode !== "business") {
@@ -155,42 +154,23 @@ export function DynamicIsland() {
     return undefined;
   }, [noticeCount]);
 
-  async function handleLookup(event: FormEvent) {
-    event.preventDefault();
-    const value = inn.trim();
-    if (!value) {
-      return;
-    }
-    setInnToast(null);
-    const result = await lookupInn(value);
-    if (result.ok) {
-      setInnToast({ kind: "ok", title: "ИНН найден", text: result.name });
-      setInn(value);
-    } else {
-      setInnToast({
-        kind: "err",
-        title: "ИНН не найден",
-        text: result.message || "Проверьте корректность номера",
-      });
-    }
-  }
-
   async function handleResetAll() {
     if (isBusy) return;
     try {
       await resetAllScenarios();
-      setInn("");
-      setInnToast({
+      setResetToast({
         kind: "ok",
         title: "Сценарии сброшены",
         text: "Все заявки, балансы компаний и чаты возвращены в исходное состояние",
       });
+      window.setTimeout(() => setResetToast(null), 3000);
     } catch {
-      setInnToast({
+      setResetToast({
         kind: "err",
         title: "Ошибка сброса",
         text: "Не удалось сбросить демо-сценарии",
       });
+      window.setTimeout(() => setResetToast(null), 3000);
     }
   }
 
@@ -243,7 +223,9 @@ export function DynamicIsland() {
             title="Сбросить все сценарии к исходному состоянию"
             aria-label="Сброс всех сценариев"
           >
-            <span className="dyn-reset-icon" aria-hidden>↺</span>
+            <span className="dyn-reset-icon" aria-hidden>
+              <ArrowCounterClockwiseIcon size={14} />
+            </span>
             <span className="dyn-quick-reset-label">Сброс</span>
           </button>
         </div>
@@ -322,40 +304,6 @@ export function DynamicIsland() {
                         <li className="demo-popover-empty">Ничего не найдено</li>
                       ) : null}
                     </ul>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="demo-inn">
-                <form className="demo-inn-form" onSubmit={(event) => void handleLookup(event)}>
-                  <div className="demo-inn-field">
-                    <input
-                      value={inn}
-                      onChange={(event) => setInn(event.target.value.replace(/\D/g, "").slice(0, 12))}
-                      placeholder="ИНН"
-                      inputMode="numeric"
-                      disabled={isBusy}
-                      aria-label="ИНН"
-                    />
-                    {isBusy ? <span className="demo-inn-spinner" aria-hidden /> : null}
-                  </div>
-                  <button
-                    type="submit"
-                    className="demo-inn-btn"
-                    disabled={isBusy || inn.trim().length < 10}
-                  >
-                    Проверить
-                  </button>
-                </form>
-                {innToast ? (
-                  <div className={`demo-inn-toast ${innToast.kind}`} role="status">
-                    <span className="demo-inn-toast-ico" aria-hidden>
-                      {innToast.kind === "ok" ? "✓" : "!"}
-                    </span>
-                    <div>
-                      <strong>{innToast.title}</strong>
-                      <span>{innToast.text}</span>
-                    </div>
                   </div>
                 ) : null}
               </div>
@@ -472,21 +420,35 @@ export function DynamicIsland() {
                 onClick={() => void handleResetAll()}
                 title="Сбросить все заявки, события, балансы компаний и чаты к исходному демо-состоянию"
               >
-                <span className="dyn-reset-icon" aria-hidden>↺</span>
+                <span className="dyn-reset-icon" aria-hidden>
+                  <ArrowCounterClockwiseIcon size={14} />
+                </span>
                 <span>Сброс всех сценариев</span>
               </button>
+
+              {resetToast && open ? (
+                <div className={`demo-inn-toast ${resetToast.kind}`} role="status" style={{ marginTop: 12 }}>
+                  <span className="demo-inn-toast-ico" aria-hidden>
+                    {resetToast.kind === "ok" ? "✓" : "!"}
+                  </span>
+                  <div>
+                    <strong>{resetToast.title}</strong>
+                    <span>{resetToast.text}</span>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}
 
-        {innToast && !open ? (
-          <div className={`demo-inn-toast ${innToast.kind} dyn-island-toast`} role="status">
+        {resetToast && !open ? (
+          <div className={`demo-inn-toast ${resetToast.kind} dyn-island-toast`} role="status">
             <span className="demo-inn-toast-ico" aria-hidden>
-              {innToast.kind === "ok" ? "✓" : "!"}
+              {resetToast.kind === "ok" ? "✓" : "!"}
             </span>
             <div>
-              <strong>{innToast.title}</strong>
-              <span>{innToast.text}</span>
+              <strong>{resetToast.title}</strong>
+              <span>{resetToast.text}</span>
             </div>
           </div>
         ) : null}

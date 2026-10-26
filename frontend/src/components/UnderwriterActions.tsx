@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { StarIcon, ArrowsClockwiseIcon, ArticleIcon } from "./icons";
 import { useApp } from "../state/AppState";
 
 export function UnderwriterActions() {
@@ -70,8 +71,10 @@ export function UnderwriterActions() {
           className="btn btn-primary"
           disabled={isBusy || (needsDocument && !documentName.trim())}
           onClick={() => void underwriterAction("APPROVE", comment || "Одобрено на ручном разборе", documentName)}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
         >
-          {needsDocument ? "Принять документы и одобрить" : "Одобрить"}
+          <StarIcon size={15} />
+          <span>{needsDocument ? "Принять документы и одобрить" : "Одобрить"}</span>
         </button>
         {(application.status === "MANUAL_REVIEW" ||
           application.status === "ANOMALY_DETECTED" ||
@@ -81,8 +84,10 @@ export function UnderwriterActions() {
             className="btn btn-secondary"
             disabled={isBusy}
             onClick={() => void underwriterAction("COUNTER_OFFER", comment || "Сформировать встречные условия")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            Другие условия
+            <ArrowsClockwiseIcon size={15} />
+            <span>Другие условия</span>
           </button>
         )}
         {(application.status === "MANUAL_REVIEW" || application.status === "COUNTER_OFFER") && (
@@ -91,8 +96,10 @@ export function UnderwriterActions() {
             className="btn btn-ghost"
             disabled={isBusy}
             onClick={() => void underwriterAction("NEED_MORE_INFO", comment || "Запрошен договор аренды", documentName)}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            Запросить документы
+            <ArticleIcon size={15} />
+            <span>Запросить документы</span>
           </button>
         )}
         <button

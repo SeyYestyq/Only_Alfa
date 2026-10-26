@@ -1,5 +1,6 @@
 import type { XrayEvent } from "../api/types";
 import { formatDateTime } from "../utils/format";
+import { GearIcon, UserIcon, BankIcon, ArrowsDownUpIcon } from "./icons";
 
 export function EventLog({ events }: { events: XrayEvent[] }) {
   if (!events || events.length === 0) {
@@ -10,13 +11,15 @@ export function EventLog({ events }: { events: XrayEvent[] }) {
     <div className="desk-timeline">
       {events.map((event) => {
         const actorIcon =
-          event.actor_role === "SCORING_ENGINE" || event.actor_role === "SYSTEM"
-            ? "🤖"
-            : event.actor_role === "UNDERWRITER"
-              ? "👤"
-              : event.actor_role === "CLIENT"
-                ? "🏢"
-                : "⚖️";
+          event.actor_role === "SCORING_ENGINE" || event.actor_role === "SYSTEM" ? (
+            <GearIcon size={14} />
+          ) : event.actor_role === "UNDERWRITER" ? (
+            <UserIcon size={14} />
+          ) : event.actor_role === "CLIENT" ? (
+            <BankIcon size={14} />
+          ) : (
+            <ArrowsDownUpIcon size={14} />
+          );
 
         const isGood =
           event.new_status === "APPROVED" ||

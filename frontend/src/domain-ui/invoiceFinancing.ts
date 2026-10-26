@@ -1,11 +1,5 @@
 import type { InvoiceTemplate } from "../api/types";
 
-/**
- * Доля суммы счёта, доступная к мгновенному финансированию (Invoice-to-Credit).
- * Ориентир продукта на UI; решение и лимит считает бэкенд при заявке.
- */
-export const INVOICE_INSTANT_FINANCING_RATIO = 0.85;
-
 export type InvoiceUiStatus = "unsent" | "viewed" | "overdue";
 
 export interface UnpaidInvoiceRow {
@@ -19,7 +13,6 @@ export interface UnpaidInvoiceRow {
   status: InvoiceUiStatus;
   due_label: string;
   net_rub: number;
-  financing_rub: number;
   lines: Array<{ label: string; amount_rub: number }>;
 }
 
@@ -45,9 +38,14 @@ export function invoiceStatusLabel(status: InvoiceUiStatus): string {
   return STATUS_LABEL[status];
 }
 
-/** Сумма мгновенного финансирования = 85% от суммы счёта. */
-export function instantFinancingAmount(invoiceTotalRub: number): number {
-  return Math.round(invoiceTotalRub * INVOICE_INSTANT_FINANCING_RATIO);
+/** Недостача: сколько не хватает своих средств, чтобы закрыть этот счёт. */
+export function invoiceShortfallRub(amountRub: number, balanceRub: number): number {
+  return Math.max(0, amountRub - balanceRub);
+}
+
+/** Свои средства на этот счёт: остаток, но не больше суммы счёта. */
+export function ownFundsForInvoice(amountRub: number, balanceRub: number): number {
+  return Math.min(Math.max(0, balanceRub), Math.max(0, amountRub));
 }
 
 export function toUnpaidInvoiceRow(template: InvoiceTemplate): UnpaidInvoiceRow {
@@ -64,7 +62,6 @@ export function toUnpaidInvoiceRow(template: InvoiceTemplate): UnpaidInvoiceRow 
     status,
     due_label: DUE_BY_CODE[template.code] ?? "В этом месяце",
     net_rub: net,
-    financing_rub: instantFinancingAmount(template.amount_rub),
     lines: [
       { label: template.purpose, amount_rub: net },
       { label: "НДС", amount_rub: template.vat_rub },
@@ -79,6 +76,5 @@ export function unpaidInvoiceKpis(rows: UnpaidInvoiceRow[]) {
   const dueSoon = rows
     .filter((row) => row.status !== "overdue")
     .reduce((sum, row) => sum + row.amount_rub, 0);
-  const available = rows.reduce((sum, row) => sum + row.financing_rub, 0);
-  return { overdue, dueSoon, available, count: rows.length };
+  return { overdue, dueSoon, count: rows.length };
 }

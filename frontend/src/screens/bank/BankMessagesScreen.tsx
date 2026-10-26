@@ -1,4 +1,13 @@
 import { useState, useRef, useEffect } from "react";
+import {
+  ArticleIcon,
+  EnvelopeIcon,
+  ArrowsDownUpIcon,
+  MagnifyingGlassIcon,
+  AlarmIcon,
+  BookmarkSimpleIcon,
+  ArrowLineUpIcon,
+} from "../../components/icons";
 import { useApp } from "../../state/AppState";
 import {
   useBankMessagesStore,
@@ -311,8 +320,8 @@ export function BankMessagesScreen() {
                   {/* Вложение документа */}
                   {msg.attachment && (
                     <div className="bank-chat-attachment-card">
-                      <div className="bank-chat-doc-icon">
-                        {msg.attachment.type.toUpperCase()}
+                      <div className="bank-chat-doc-icon" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <ArticleIcon size={20} />
                       </div>
                       <div>
                         <div className="bank-chat-doc-name">
@@ -371,35 +380,40 @@ export function BankMessagesScreen() {
               className="bank-quick-btn"
               onClick={() => sendQuickAction("request_lease")}
             >
-              📄 Запросить договор аренды
+              <ArticleIcon size={14} />
+              <span>Запросить договор аренды</span>
             </button>
             <button
               type="button"
               className="bank-quick-btn"
               onClick={() => sendQuickAction("send_counter")}
             >
-              ⚖️ Контр-оффер (1,8 млн ₽)
+              <ArrowsDownUpIcon size={14} />
+              <span>Контр-оффер (1,8 млн ₽)</span>
             </button>
             <button
               type="button"
               className="bank-quick-btn"
               onClick={() => sendQuickAction("request_multibank")}
             >
-              🔍 Запросить Мультибанк
+              <MagnifyingGlassIcon size={14} />
+              <span>Запросить Мультибанк</span>
             </button>
             <button
               type="button"
               className="bank-quick-btn"
               onClick={() => sendQuickAction("adjust_schedule")}
             >
-              📅 Согласовать график
+              <AlarmIcon size={14} />
+              <span>Согласовать график</span>
             </button>
             <button
               type="button"
               className="bank-quick-btn"
               onClick={() => sendQuickAction("confirm_docs")}
             >
-              ✅ Принять документы
+              <BookmarkSimpleIcon size={14} />
+              <span>Принять документы</span>
             </button>
           </div>
 
@@ -411,7 +425,7 @@ export function BankMessagesScreen() {
               title="Прикрепить проект договора или расчет"
               onClick={handleAttachDocument}
             >
-              +
+              <ArrowLineUpIcon size={16} />
             </button>
             <input
               type="text"
@@ -424,8 +438,10 @@ export function BankMessagesScreen() {
               type="submit"
               className="bank-chat-send-btn"
               disabled={!inputVal.trim()}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
             >
-              Отправить ↵
+              <EnvelopeIcon size={14} />
+              <span>Отправить</span>
             </button>
           </form>
         </main>

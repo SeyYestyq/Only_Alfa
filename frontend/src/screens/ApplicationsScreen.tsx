@@ -43,8 +43,8 @@ export function ApplicationsScreen() {
     application,
     loadApplications,
     openApplication,
-    goToScreen,
     isBusy,
+    openPlainApply,
   } = useApp();
   const [chatTarget, setChatTarget] = useState<Application | null>(null);
   const [chatLoading, setChatLoading] = useState(false);
@@ -101,8 +101,8 @@ export function ApplicationsScreen() {
             Статус, ответы банка и документы — в одном списке, без лишних вкладок.
           </p>
         </div>
-        <button type="button" className="btn btn-primary primary-cta" onClick={() => goToScreen("invoice")}>
-          Счета → финансирование
+        <button type="button" className="btn btn-primary primary-cta" onClick={openPlainApply}>
+          Оформить кредит
         </button>
       </div>
 
@@ -143,9 +143,9 @@ export function ApplicationsScreen() {
       {applications.length === 0 ? (
         <div className="empty-state">
           <h3>Заявок пока нет</h3>
-          <p>Оформите кредит при оплате счёта поставщика — заявка появится здесь.</p>
-          <button type="button" className="btn btn-primary" onClick={() => goToScreen("invoice")}>
-            Счета → финансирование
+          <p>Оформите кредит — заявка появится в этом списке.</p>
+          <button type="button" className="btn btn-primary" onClick={openPlainApply}>
+            Оформить кредит
           </button>
         </div>
       ) : (

@@ -1,4 +1,5 @@
 import type { Xray } from "../api/types";
+import { MapPinIcon } from "./icons";
 import { GeoMap } from "./GeoMap";
 
 const BUSINESS_MODEL_LABELS: Record<string, string> = {
@@ -14,8 +15,9 @@ export function GeoPanel({ xray }: { xray: Xray }) {
   return (
     <div className="geo-grid">
       <div>
-        <div className="card-subtitle" style={{ marginBottom: 6 }}>
-          Локация и рейтинг заказчика · {modelLabel}
+        <div className="card-subtitle" style={{ marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+          <MapPinIcon size={16} />
+          <span>Локация и рейтинг заказчика · {modelLabel}</span>
         </div>
         <div className="map-frame">
           <GeoMap

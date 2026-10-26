@@ -1,9 +1,5 @@
-import {
-  INVOICE_INSTANT_FINANCING_RATIO,
-  invoiceStatusLabel,
-  type UnpaidInvoiceRow,
-} from "../../domain-ui/invoiceFinancing";
-import { formatMoney, formatMoneyExact, roughAnnuity } from "../../utils/format";
+import { invoiceShortfallRub, invoiceStatusLabel, type UnpaidInvoiceRow } from "../../domain-ui/invoiceFinancing";
+import { formatMoney, formatMoneyExact } from "../../utils/format";
 
 interface InvoiceDetailPaneProps {
   invoice: UnpaidInvoiceRow;
@@ -11,26 +7,24 @@ interface InvoiceDetailPaneProps {
   balanceRub: number;
   isBusy: boolean;
   disabled?: boolean;
-  onFinance: () => void;
+  onRequestFunds: () => void;
   onPayFromAccount?: () => void;
   paidFromAccount?: boolean;
 }
 
-const TERM_MONTHS = 6;
-
-/** Карточка выбранного счёта: разбивка + CTA мгновенного финансирования 85%. */
+/** Карточка выбранного счёта: оплата своими деньгами или одна плашка на недостачу. */
 export function InvoiceDetailPane({
   invoice,
   companyName,
   balanceRub,
   isBusy,
   disabled,
-  onFinance,
+  onRequestFunds,
   onPayFromAccount,
   paidFromAccount,
 }: InvoiceDetailPaneProps) {
-  const pct = Math.round(INVOICE_INSTANT_FINANCING_RATIO * 100);
-  const paymentHint = roughAnnuity(invoice.financing_rub, TERM_MONTHS);
+  const shortfall = invoiceShortfallRub(invoice.amount_rub, balanceRub);
+  const fitsOnAccount = shortfall <= 0;
 
   return (
     <div className="inv-detail-pane">
@@ -71,53 +65,41 @@ export function InvoiceDetailPane({
           <span>Итого по счёту</span>
           <strong>{formatMoneyExact(invoice.amount_rub)}</strong>
         </div>
-        <div className="inv-totals-finance">
-          <span>К финансированию ({pct}%)</span>
-          <strong>{formatMoneyExact(invoice.financing_rub)}</strong>
-        </div>
       </div>
 
-      <aside className="inv-finance-offer">
-        <div className="inv-finance-offer-copy">
-          <span className="inv-finance-eyebrow">Invoice-to-Credit · предложение банка</span>
-          <strong>
-            Мгновенное финансирование {formatMoney(invoice.financing_rub)}
-          </strong>
-          <p className="muted">
-            {pct}% суммы счёта на {TERM_MONTHS} мес. · ≈ {formatMoney(paymentHint)} / мес. · 18% · без
-            залога. Остаток {formatMoney(invoice.amount_rub - invoice.financing_rub)} — после оплаты
-            контрагентом.
-          </p>
-          <p className="muted" style={{ fontSize: 12 }}>
-            На расчётном счёте сейчас {formatMoney(balanceRub)}
-          </p>
-        </div>
-        <button
-          type="button"
-          className="btn btn-primary inv-finance-cta"
-          disabled={isBusy || disabled}
-          onClick={onFinance}
-        >
-          Мгновенное финансирование {pct}%
-        </button>
-      </aside>
-
-      {onPayFromAccount ? (
+      {fitsOnAccount ? (
         <div className="inv-alt-pay">
           {paidFromAccount ? (
             <div className="alert alert-good">Демо: платёж со счёта отмечен.</div>
           ) : (
             <button
               type="button"
-              className="btn btn-ghost btn-sm"
-              disabled={isBusy || disabled}
+              className="btn btn-primary"
+              disabled={isBusy || disabled || !onPayFromAccount}
               onClick={onPayFromAccount}
             >
-              Оплатить со счёта полностью · {formatMoney(invoice.amount_rub)}
+              Оплатить со счёта
             </button>
           )}
         </div>
-      ) : null}
+      ) : (
+        <aside className="inv-shortfall">
+          <div className="inv-shortfall-copy">
+            <strong>Своих средств не хватает на {formatMoney(shortfall)}</strong>
+            <p className="muted">
+              На счёте {formatMoney(balanceRub)}, счёт на {formatMoney(invoice.amount_rub)}.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={isBusy || disabled}
+            onClick={onRequestFunds}
+          >
+            Получить деньги
+          </button>
+        </aside>
+      )}
     </div>
   );
 }

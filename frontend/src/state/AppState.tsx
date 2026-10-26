@@ -62,8 +62,11 @@ interface AppContextValue {
   setUserRole: (role: ActorRole) => void;
   setViewMode: (mode: ViewMode) => void;
   goToScreen: (screen: ScreenId) => void;
+  /** Пустая форма кредита: без счёта и без суммы недостачи. */
+  openPlainApply: () => void;
+  clearInvoiceResult: () => void;
   runSearch: (query: string) => Promise<void>;
-  parseTemplate: (code: string) => Promise<void>;
+  parseTemplate: (code: string) => Promise<boolean>;
   parseFile: (file: File) => Promise<void>;
   submitDraft: (productType: ProductType, termMonths: number) => Promise<void>;
   createApplication: (
@@ -271,12 +274,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (app.status === "FUNDED" || app.status === "AWAITING_CEO_APPROVAL") {
       return "signing";
     }
-    if (
-      ["COUNTER_OFFER", "APPROVED", "REJECTED", "NEED_MORE_INFO", "MANUAL_REVIEW"].includes(app.status)
-    ) {
-      return "decision";
+    // Черновик разбора счёта ещё не решение. Остальные статусы, включая аномалию, открывают решение.
+    if (app.status === "DRAFT_BY_EMPLOYEE") {
+      return "passport";
     }
-    return "passport";
+    return "decision";
   }, []);
 
   const setViewMode = useCallback((mode: ViewMode) => {
@@ -286,6 +288,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       loadXray(application.application_id).catch(handleError);
     }
   }, [application, handleError, loadXray, screenForApplication, setScreen, setViewModeStore]);
+
+  const clearInvoiceResult = useCallback(() => {
+    setInvoiceResult(null);
+  }, []);
+
+  const openPlainApply = useCallback(() => {
+    setInvoiceResult(null);
+    useDemoStore.getState().setApplyPrefillAmount(null);
+    useDemoStore.getState().setApplySource("plain");
+    useDemoStore.getState().setApplyIntent("standard");
+    setScreen("apply");
+  }, [setScreen]);
 
   const goToScreen = useCallback((next: ScreenId) => {
     setScreen(next);
@@ -331,20 +345,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [companyId, handleError, loadDashboard]);
 
-  const parseTemplate = useCallback(async (code: string) => {
+  const parseTemplate = useCallback(async (code: string): Promise<boolean> => {
     if (!companyId) {
-      return;
+      return false;
     }
     setIsBusy(true);
     setError(null);
     try {
       const result = await api.parseInvoiceTemplate(companyId, code);
       if (companyRef.current !== companyId) {
-        return;
+        return false;
       }
       setInvoiceResult(result);
+      return true;
     } catch (cause) {
       handleError(cause);
+      return false;
     } finally {
       setIsBusy(false);
     }
@@ -819,6 +835,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUserRole,
     setViewMode,
     goToScreen,
+    openPlainApply,
+    clearInvoiceResult,
     runSearch,
     parseTemplate,
     parseFile,
@@ -839,8 +857,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     resetAllScenarios,
     clearError: () => setError(null),
   }), [
-    acceptOffer, application, applications, cbrRate, companies, companyId, createApplication, dashboard,
+    acceptOffer, application, applications, cbrRate, clearInvoiceResult, companies, companyId, createApplication, dashboard,
     effectiveRole, error, goToScreen, invoiceResult, isBusy, isReady, loadApplications, lookupInn, multibankResult,
+    openPlainApply,
     openApplication, openBankCase, parseFile, parseTemplate, refresh, resetAllScenarios, runInstallment, runSearch, screen, searchResult,
     selectCompany, setViewMode, signApplication, submitClientProductRequest, decideClientProductRequest,
     uploadSupplement, submitDraft, templates, underwriterAction, userRole,

@@ -2,6 +2,20 @@ import { useMemo, useState } from "react";
 import type { CounterOffer, ProductType } from "../../api/types";
 import { buildDisplayProductOffers, type DisplayProductOffer } from "../../domain-ui/selectProductOffers";
 import { formatMoney, formatPercent } from "../../utils/format";
+import { ArrowsClockwiseIcon, GearIcon, BatteryChargingIcon, StarIcon } from "../icons";
+
+function getOfferIcon(kind: string) {
+  switch (kind) {
+    case "WORKING_CAPITAL":
+      return <ArrowsClockwiseIcon size={20} />;
+    case "CAPEX":
+      return <GearIcon size={20} />;
+    case "OVERDRAFT":
+      return <BatteryChargingIcon size={20} />;
+    default:
+      return <ArrowsClockwiseIcon size={20} />;
+  }
+}
 
 interface ProductOfferCardsProps {
   offers: CounterOffer[];
@@ -120,9 +134,14 @@ function ProductOfferCard({
       >
         <div className="product-offer-card-top">
           <span className="product-offer-icon" aria-hidden>
-            {presentation.iconLabel}
+            {getOfferIcon(presentation.kind)}
           </span>
-          {isFeatured && <span className="product-offer-badge">Рекомендуем</span>}
+          {isFeatured && (
+            <span className="product-offer-badge" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <StarIcon size={12} />
+              <span>Рекомендуем</span>
+            </span>
+          )}
           {isSelected && !isFeatured && <span className="product-offer-badge is-chosen">Выбрано</span>}
         </div>
 

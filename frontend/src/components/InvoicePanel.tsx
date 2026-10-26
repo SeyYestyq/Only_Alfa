@@ -1,5 +1,5 @@
 import { useDropzone } from "react-dropzone";
-import { FileUp } from "lucide-react";
+import { ArrowLineUpIcon } from "./icons";
 import { useApp } from "../state/AppState";
 import { formatMoney, formatMoneyExact } from "../utils/format";
 
@@ -34,7 +34,7 @@ export function InvoicePanel() {
           {isDragActive ? "Отпустите PDF-счёт" : "Перетащите PDF-счёт сюда"}
         </div>
         <div className="dropzone-sub">или выберите файл · PDF до 10 МБ</div>
-        <FileUp size={20} strokeWidth={1.75} aria-hidden style={{ marginTop: 8, opacity: 0.5 }} />
+        <ArrowLineUpIcon size={24} aria-hidden style={{ marginTop: 8, opacity: 0.6 }} />
       </div>
 
       <div className="figma-panel-title" style={{ marginTop: 20 }}>

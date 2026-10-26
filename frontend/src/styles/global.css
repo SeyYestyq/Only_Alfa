@@ -2253,3 +2253,120 @@ p {
     overflow-x: auto;
   }
 }
+
+/* ── Light Theme Global Contrast & Legibility Overrides ─────────────────── */
+[data-theme="light"] .btn-secondary {
+  background: var(--surface-2);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+}
+
+[data-theme="light"] .btn-secondary:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+[data-theme="light"] .btn-ghost {
+  background: #ffffff;
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .control-select,
+[data-theme="light"] .control-input {
+  background: #ffffff;
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+}
+
+[data-theme="light"] .control-select option {
+  background: #ffffff;
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .control-input::placeholder {
+  color: var(--text-faint);
+}
+
+[data-theme="light"] .field-input,
+[data-theme="light"] .field-select,
+[data-theme="light"] .field-textarea {
+  background: #ffffff;
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .field-select option {
+  background: #ffffff;
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .credit-badge {
+  background: #ffffff;
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .credit-badge .badge-top strong {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .pill-dark {
+  background: var(--surface-3);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+}
+
+[data-theme="light"] .pill-outline {
+  background: #ffffff;
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .segmented {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+[data-theme="light"] .segment.active {
+  background: #ffffff;
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .nav-tab:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .nav-tab.active {
+  background: rgba(239, 49, 36, 0.12);
+  border-color: rgba(239, 49, 36, 0.45);
+  color: var(--accent);
+}
+
+[data-theme="light"] .nav-tab-index {
+  background: var(--surface-3);
+  color: var(--text-primary);
+}
+
+/* ── Dark theme text polish for credit inspector ────────────────────────── */
+[data-theme="dark"] .chat-pane-head .muted,
+[data-theme="dark"] .credit-chat-modal .sheet-head .muted {
+  color: #ffffff;
+  opacity: 0.9;
+}
+

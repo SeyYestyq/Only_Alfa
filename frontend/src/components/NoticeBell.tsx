@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { BellRingingIcon } from "./icons";
 import { useApp } from "../state/AppState";
 import { useBankMessagesStore } from "../state/bankMessagesStore";
 import {
@@ -141,20 +142,7 @@ export function NoticeBell() {
         onClick={() => setOpen(!open)}
       >
         <span className="notice-bell-ico" aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 3a5 5 0 0 0-5 5v2.2c0 .7-.2 1.4-.6 2L5 14.5V16h14v-1.5l-1.4-2.3c-.4-.6-.6-1.3-.6-2V8a5 5 0 0 0-5-5Z"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M10 17a2 2 0 0 0 4 0"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            />
-          </svg>
+          <BellRingingIcon size={18} />
         </span>
         {count > 0 ? (
           <span className="figma-nav-badge">{count > 9 ? "9+" : count}</span>

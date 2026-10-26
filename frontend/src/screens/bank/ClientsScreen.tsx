@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AccountsStrip } from "../../components/AccountsStrip";
 import { CashForecastChart } from "../../components/CashForecastChart";
+import { ClientCapexSignal } from "../../components/ClientCapexSignal";
 import { DnaPanel } from "../../components/DnaPanel";
 import { RadarPanel } from "../../components/RadarPanel";
 import { BankEmptyState, ClientsSkeleton } from "../../components/Skeleton";
@@ -156,7 +157,8 @@ function getClientAppBadge(
 /**
  * Б6 — Клиенты банка (Master-Detail 360° по макету Figma).
  * Слева — выбор компании из портфеля со статусной точкой заявки.
- * Справа — 360°-аналитика бизнеса: баннер заявки, счета, ДНК, прогноз кассы 60 дней, радар и выписка.
+ * Справа — 360°-аналитика бизнеса: баннер заявки, счета, ДНК, прогноз кассы 60 дней,
+ * сигнал по платежам, радар и выписка.
  */
 export function ClientsScreen() {
   const {
@@ -374,6 +376,8 @@ export function ClientsScreen() {
                     <CashForecastChart forecast={dashboard.cash_forecast} />
                   </div>
                 </section>
+
+                <ClientCapexSignal />
 
                 {/* Финансовый радар */}
                 <RadarPanel triggers={dashboard.radar_triggers} />

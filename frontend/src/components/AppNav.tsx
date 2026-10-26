@@ -1,4 +1,15 @@
 import { NoticeBell } from "./NoticeBell";
+import {
+  HouseIcon,
+  BankIcon,
+  EnvelopeIcon,
+  ArticleIcon,
+  UsersThreeIcon,
+  BlueprintIcon,
+  PresentationIcon,
+  BagIcon,
+  MagnifyingGlassIcon,
+} from "./icons";
 import { useApp } from "../state/AppState";
 import type { ScreenId } from "../api/types";
 import { useDemoStore } from "../state/demoStore";
@@ -6,6 +17,30 @@ import { useBankMessagesStore } from "../state/bankMessagesStore";
 import { roleLabel } from "../utils/format";
 
 type NavLink = { id: ScreenId; label: string; badge?: number };
+
+function getNavIcon(id: ScreenId) {
+  switch (id) {
+    case "home":
+      return <HouseIcon size={16} />;
+    case "applications":
+      return <BankIcon size={16} />;
+    case "messages":
+    case "bank-messages":
+      return <EnvelopeIcon size={16} />;
+    case "invoice":
+      return <ArticleIcon size={16} />;
+    case "bank-clients":
+      return <UsersThreeIcon size={16} />;
+    case "bank-signal":
+      return <BlueprintIcon size={16} />;
+    case "bank-xray":
+      return <PresentationIcon size={16} />;
+    case "bank-effect":
+      return <BagIcon size={16} />;
+    default:
+      return null;
+  }
+}
 
 const CREDIT_SCREENS: ScreenId[] = [
   "applications",
@@ -120,7 +155,10 @@ export function AppNav() {
               className={`figma-nav-item ${active ? "active" : ""}`}
               onClick={() => goToScreen(link.id)}
             >
-              {link.label}
+              <span className="figma-nav-icon-wrap" aria-hidden="true">
+                {getNavIcon(link.id)}
+              </span>
+              <span>{link.label}</span>
               {typeof badge === "number" && badge > 0 ? (
                 <span className="figma-nav-badge">{badge}</span>
               ) : null}
@@ -138,7 +176,8 @@ export function AppNav() {
           onClick={() => goToScreen("search")}
           aria-label="Открыть умный поиск"
         >
-          Найти платёж или сервис…
+          <MagnifyingGlassIcon size={15} />
+          <span>Найти платёж или сервис…</span>
         </button>
       ) : (
         <button
@@ -147,7 +186,8 @@ export function AppNav() {
           onClick={() => goToScreen("bank-clients")}
           title="Открыть список клиентов — поиск по названию или ИНН"
         >
-          Найти клиента по ИНН…
+          <MagnifyingGlassIcon size={15} />
+          <span>Найти клиента по ИНН…</span>
         </button>
       )}
 

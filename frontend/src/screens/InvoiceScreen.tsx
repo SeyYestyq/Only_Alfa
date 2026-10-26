@@ -3,21 +3,14 @@ import { InvoicePanel, InvoiceRecognizedSummary } from "../components/InvoicePan
 import { InvoiceDetailPane } from "../components/invoice/InvoiceDetailPane";
 import { InvoiceKpiStrip } from "../components/invoice/InvoiceKpiStrip";
 import { InvoiceListPane } from "../components/invoice/InvoiceListPane";
-import {
-  instantFinancingAmount,
-  toUnpaidInvoiceRow,
-  unpaidInvoiceKpis,
-} from "../domain-ui/invoiceFinancing";
+import { invoiceShortfallRub, toUnpaidInvoiceRow, unpaidInvoiceKpis } from "../domain-ui/invoiceFinancing";
 import { useApp } from "../state/AppState";
 import { useDemoStore } from "../state/demoStore";
 import { formatMoney } from "../utils/format";
 
 type FilterTab = "all" | "unpaid" | "draft";
 
-/**
- * Invoice-to-Credit: кабинет неоплаченных счетов (list + detail) и CTA
- * «мгновенное финансирование 85%» → форма заявки с предзаполненной суммой.
- */
+/** Счета к оплате: своими деньгами или кредит на недостачу выбранного счёта. */
 export function InvoiceScreen() {
   const {
     dashboard,
@@ -30,6 +23,7 @@ export function InvoiceScreen() {
   } = useApp();
   const setApplyIntent = useDemoStore((state) => state.setApplyIntent);
   const setApplyPrefillAmount = useDemoStore((state) => state.setApplyPrefillAmount);
+  const setApplySource = useDemoStore((state) => state.setApplySource);
 
   const [tab, setTab] = useState<FilterTab>("unpaid");
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
@@ -57,47 +51,39 @@ export function InvoiceScreen() {
   const balance = dashboard?.account_balance ?? 0;
   const bankView = viewMode === "bank";
 
-  async function startFinancing(code: string, amountRub: number) {
-    setApplyPrefillAmount(instantFinancingAmount(amountRub));
-    setApplyIntent("standard");
-    await parseTemplate(code);
-    goToScreen("apply");
-  }
-
-  async function financeSelected() {
+  async function requestFunds() {
     if (!selected || bankView) {
       return;
     }
-    await startFinancing(selected.code, selected.amount_rub);
+    const shortfall = invoiceShortfallRub(selected.amount_rub, balance);
+    setApplyPrefillAmount(shortfall);
+    setApplySource("invoice");
+    setApplyIntent("standard");
+    const parsed = await parseTemplate(selected.code);
+    if (!parsed) {
+      setApplySource("plain");
+      setApplyPrefillAmount(null);
+      return;
+    }
+    goToScreen("apply");
   }
 
   return (
     <>
       <section className="home-hero">
         <div className="home-hero-main">
-          <div className="figma-eyebrow">
-            {company?.name ?? "Кабинет"} · Invoice-to-Credit
-          </div>
+          <div className="figma-eyebrow">{company?.name ?? "Кабинет"}</div>
           <h1 className="figma-h1">Счета к оплате</h1>
           <p className="figma-lead">
-            Выберите счёт поставщика — банк профинансирует до 85%. Остаток закроется после оплаты
-            контрагентом.
+            Выберите счёт. Если денег хватает — оплатите со счёта. Если нет — запросите кредит на разницу.
           </p>
           <div className="home-hero-balance">
             <span>На счёте сейчас</span>
             <strong>{formatMoney(balance)}</strong>
-            <small>можно оплатить целиком или взять финансирование</small>
+            <small>расчётный счёт в Альфе</small>
           </div>
         </div>
         <div className="home-hero-cta">
-          <button
-            type="button"
-            className="btn btn-primary primary-cta"
-            disabled={isBusy || bankView || !selected}
-            onClick={() => void financeSelected()}
-          >
-            Финансировать выбранный
-          </button>
           <button
             type="button"
             className="btn btn-ghost"
@@ -111,13 +97,7 @@ export function InvoiceScreen() {
         </div>
       </section>
 
-      <InvoiceKpiStrip
-        overdueRub={kpis.overdue}
-        dueSoonRub={kpis.dueSoon}
-        availableRub={kpis.available}
-        onFinanceAll={() => void financeSelected()}
-        financeDisabled={isBusy || bankView || !selected}
-      />
+      <InvoiceKpiStrip overdueRub={kpis.overdue} dueSoonRub={kpis.dueSoon} />
 
       <section className="inv-workspace">
         <InvoiceListPane
@@ -139,14 +119,14 @@ export function InvoiceScreen() {
               balanceRub={balance}
               isBusy={isBusy}
               disabled={bankView}
-              onFinance={() => void financeSelected()}
+              onRequestFunds={() => void requestFunds()}
               onPayFromAccount={() => setPaidFromAccount(true)}
               paidFromAccount={paidFromAccount}
             />
           ) : (
             <div className="inv-list-empty">
               <strong>Выберите счёт</strong>
-              <p className="muted">Слева — демо-шаблоны Invoice-to-Credit из API.</p>
+              <p className="muted">Слева — счета поставщиков из API.</p>
             </div>
           )}
 
@@ -162,7 +142,7 @@ export function InvoiceScreen() {
         <section className="figma-panel figma-panel-sm" style={{ marginTop: 16 }}>
           <div className="figma-panel-title">Свой PDF-счёт</div>
           <div className="figma-panel-heading" style={{ fontSize: 18, marginBottom: 12 }}>
-            Распознать и перейти к финансированию
+            Распознать PDF-счёт
           </div>
           <InvoicePanel />
         </section>

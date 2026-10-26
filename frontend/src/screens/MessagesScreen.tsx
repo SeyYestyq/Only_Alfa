@@ -6,7 +6,7 @@ type ThreadId = "application" | "offer" | "news";
 
 /** К6 — сообщения: список диалогов и переписка по заявке. */
 export function MessagesScreen() {
-  const { dashboard, application, goToScreen } = useApp();
+  const { dashboard, application, goToScreen, openPlainApply } = useApp();
   const news = dashboard?.news_feed ?? [];
   const [active, setActive] = useState<ThreadId>(application ? "application" : "offer");
   const [draft, setDraft] = useState("");
@@ -222,7 +222,7 @@ export function MessagesScreen() {
                   закрыть разрыв.
                 </p>
               </div>
-              <button type="button" className="btn btn-primary" onClick={() => goToScreen("apply")}>
+              <button type="button" className="btn btn-primary" onClick={openPlainApply}>
                 Оформить заявку
               </button>
             </div>

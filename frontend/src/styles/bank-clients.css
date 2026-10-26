@@ -175,6 +175,35 @@
   min-width: 0;
 }
 
+.client-capex-signal {
+  scroll-margin-top: 120px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.client-capex-empty {
+  margin: 0;
+}
+
+.bank-client-detail .signal-payments,
+.bank-client-detail .signal-recommend,
+.bank-client-detail .signal-statuses {
+  min-width: 0;
+}
+
+.bank-client-detail .signal-status-cards {
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+}
+
+@media (max-width: 1180px) {
+  .bank-client-detail .signal-figma-grid,
+  .bank-client-detail .signal-balance-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Шапка детального профиля */
 .bank-detail-head {
   display: flex;
@@ -450,4 +479,41 @@
   font-size: 10px;
   color: var(--text-faint, #6e6e7c);
 }
+
+/* ── Light Theme Overrides ──────────────────────────────────────────────── */
+[data-theme="light"] .bank-active-app-banner {
+  background: linear-gradient(135deg, rgba(239, 49, 36, 0.08) 0%, #ffffff 100%);
+  border: 1px solid rgba(239, 49, 36, 0.35);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .bank-active-app-banner .banner-title-row strong {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .bank-rate-chip:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .bank-rate-chip.active {
+  background: rgba(239, 49, 36, 0.12);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+[data-theme="light"] .bank-rate-val {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .bank-calc-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .bank-calc-val {
+  color: var(--text-primary);
+}
+
 

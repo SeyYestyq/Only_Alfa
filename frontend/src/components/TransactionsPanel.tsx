@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { GearIcon, EnvelopeIcon } from "./icons";
 import type { InstallmentResult, Transaction } from "../api/types";
 import { useApp } from "../state/AppState";
 import { useBankMessagesStore } from "../state/bankMessagesStore";
@@ -823,10 +824,13 @@ export function TransactionsPanel({
                     className={`installment-custom-toggle-btn ${isCustomMode ? "active" : ""}`}
                     onClick={() => setIsCustomMode((v) => !v)}
                   >
-                    <span>
-                      ⚙️ {isCustomMode
-                        ? "Вернуться к выбору вариантов банка"
-                        : "Настроить свои условия (если варианты банка не подходят)"}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <GearIcon size={14} />
+                      <span>
+                        {isCustomMode
+                          ? "Вернуться к выбору вариантов банка"
+                          : "Настроить свои условия (если варианты банка не подходят)"}
+                      </span>
                     </span>
                     <span className="toggle-chevron">{isCustomMode ? "▴" : "▾"}</span>
                   </button>
@@ -940,8 +944,10 @@ export function TransactionsPanel({
                       className="installment-submit-btn"
                       disabled={isBusy}
                       onClick={handleClientSendCustomConditions}
+                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                     >
-                      Отправить на рассмотрение в банк 📨
+                      <EnvelopeIcon size={15} />
+                      <span>Отправить на рассмотрение в банк</span>
                     </button>
                   ) : (
                     <button

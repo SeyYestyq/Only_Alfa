@@ -160,12 +160,12 @@ function AxisTick({
           width={pillWidth}
           height={20}
           rx={10}
-          fill="#fff"
+          fill="var(--text-primary)"
         />
         <text
           textAnchor="middle"
           y={20}
-          fill="#111113"
+          fill="var(--bg-base)"
           fontSize={11}
           fontWeight={600}
           fontFamily="var(--font)"

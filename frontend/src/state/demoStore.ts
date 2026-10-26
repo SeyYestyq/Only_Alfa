@@ -127,8 +127,10 @@ interface DemoStore {
   userRole: ActorRole;
   applyIntent: ApplyIntent;
   prefillCollateral: boolean;
-  /** Сумма заявки из Invoice-to-Credit (85% счёта); сбрасывается после подстановки в форму. */
+  /** Недостача по счёту, которую форма подставляет в поле «Сумма». null — пустая заявка или бейдж поиска. */
   applyPrefillAmount: number | null;
+  /** Откуда открыли форму: пустой кредит, недостача по счёту или бейдж поиска. */
+  applySource: "plain" | "invoice" | "badge";
   offersMuted: boolean;
   creditDocs: string[];
   clientNotices: ClientNotice[];
@@ -140,6 +142,7 @@ interface DemoStore {
   setUserRole: (role: ActorRole) => void;
   setApplyIntent: (intent: ApplyIntent, prefillFromApplication?: boolean) => void;
   setApplyPrefillAmount: (amount: number | null) => void;
+  setApplySource: (source: "plain" | "invoice" | "badge") => void;
   setOffersMuted: (muted: boolean) => void;
   addCreditDoc: (fileName: string) => void;
   clearCreditDocs: () => void;
@@ -255,6 +258,7 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
   applyIntent: "standard",
   prefillCollateral: false,
   applyPrefillAmount: null,
+  applySource: "plain",
   offersMuted: false,
   creditDocs: [],
   clientNotices: [],
@@ -269,6 +273,7 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
       prefillCollateral: applyIntent === "collateral" && prefillFromApplication,
     }),
   setApplyPrefillAmount: (applyPrefillAmount) => set({ applyPrefillAmount }),
+  setApplySource: (applySource) => set({ applySource }),
   setOffersMuted: (offersMuted) => set({ offersMuted }),
   addCreditDoc: (fileName) => {
     const name = fileName.trim();
@@ -331,6 +336,7 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
       applyIntent: "standard",
       prefillCollateral: false,
       applyPrefillAmount: null,
+      applySource: "plain",
       offersMuted: false,
       creditDocs: [],
       clientNotices: [],

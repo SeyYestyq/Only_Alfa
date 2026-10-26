@@ -5,7 +5,7 @@ import { GeoPanel } from "../../components/GeoPanel";
 import { BankEmptyState, XrayRecalcPanel, XraySkeleton } from "../../components/Skeleton";
 import { UnderwriterActions } from "../../components/UnderwriterActions";
 import { RiskScoreGauge } from "../../components/RiskScoreGauge";
-import { XrayBaseDecomposition } from "../../components/XrayBaseDecomposition";
+import { ArticleIcon, BankIcon, ArchiveIcon, MapPinIcon } from "../../components/icons";
 import { useApp } from "../../state/AppState";
 import { formatMoney, formatPercent } from "../../utils/format";
 
@@ -127,21 +127,29 @@ export function XrayScreen() {
         </div>
         <div className="supplier-checks" style={{ marginBottom: 14 }}>
           <div>
-            <span>ЕГРЮЛ</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <ArticleIcon size={14} /> ЕГРЮЛ
+            </span>
             <strong>
               Действует, {Math.floor(ageMonths / 12)} г. {ageMonths % 12} мес.
             </strong>
           </div>
           <div>
-            <span>БКИ</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <BankIcon size={14} /> БКИ
+            </span>
             <strong>Просрочек нет</strong>
           </div>
           <div>
-            <span>ФССП</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <ArchiveIcon size={14} /> ФССП
+            </span>
             <strong>Производств нет</strong>
           </div>
           <div>
-            <span>Гео</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <MapPinIcon size={14} /> Гео
+            </span>
             <strong>{xray ? `${xray.geo.competitors_count} точек в 300 м` : "—"}</strong>
           </div>
         </div>
@@ -239,21 +247,7 @@ export function XrayScreen() {
         </div>
       </details>
 
-      <details className="bank-collapse">
-        <summary>
-          <span>
-            Декомпозиция базы 500
-            <span className="muted"> · аналитика модели, не блокирует решение</span>
-          </span>
-        </summary>
-        <div className="bank-collapse-body" style={{ paddingTop: 12 }}>
-          <XrayBaseDecomposition
-            application={application}
-            company={dashboard?.company ?? null}
-            xray={xray}
-          />
-        </div>
-      </details>
+
 
       {xray && (
         <details className="bank-collapse">
