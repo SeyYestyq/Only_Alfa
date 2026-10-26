@@ -1,5 +1,6 @@
 import { TransactionsPanel } from "../components/TransactionsPanel";
 import { PeriodChart } from "../components/PeriodChart";
+import { ArticleIcon, BankIcon } from "../components/icons";
 import { useApp } from "../state/AppState";
 import { formatMoney, formatPercent, givenName } from "../utils/format";
 
@@ -87,11 +88,23 @@ export function DashboardScreen() {
           </div>
         </div>
         <div className="home-hero-cta">
-          <button type="button" className="btn btn-primary primary-cta" onClick={() => goToScreen("invoice")}>
-            Счета к оплате
+          <button
+            type="button"
+            className="btn btn-primary primary-cta"
+            style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            onClick={() => goToScreen("invoice")}
+          >
+            <ArticleIcon size={16} />
+            <span>Счета к оплате</span>
           </button>
-          <button type="button" className="btn btn-ghost" onClick={openPlainApply}>
-            Оформить кредит
+          <button
+            type="button"
+            className="btn btn-ghost"
+            style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            onClick={openPlainApply}
+          >
+            <BankIcon size={16} />
+            <span>Оформить кредит</span>
           </button>
         </div>
       </section>

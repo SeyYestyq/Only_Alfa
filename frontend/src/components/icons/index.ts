@@ -24,3 +24,4 @@ export { ArchiveIcon } from "./archive";
 export { ArrowsDownUpIcon } from "./arrows_down_up";
 export { AlarmIcon } from "./alarm";
 export { BookmarkSimpleIcon } from "./bookmark_simple";
+export { ListIcon } from "./list";

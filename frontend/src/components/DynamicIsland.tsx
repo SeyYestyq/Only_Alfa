@@ -64,6 +64,8 @@ export function DynamicIsland() {
   const [userOpen, setUserOpen] = useState(false);
   const [companyQuery, setCompanyQuery] = useState("");
   const [userQuery, setUserQuery] = useState("");
+  const [isScrolledHidden, setIsScrolledHidden] = useState(false);
+  const lastScrollYRef = useRef(0);
   const islandRef = useRef<HTMLDivElement>(null);
   const prevNoticeCount = useRef(noticeCount);
 
@@ -123,6 +125,59 @@ export function DynamicIsland() {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
+  // Умный скролл: прячем при скролле вниз, показываем при скролле вверх или у топа страницы
+  useEffect(() => {
+    let ticking = false;
+
+    function handleScroll() {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentY = window.scrollY;
+          const diff = currentY - lastScrollYRef.current;
+
+          // У самого верха страницы — остров всегда на виду
+          if (currentY <= 35) {
+            setIsScrolledHidden(false);
+          } else if (open) {
+            // Если развёрнут и пользователь активно скроллит вниз — плавно сворачиваем
+            if (diff > 80 && currentY > 120) {
+              setOpen(false);
+              setCompanyOpen(false);
+              setUserOpen(false);
+              setIsScrolledHidden(true);
+            }
+          } else {
+            // В свёрнутом виде: скролл вниз — прячем, скролл вверх — показываем
+            if (diff > 8 && currentY > 60) {
+              setIsScrolledHidden(true);
+            } else if (diff < -8) {
+              setIsScrolledHidden(false);
+            }
+          }
+
+          lastScrollYRef.current = currentY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+
+    function handleMouseMove(e: MouseEvent) {
+      // Если курсор поднесён к верхней кромке экрана (sensor/edge) — плавно приоткрываем остров
+      if (e.clientY <= 36) {
+        setIsScrolledHidden(false);
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!resetToast) {
       return;
@@ -140,6 +195,7 @@ export function DynamicIsland() {
   useEffect(() => {
     if (isBusy || error) {
       setOpen(true);
+      setIsScrolledHidden(false);
     }
   }, [isBusy, error]);
 
@@ -185,39 +241,49 @@ export function DynamicIsland() {
     .join(" ");
 
   return (
-    <div className="dyn-island-anchor" aria-live="polite">
-      <div className={islandClass} ref={islandRef}>
-        <div className="dyn-island-header">
-          <button
-            type="button"
-            className="dyn-island-pill"
-            aria-expanded={open}
-            onClick={() => setOpen((value) => !value)}
-          >
-            <span className={`dyn-island-dot ${isBusy ? "pulse" : ""} ${error ? "alert" : ""}`} />
-            <span className="dyn-island-badge">ДЕМО</span>
-            <span className="dyn-island-mode">{viewMode === "bank" ? "Банк" : "Бизнес"}</span>
-            <span className="dyn-island-sep" aria-hidden>
-              ·
-            </span>
-            <span className="dyn-island-company">{companyShort}</span>
-            <span className="dyn-island-sep" aria-hidden>
-              ·
-            </span>
-            <span className="dyn-island-status">{statusLine}</span>
-            <span className="dyn-island-theme-cue" aria-hidden title={theme === "light" ? "Светлая" : "Тёмная"}>
-              {theme === "light" ? "☀" : "☾"}
-            </span>
-            <span className="dyn-island-chevron" aria-hidden>
-              {open ? "▴" : "▾"}
-            </span>
-          </button>
-          <button
-            type="button"
-            className="dyn-island-quick-reset"
-            disabled={isBusy}
-            onClick={(e) => {
-              e.stopPropagation();
+    <>
+      {/* Сенсорная зона у верхней кромки экрана для вызова острова мышью */}
+      <div
+        className="dyn-island-hover-sensor"
+        onMouseEnter={() => setIsScrolledHidden(false)}
+        aria-hidden
+      />
+      <div
+        className={`dyn-island-anchor ${isScrolledHidden ? "is-scrolled-hidden" : ""}`}
+        aria-live="polite"
+      >
+        <div className={islandClass} ref={islandRef}>
+          <div className="dyn-island-header">
+            <button
+              type="button"
+              className="dyn-island-pill"
+              aria-expanded={open}
+              onClick={() => setOpen((value) => !value)}
+            >
+              <span className={`dyn-island-dot ${isBusy ? "pulse" : ""} ${error ? "alert" : ""}`} />
+              <span className="dyn-island-badge">ДЕМО</span>
+              <span className="dyn-island-mode">{viewMode === "bank" ? "Банк" : "Бизнес"}</span>
+              <span className="dyn-island-sep" aria-hidden>
+                ·
+              </span>
+              <span className="dyn-island-company">{companyShort}</span>
+              <span className="dyn-island-sep" aria-hidden>
+                ·
+              </span>
+              <span className="dyn-island-status">{statusLine}</span>
+              <span className="dyn-island-theme-cue" aria-hidden title={theme === "light" ? "Светлая" : "Тёмная"}>
+                {theme === "light" ? "☀" : "☾"}
+              </span>
+              <span className={`dyn-island-chevron ${open ? "is-expanded" : ""}`} aria-hidden>
+                ▾
+              </span>
+            </button>
+            <button
+              type="button"
+              className="dyn-island-quick-reset"
+              disabled={isBusy}
+              onClick={(e) => {
+                e.stopPropagation();
               void handleResetAll();
             }}
             title="Сбросить все сценарии к исходному состоянию"
@@ -454,5 +520,6 @@ export function DynamicIsland() {
         ) : null}
       </div>
     </div>
+    </>
   );
 }

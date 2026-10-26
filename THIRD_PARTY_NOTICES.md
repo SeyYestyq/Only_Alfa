@@ -74,15 +74,13 @@
 
 Сейчас Hugging Face SDK в зависимости **не подключён**. В коде есть только OpenAI-compatible HTTP-адаптер (`httpx`), который можно направить на локальный или внешний шлюз. Если open-weights модель будет подключена, лицензия зависит от конкретной модели:
 
-| Компонент / модель | Лицензия | Статус | Комментарий |
+| Компонент / модель | Лицензия | Статус | Ссылка и комментарий |
 |---|---|---|---|
-| `transformers` | Apache-2.0 | Не подключён | Библиотека для инференса |
-| `huggingface_hub` | Apache-2.0 | Не подключён | Загрузка моделей и токенизаторов |
-| Qwen, Mistral (примеры) | Apache-2.0 | Не подключены | Проверять карточку конкретной модели |
-| Llama (примеры) | Llama Community License | Не подключена | Не OSI-лицензия; отдельные ограничения |
-| Другие open-weights модели | Зависит от модели | Не подключены | Смотреть `LICENSE` и model card |
+| `Qwen/Qwen2.5-7B-Instruct` | Apache-2.0 | Рекомендуемая модель (Open Weights) | [Hugging Face: Qwen/Qwen2.5-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct) — совместима с OpenAI API |
+| `transformers` | Apache-2.0 | Опционально для self-hosted | [transformers upstream](https://github.com/huggingface/transformers) |
+| `pdfplumber` | MIT | Включён в ядро | [pdfplumber upstream](https://github.com/jsvine/pdfplumber) — открытый парсер без Yandex Vision OCR |
 
-Правило: перед подключением модели нужно зафиксировать её лицензию, условия коммерческого использования, требования к атрибуции и ограничения на выходные данные. Нельзя считать «open weights» синонимом «любая коммерческая лицензия».
+Правило: перед подключением модели нужно зафиксировать её лицензию, условия коммерческого использования, требования к атрибуции и ограничения на выходные данные. Нельзя считать «open weights» синонимом «любая коммерческая лицензия». Проприетарные облачные OCR (Yandex Vision OCR и аналоги) исключены из контура.
 
 ## 6. Внешние API и критический путь
 
@@ -119,6 +117,12 @@ docker compose images
 
 Связанные документы:
 
-- [Архитектура и SLA](./docs/architecture-and-sla.md)
-- [Реестр упрощений](./docs/simplifications-registry.md)
+- [Навигатор по документации (docs/README.md)](./docs/README.md)
+- [01. Продуктовое исследование, JTBD и CJM](./docs/01_Product_Research_JTBD_CJM.md)
+- [02. Системная архитектура и SLA](./docs/02_System_Architecture_and_SLA.md)
+- [03. FSM State Machine и скоринг](./docs/03_State_Machine_and_Scoring_Rules.md)
+- [04. Модель данных (ERD)](./docs/04_ERD_Data_Model.md)
+- [05. Банковская ценность и антифрод](./docs/05_Bank_Risk_Value_and_AntiFraud.md)
+- [06. Реестр упрощений](./docs/06_Simplifications_and_Mocks_Registry.md)
+- [07. Матрица приёмки и QA](./docs/07_QA_Acceptance_and_Test_Scenarios.md)
 - [README](./README.md)

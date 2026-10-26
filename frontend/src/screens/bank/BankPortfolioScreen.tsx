@@ -20,6 +20,7 @@ import {
 import { ROSTERS_OFFER_AMOUNT, ROSTERS_REQUEST_AMOUNT } from "../../domain-ui/caseScript";
 import { useApp } from "../../state/AppState";
 import { formatMoney } from "../../utils/format";
+import { PortfolioSearchIntentCard } from "../../components/bank/PortfolioSearchIntentCard";
 import "../../styles/bank-portfolio.css";
 
 export function BankPortfolioScreen() {
@@ -133,6 +134,9 @@ export function BankPortfolioScreen() {
           <RiskBar risk={book.risk} />
         </section>
       </div>
+
+      {/* Поисковые интенты клиентов портфеля */}
+      <PortfolioSearchIntentCard />
 
       {/* Секция: Эффект для банка */}
       <section className="v2-effect-section">

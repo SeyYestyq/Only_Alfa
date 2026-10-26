@@ -10,6 +10,7 @@ import { useApp } from "../../state/AppState";
 import { useBankMessagesStore } from "../../state/bankMessagesStore";
 import { formatMoney, formatPercent } from "../../utils/format";
 import type { Application, CompanyBrief } from "../../api/types";
+import { ClientSearchIntentAnalytics } from "../../components/bank/ClientSearchIntentAnalytics";
 import "../../styles/bank-clients.css";
 
 interface ClientAppBadge {
@@ -378,6 +379,9 @@ export function ClientsScreen() {
                 </section>
 
                 <ClientCapexSignal />
+
+                {/* Цифровой след: поисковая активность клиента и что нашлось */}
+                <ClientSearchIntentAnalytics />
 
                 {/* Финансовый радар */}
                 <RadarPanel triggers={dashboard.radar_triggers} />

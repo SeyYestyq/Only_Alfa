@@ -7,6 +7,16 @@
 
 ## [Unreleased]
 
+- **Комплект проектной документации для системных и бизнес-аналитиков по требованиям экспертов Альфа-Банка («Не обижайте Ольгу!»):**
+  - Создан единый ролевой навигатор [`docs/README.md`](./docs/README.md) с прямыми указателями для Ольги Урсул, Антона Рабина, Дениса Мишенкова, Данилы Звягина, Евгения Оконсова, Николая Детантова, Александра Кузьмичева и Алексея Григорьева.
+  - [`docs/01_Product_Research_JTBD_CJM.md`](./docs/01_Product_Research_JTBD_CJM.md): продуктовое исследование МСП, фреймворк JTBD (4 работы), 5 персон заемщиков, специфика ИП vs ООО, **сквозная интерактивная Mermaid CJM диаграмма клиентского пути** и путь андеррайтера.
+  - [`docs/02_System_Architecture_and_SLA.md`](./docs/02_System_Architecture_and_SLA.md): C4 архитектурные диаграммы (Context, Container, Component), матрица эксплуатационных SLA (Tier-0 / Tier-1 / Tier-2), автомат состояний Circuit Breaker, бюджеты задержек, Open Weights архитектура (Qwen2.5-7B) и профиль памяти в Docker (≤ 4 ГБ ОЗУ).
+  - [`docs/03_State_Machine_and_Scoring_Rules.md`](./docs/03_State_Machine_and_Scoring_Rules.md): полная диаграмма состояний FSM (21 переход), обработка ошибок (403 Forbidden / 409 Conflict), правовые отличия ИП vs ООО (Maker-Checker), двухступенчатый скоринг (Hard Stops + RiskScore 0–1000), 4 коридора решений и прозрачная формула ставки от Ключевой ставки ЦБ РФ.
+  - [`docs/04_ERD_Data_Model.md`](./docs/04_ERD_Data_Model.md): Mermaid ERD диаграмма 10 реляционных таблиц PostgreSQL 16, исчерпывающий словарь данных (Data Dictionary), индексы, ссылочная целостность и неизменяемый журнал аудита (Audit Trail).
+  - [`docs/05_Bank_Risk_Value_and_AntiFraud.md`](./docs/05_Bank_Risk_Value_and_AntiFraud.md): экономическое обоснование для банка: антифрод счетов поставщиков (Invoice-to-Credit), предотвращение дефолтов (NPL) предиктивным кассовым прогнозом на 60 дней, модель P&L сделки и инструменты Bank X-Ray.
+  - [`docs/06_Simplifications_and_Mocks_Registry.md`](./docs/06_Simplifications_and_Mocks_Registry.md): легализация допустимых упрощений (ЕГРЮЛ, БКИ, ФССП, Мультибанк, ПЭП, АБС), спецификация JSON-контрактов симуляторов, перечень непромышленных упрощений и Roadmap вывода в продуктив.
+  - [`docs/07_QA_Acceptance_and_Test_Scenarios.md`](./docs/07_QA_Acceptance_and_Test_Scenarios.md): матрица соответствия критериям хакатона, пошаговый регламент 3-минутного экспресс-прогона для жюри, сценарии тестирования 5 контрастных профилей, запуск 35 автотестов pytest (56 passed).
+  - Обновлены корневой `README.md` (навигатор жюри, сводная таблица SLA, таблица упрощений), `THIRD_PARTY_NOTICES.md` (прямая ссылка на Qwen2.5-7B-Instruct на Hugging Face), `.env.example` (алиасы `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL_NAME`) и `backend/app/core/config.py` (поддержка `LLM_*` переменных).
 - `reset-demo`: миграции колонок/таблиц на лету, повторное создание `system_actions` после сброса; тесты `test_reset_demo_migrations.py`.
 - Клиентская навигация «Сообщения»; фиксация ответа клиента на проактив в NewsFeed.
 - Документация приёмки: `docs/USER_JOURNEY.md`, `docs/ACCEPTANCE_MATRIX.md`.

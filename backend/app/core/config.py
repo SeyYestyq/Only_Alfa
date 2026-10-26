@@ -40,9 +40,9 @@ class Settings:
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./alfa.db")
     cbr_key_rate: float = float(os.getenv("CBR_KEY_RATE", str(DEFAULT_CBR_KEY_RATE)))
     ai_provider_mode: str = os.getenv("AI_PROVIDER_MODE", AI_MODE_DETERMINISTIC)
-    openai_base_url: str = os.getenv("OPENAI_BASE_URL", "")
-    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
-    openai_model_name: str = os.getenv("OPENAI_MODEL_NAME", "")
+    openai_base_url: str = os.getenv("OPENAI_BASE_URL") or os.getenv("LLM_BASE_URL", "")
+    openai_api_key: str = os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY", "")
+    openai_model_name: str = os.getenv("OPENAI_MODEL_NAME") or os.getenv("LLM_MODEL_NAME", "")
     openai_timeout_ms: int = int(os.getenv("OPENAI_TIMEOUT_MS", str(OPENAI_DEFAULT_TIMEOUT_MS)))
     cors_origins: list[str] = field(
         default_factory=lambda: _parse_origins(
