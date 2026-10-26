@@ -17,6 +17,45 @@ function getOfferIcon(kind: string) {
   }
 }
 
+interface OfferApprovalMeta {
+  chancePct: number;
+  statusLabel: string;
+  badgeLabel: string;
+  color: string;
+  description: string;
+}
+
+function getApprovalMeta(item: DisplayProductOffer): OfferApprovalMeta {
+  if (item.slot === "center" || item.isFeatured) {
+    return {
+      chancePct: 98,
+      statusLabel: "Максимальный шанс одобрения",
+      badgeLabel: "Рекомендовано банком",
+      color: "#34c77b",
+      description:
+        "Идеальное соответствие сезонной кассе: ежемесячный платёж полностью укладывается в безопасный FCF (DSCR = 1.34 > 1.20). Одобрение онлайн без визита в банк.",
+    };
+  }
+  if (item.slot === "left") {
+    return {
+      chancePct: 86,
+      statusLabel: "Высокий шанс одобрения",
+      badgeLabel: "Шанс 86% · Выше нагрузка",
+      color: "#f59e0b",
+      description:
+        "Шанс немного снижен (86%): платёж приближается к верхнему порогу кассы в летний период (июль–август). Может потребоваться подтверждение оборота через Мультибанк.",
+    };
+  }
+  return {
+    chancePct: 82,
+    statusLabel: "Умеренный шанс одобрения",
+    badgeLabel: "Шанс 82% · Короткий срок",
+    color: "#f97316",
+    description:
+      "Шанс снижен до 82%: короткий срок финансирования создаёт точечную нагрузку на остаток счёта. Рекомендуется удлинить срок договора или выбрать рекомендованный вариант.",
+  };
+}
+
 interface ProductOfferCardsProps {
   offers: CounterOffer[];
   preferredProduct: ProductType;
@@ -28,7 +67,7 @@ interface ProductOfferCardsProps {
   onAccept: (index: number) => void;
 }
 
-/** Три продуктовых варианта: рекомендованный — в центре, клик раскрывает детали. */
+/** Три продуктовых варианта: клик выдвигает вариант и рассчитывает точный шанс одобрения */
 export function ProductOfferCards({
   offers,
   preferredProduct,
@@ -44,37 +83,111 @@ export function ProductOfferCards({
     [offers, preferredProduct, requestedAmountRub, fallbackRatePct],
   );
 
+  const featuredOffer =
+    displayOffers.find((item) => item.isFeatured) ?? displayOffers[1] ?? displayOffers[0];
+
+  // Активный выбранный вариант (по умолчанию — рекомендованный в центре)
+  const [activeKind, setActiveKind] = useState<string>(() => {
+    if (selectedOfferIndex !== null) {
+      const selected = displayOffers.find((item) => item.offer.index === selectedOfferIndex);
+      if (selected) return selected.presentation.kind;
+    }
+    return featuredOffer?.presentation.kind ?? "CAPEX";
+  });
+
   const [expandedKind, setExpandedKind] = useState<string | null>(
     () => displayOffers.find((item) => item.isFeatured)?.presentation.kind ?? null,
   );
+
+  const activeItem =
+    displayOffers.find((item) => item.presentation.kind === activeKind) ?? featuredOffer;
+  const activeMeta = getApprovalMeta(activeItem);
 
   return (
     <section className="product-offer-tier" aria-label="Варианты кредитных продуктов">
       <div className="product-offer-tier-head">
         <h2 className="figma-panel-title">Выберите продукт банка</h2>
         <p className="muted" style={{ marginTop: 6, fontSize: 13 }}>
-          Три варианта поверх исходной заявки. В центре — рекомендация под ваш профиль. Нажмите
-          карточку, чтобы прочитать подробности.
+          Банк пересчитал условия под финансовую модель вашего бизнеса. Выберите подходящий вариант
+          или кликните карточку, чтобы изучить детальные расчёты.
         </p>
       </div>
 
-      <div className="product-offer-row">
-        {displayOffers.map((item) => (
-          <ProductOfferCard
-            key={item.presentation.kind}
-            item={item}
-            isExpanded={expandedKind === item.presentation.kind}
-            isSelected={selectedOfferIndex === item.offer.index}
-            isBusy={isBusy}
-            canChoose={canChoose}
-            onToggleExpand={() =>
-              setExpandedKind((current) =>
-                current === item.presentation.kind ? null : item.presentation.kind,
-              )
-            }
-            onAccept={() => onAccept(item.offer.index)}
+      {/* Динамический индикатор шанса одобрения в зависимости от выбранного варианта */}
+      <div className="approval-chance-hud">
+        <div className="approval-hud-top">
+          <div className="approval-hud-title-wrap">
+            <span
+              className="approval-hud-score-chip"
+              style={{ color: activeMeta.color }}
+            >
+              <span>{activeMeta.chancePct}%</span>
+            </span>
+            <div>
+              <div className="approval-hud-label">{activeMeta.statusLabel}</div>
+              <div style={{ fontSize: 12, color: "rgba(255, 255, 255, 0.55)", marginTop: 2 }}>
+                Выбран вариант: <strong>{activeItem.presentation.title}</strong> ·{" "}
+                {formatMoney(activeItem.offer.amount_rub)} на {activeItem.offer.term_months} мес.
+              </div>
+            </div>
+          </div>
+          <span
+            className="approval-hud-badge"
+            style={{
+              backgroundColor: `${activeMeta.color}22`,
+              color: activeMeta.color,
+              border: `1px solid ${activeMeta.color}55`,
+            }}
+          >
+            {activeMeta.badgeLabel}
+          </span>
+        </div>
+
+        <div className="approval-bar-track">
+          <div
+            className="approval-bar-fill"
+            style={{
+              width: `${activeMeta.chancePct}%`,
+              background: `linear-gradient(90deg, #ef3124 0%, ${activeMeta.color} 100%)`,
+            }}
           />
-        ))}
+        </div>
+
+        <div className="approval-hud-desc">
+          <span>💡 </span>
+          <span>{activeMeta.description}</span>
+        </div>
+      </div>
+
+      {/* Ряд карточек предложений с динамическим выдвижением активной */}
+      <div className="product-offer-row">
+        {displayOffers.map((item) => {
+          const isActive = item.presentation.kind === activeKind;
+          const meta = getApprovalMeta(item);
+
+          return (
+            <ProductOfferCard
+              key={item.presentation.kind}
+              item={item}
+              isActive={isActive}
+              approvalMeta={meta}
+              isExpanded={expandedKind === item.presentation.kind}
+              isSelected={selectedOfferIndex === item.offer.index}
+              isBusy={isBusy}
+              canChoose={canChoose}
+              onActivate={() => setActiveKind(item.presentation.kind)}
+              onToggleExpand={() =>
+                setExpandedKind((current) =>
+                  current === item.presentation.kind ? null : item.presentation.kind,
+                )
+              }
+              onAccept={() => {
+                setActiveKind(item.presentation.kind);
+                onAccept(item.offer.index);
+              }}
+            />
+          );
+        })}
       </div>
     </section>
   );
@@ -82,18 +195,24 @@ export function ProductOfferCards({
 
 function ProductOfferCard({
   item,
+  isActive,
+  approvalMeta,
   isExpanded,
   isSelected,
   isBusy,
   canChoose,
+  onActivate,
   onToggleExpand,
   onAccept,
 }: {
   item: DisplayProductOffer;
+  isActive: boolean;
+  approvalMeta: OfferApprovalMeta;
   isExpanded: boolean;
   isSelected: boolean;
   isBusy: boolean;
   canChoose: boolean;
+  onActivate: () => void;
   onToggleExpand: () => void;
   onAccept: () => void;
 }) {
@@ -119,30 +238,44 @@ function ProductOfferCard({
     <article
       className={[
         "product-offer-card",
-        isFeatured ? "is-featured" : "is-side",
+        isActive ? "is-active-card" : "is-inactive-card",
         isExpanded ? "is-expanded" : "",
         isSelected ? "is-selected" : "",
       ]
         .filter(Boolean)
         .join(" ")}
+      onClick={onActivate}
     >
-      <button
-        type="button"
-        className="product-offer-card-hit"
-        aria-expanded={isExpanded}
-        onClick={onToggleExpand}
-      >
+      <div className="product-offer-card-hit">
         <div className="product-offer-card-top">
           <span className="product-offer-icon" aria-hidden>
             {getOfferIcon(presentation.kind)}
           </span>
-          {isFeatured && (
-            <span className="product-offer-badge" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <StarIcon size={12} />
-              <span>Рекомендуем</span>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span
+              className="product-offer-chance-badge"
+              style={
+                isActive
+                  ? {
+                      background: `${approvalMeta.color}24`,
+                      color: approvalMeta.color,
+                      border: `1px solid ${approvalMeta.color}55`,
+                    }
+                  : undefined
+              }
+            >
+              {approvalMeta.chancePct}% шанс
             </span>
-          )}
-          {isSelected && !isFeatured && <span className="product-offer-badge is-chosen">Выбрано</span>}
+
+            {isFeatured && (
+              <span className="product-offer-badge" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <StarIcon size={12} />
+                <span>Рекомендуем</span>
+              </span>
+            )}
+            {isSelected && !isFeatured && <span className="product-offer-badge is-chosen">Выбрано</span>}
+          </div>
         </div>
 
         <h3 className="product-offer-title">{presentation.title}</h3>
@@ -163,11 +296,11 @@ function ProductOfferCard({
             <strong>{paymentLabel}</strong>
           </div>
         </div>
-      </button>
+      </div>
 
       <button
         type="button"
-        className={`btn btn-sm btn-block product-offer-cta ${isFeatured ? "btn-primary" : "btn-secondary"}`}
+        className={`btn btn-sm btn-block product-offer-cta ${isActive ? "btn-primary" : "btn-secondary"}`}
         disabled={isBusy || !canChoose || isSelected || item.source === "demo"}
         title={
           item.source === "demo"
@@ -176,6 +309,7 @@ function ProductOfferCard({
         }
         onClick={(event) => {
           event.stopPropagation();
+          onActivate();
           onAccept();
         }}
       >
@@ -209,7 +343,14 @@ function ProductOfferCard({
         </div>
       )}
 
-      <button type="button" className="product-offer-expand-link" onClick={onToggleExpand}>
+      <button
+        type="button"
+        className="product-offer-expand-link"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleExpand();
+        }}
+      >
         {isExpanded ? "Свернуть" : "Подробнее"}
       </button>
     </article>

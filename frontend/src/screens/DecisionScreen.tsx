@@ -96,9 +96,7 @@ export function DecisionScreen() {
         </div>
       )}
 
-      {(application.status === "NEED_MORE_INFO" ||
-        application.status === "APPROVED" ||
-        application.status === "COUNTER_OFFER") && (
+      {(application.status === "NEED_MORE_INFO" || application.status === "APPROVED") && (
         <section className="figma-panel figma-panel-sm decision-flags" style={{ marginBottom: 24 }}>
           <div className="figma-panel-title">Требует вашего внимания</div>
           <div className="decision-flag-list">
@@ -170,15 +168,6 @@ export function DecisionScreen() {
                       {confirmedFacts ? "Условия подтверждены" : "Подтвердить и перейти к подписи"}
                     </button>
                   </div>
-                </div>
-              </div>
-            )}
-            {application.status === "COUNTER_OFFER" && (
-              <div className="decision-flag">
-                <span className="decision-flag-mark">!</span>
-                <div>
-                  <strong>Выберите один из вариантов ниже</strong>
-                  <p>Банк не одобрил исходную сумму — условия пересчитаны под ваш сезон.</p>
                 </div>
               </div>
             )}
